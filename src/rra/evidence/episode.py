@@ -90,7 +90,7 @@ def run_episode(
                 })
         world.advance()
 
-    total = max(1, len(attempted_targets))
+    total = max(1, config.object_count)
     receipt: dict[str, Any] = {
         "schema_version": "rra.receipt.v1",
         "config": config.model_dump(mode="json"),
