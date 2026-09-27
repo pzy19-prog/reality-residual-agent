@@ -17,6 +17,7 @@ def run_episode(
     seed: int,
     compensation: bool,
     git_sha: str | None = None,
+    include_trace: bool = False,
 ) -> dict[str, Any]:
     """Run a fixed-step episode and return its complete reproducibility receipt."""
     world = World(config, seed)
@@ -32,6 +33,8 @@ def run_episode(
     successes = 0
     attempted_targets: set[int] = set()
     safe_stop = False
+    trace_by_target: dict[int, dict[str, Any]] = {}
+    object_grab_end_times: dict[int, float] = {}
 
     for _ in range(config.episode_steps * config.object_count):
         observation = world.observation()
@@ -57,6 +60,36 @@ def run_episode(
                 })
             safe_stop = True
         applied_plan = correction.plan if compensation else nominal_plan
+        if include_trace:
+            trace = trace_by_target.setdefault(observation.target_id, {
+                "target_id": observation.target_id,
+                "command_issued": False,
+                "command_success": False,
+                "decision_sample_count": 0,
+            })
+            if not trace["command_issued"]:
+                trace["decision_sample_count"] += 1
+                predicted_center = applied_plan.expected_arrival_time
+                window_half_width = config.dt / 2
+                trace.update({
+                    "decision_time": round(observation.time, 6),
+                    "decision_time_sample_count": trace["decision_sample_count"],
+                    "window_remaining_time": round(
+                        predicted_center + window_half_width - observation.time, 6
+                    ),
+                    "compensated_predicted_window": {
+                        "start": round(predicted_center - window_half_width, 6),
+                        "center": round(predicted_center, 6),
+                        "end": round(predicted_center + window_half_width, 6),
+                    },
+                    # Each target's plant clock resets, so report the episode-global
+                    # timestamp. Actions have zero modeled duration in this simulator.
+                    "previous_object_grab_end_time": (
+                        None if observation.target_id == 0
+                        or observation.target_id - 1 not in object_grab_end_times
+                        else round(object_grab_end_times[observation.target_id - 1], 6)
+                    ),
+                })
         if compensation:
             records.append({
                 "time": round(observation.time, 6),
@@ -91,6 +124,22 @@ def run_episode(
             attempted_targets.add(observation.target_id)
             errors.append(result.position_error)
             successes += int(result.accepted and result.success)
+            if include_trace:
+                trace = trace_by_target[observation.target_id]
+                trace.update({
+                    "command_issued": True,
+                    "command_success": bool(result.accepted and result.success),
+                    "command_result": result.reason,
+                    "skip_reason": (
+                        None if result.accepted and result.success
+                        else "command_issued_but_pick_failed"
+                    ),
+                })
+            if result.accepted and result.success:
+                object_grab_end_times[observation.target_id] = (
+                    observation.target_id * config.episode_steps * config.dt
+                    + observation.time + response_delay
+                )
             if not result.accepted:
                 safe_stop = True
                 escalations.append({
@@ -119,6 +168,24 @@ def run_episode(
             "escalations": len(escalations),
         },
     }
+    if include_trace:
+        failure_trace = []
+        for target_id, trace in sorted(trace_by_target.items()):
+            if trace["command_success"]:
+                continue
+            if not trace["command_issued"]:
+                if safe_stop:
+                    reason = "safe_stop_before_command"
+                elif trace["window_remaining_time"] < 0:
+                    reason = "prediction_window_expired_without_command"
+                else:
+                    reason = "prediction_window_not_reached_before_episode_end"
+                trace["skip_reason"] = reason
+            trace["seed"] = int(seed)
+            trace["compensation"] = "on" if compensation else "off"
+            trace["scenario"] = config.scenario
+            failure_trace.append(trace)
+        receipt["failure_trace"] = failure_trace
     hash_input = {key: value for key, value in receipt.items() if key != "git_sha"}
     canonical = json.dumps(hash_input, sort_keys=True, separators=(",", ":")).encode("utf-8")
     receipt["receipt_sha256"] = sha256(canonical).hexdigest()
