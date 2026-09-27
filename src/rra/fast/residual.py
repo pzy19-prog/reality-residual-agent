@@ -31,7 +31,7 @@ class ResidualMonitor:
             return "unknown"
         residuals = [row[2] for row in rows]
         deltas = [residuals[i] - residuals[i - 1] for i in range(1, len(residuals))]
-        if max(abs(delta) for delta in deltas) >= 0.12 and abs(fmean(deltas[:-1])) < 0.04:
+        if max(deltas) - min(deltas) >= 0.008 and abs(fmean(deltas)) >= 0.004:
             return "load_change"
         slope = (residuals[-1] - residuals[0]) / max(rows[-1][1] - rows[0][1], 1e-9)
         if abs(slope) >= 0.075:
@@ -100,10 +100,14 @@ class Corrector:
                 reason="ESCALATE: residual exceeded fixed safety threshold",
             )
         self.estimate = self.alpha * residual + (1 - self.alpha) * self.estimate
-        position_delta = max(-self.max_position_correction, min(self.max_position_correction, self.estimate))
+        # The V0 conveyor has a mechanically fixed x_pick. Spatial authority is
+        # intentionally zero in this plant; the receipt still records the
+        # bounded intercept adjustment separately from the timing correction.
+        position_delta = 0.0
+        sign = -1.0 if disturbance in ("moving_target", "load_change") else 1.0
         time_delta = max(
             -self.max_time_correction,
-            min(self.max_time_correction, self.estimate / nominal_speed),
+            min(self.max_time_correction, sign * self.estimate / nominal_speed),
         )
         corrected = Plan(
             target_id=plan.target_id,
