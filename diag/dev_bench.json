@@ -1,0 +1,359 @@
+{
+  "schema_version": "rra.diag-bench.v1",
+  "seed_role": "dev",
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    50,
+    51,
+    52,
+    53,
+    54,
+    55,
+    56,
+    57,
+    58,
+    59,
+    60,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72,
+    73,
+    74,
+    75,
+    76,
+    77,
+    78,
+    79,
+    80,
+    81,
+    82,
+    83,
+    84,
+    85,
+    86,
+    87,
+    88,
+    89,
+    90,
+    91,
+    92,
+    93,
+    94,
+    95,
+    96,
+    97,
+    98,
+    99,
+    100,
+    101,
+    102,
+    103,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109,
+    110,
+    111,
+    112,
+    113,
+    114,
+    115,
+    116,
+    117,
+    118,
+    119,
+    120,
+    121,
+    122,
+    123,
+    124,
+    125,
+    126,
+    127,
+    128,
+    129
+  ],
+  "metric": "silent_fail = failed generated objects in episodes with zero escalations",
+  "rows": [
+    {
+      "scenario": "nominal",
+      "parameters": {},
+      "off": {
+        "silent_fail": 24,
+        "successes": 1536,
+        "upgraded_episodes": 0
+      },
+      "on": {
+        "silent_fail": 24,
+        "successes": 1536,
+        "upgraded_episodes": 0
+      }
+    },
+    {
+      "scenario": "bias-low",
+      "parameters": {
+        "position_bias": 0.08
+      },
+      "off": {
+        "silent_fail": 0,
+        "successes": 1560,
+        "upgraded_episodes": 0
+      },
+      "on": {
+        "silent_fail": 24,
+        "successes": 1536,
+        "upgraded_episodes": 0
+      }
+    },
+    {
+      "scenario": "bias-mid",
+      "parameters": {
+        "position_bias": 0.25
+      },
+      "off": {
+        "silent_fail": 1560,
+        "successes": 0,
+        "upgraded_episodes": 0
+      },
+      "on": {
+        "silent_fail": 24,
+        "successes": 1536,
+        "upgraded_episodes": 0
+      }
+    },
+    {
+      "scenario": "bias-high",
+      "parameters": {
+        "position_bias": 0.45
+      },
+      "off": {
+        "silent_fail": 1560,
+        "successes": 0,
+        "upgraded_episodes": 0
+      },
+      "on": {
+        "silent_fail": 24,
+        "successes": 1536,
+        "upgraded_episodes": 0
+      }
+    },
+    {
+      "scenario": "drift-low",
+      "parameters": {
+        "drift_per_second": 0.008
+      },
+      "off": {
+        "silent_fail": 24,
+        "successes": 1536,
+        "upgraded_episodes": 0
+      },
+      "on": {
+        "silent_fail": 47,
+        "successes": 1513,
+        "upgraded_episodes": 0
+      }
+    },
+    {
+      "scenario": "drift-mid",
+      "parameters": {
+        "drift_per_second": 0.045
+      },
+      "off": {
+        "silent_fail": 1368,
+        "successes": 192,
+        "upgraded_episodes": 0
+      },
+      "on": {
+        "silent_fail": 0,
+        "successes": 1560,
+        "upgraded_episodes": 0
+      }
+    },
+    {
+      "scenario": "drift-high",
+      "parameters": {
+        "drift_per_second": 0.09
+      },
+      "off": {
+        "silent_fail": 1560,
+        "successes": 0,
+        "upgraded_episodes": 0
+      },
+      "on": {
+        "silent_fail": 21,
+        "successes": 1539,
+        "upgraded_episodes": 0
+      }
+    },
+    {
+      "scenario": "moving-low",
+      "parameters": {
+        "moving_speed_delta": 0.02
+      },
+      "off": {
+        "silent_fail": 39,
+        "successes": 1521,
+        "upgraded_episodes": 0
+      },
+      "on": {
+        "silent_fail": 0,
+        "successes": 1560,
+        "upgraded_episodes": 0
+      }
+    },
+    {
+      "scenario": "moving-mid",
+      "parameters": {
+        "moving_speed_delta": 0.1
+      },
+      "off": {
+        "silent_fail": 1560,
+        "successes": 0,
+        "upgraded_episodes": 0
+      },
+      "on": {
+        "silent_fail": 231,
+        "successes": 1329,
+        "upgraded_episodes": 0
+      }
+    },
+    {
+      "scenario": "moving-high",
+      "parameters": {
+        "moving_speed_delta": 0.18
+      },
+      "off": {
+        "silent_fail": 0,
+        "successes": 0,
+        "upgraded_episodes": 130
+      },
+      "on": {
+        "silent_fail": 0,
+        "successes": 17,
+        "upgraded_episodes": 130
+      }
+    },
+    {
+      "scenario": "load-low",
+      "parameters": {
+        "load_speed_delta": 0.04
+      },
+      "off": {
+        "silent_fail": 450,
+        "successes": 1110,
+        "upgraded_episodes": 0
+      },
+      "on": {
+        "silent_fail": 0,
+        "successes": 1560,
+        "upgraded_episodes": 0
+      }
+    },
+    {
+      "scenario": "load-mid",
+      "parameters": {
+        "load_speed_delta": 0.16
+      },
+      "off": {
+        "silent_fail": 1560,
+        "successes": 0,
+        "upgraded_episodes": 0
+      },
+      "on": {
+        "silent_fail": 449,
+        "successes": 1111,
+        "upgraded_episodes": 0
+      }
+    },
+    {
+      "scenario": "load-high",
+      "parameters": {
+        "load_speed_delta": 0.28
+      },
+      "off": {
+        "silent_fail": 0,
+        "successes": 0,
+        "upgraded_episodes": 130
+      },
+      "on": {
+        "silent_fail": 0,
+        "successes": 36,
+        "upgraded_episodes": 130
+      }
+    },
+    {
+      "scenario": "combo",
+      "parameters": {},
+      "off": {
+        "silent_fail": 0,
+        "successes": 0,
+        "upgraded_episodes": 130
+      },
+      "on": {
+        "silent_fail": 0,
+        "successes": 8,
+        "upgraded_episodes": 130
+      }
+    }
+  ]
+}
