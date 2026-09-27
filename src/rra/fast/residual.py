@@ -80,6 +80,9 @@ class Corrector:
         self.max_time_correction = max_time_correction
         self.safe_residual_threshold = safe_residual_threshold
         self.estimate = 0.0
+        self._last_residual: float | None = None
+        self._last_time: float | None = None
+        self._latched_time_delta: float | None = None
 
     def correct(
         self,
@@ -100,14 +103,25 @@ class Corrector:
                 reason="ESCALATE: residual exceeded fixed safety threshold",
             )
         self.estimate = self.alpha * residual + (1 - self.alpha) * self.estimate
-        # The V0 conveyor has a mechanically fixed x_pick. Spatial authority is
-        # intentionally zero in this plant; the receipt still records the
-        # bounded intercept adjustment separately from the timing correction.
+        now = plan.observation_time
+        slope = 0.0
+        if self._last_residual is not None and self._last_time is not None and now > self._last_time:
+            slope = (residual - self._last_residual) / (now - self._last_time)
+        self._last_residual, self._last_time = residual, now
+        # The conveyor gripper is mechanically fixed at x_pick, so V0 limits
+        # spatial correction to zero and compensates in time.
         position_delta = 0.0
-        sign = -1.0 if disturbance in ("moving_target", "load_change") else 1.0
+        if disturbance in ("moving_target", "drift", "load_change"):
+            if self._latched_time_delta is None and abs(slope) > 1e-9:
+                offset_start = max(0.0, now - residual / slope)
+                remaining_after_offset = max(0.0, plan.expected_arrival_time - offset_start)
+                self._latched_time_delta = -slope * remaining_after_offset / (nominal_speed + slope)
+            time_delta = self._latched_time_delta or 0.0
+        else:
+            time_delta = self.estimate / nominal_speed
         time_delta = max(
             -self.max_time_correction,
-            min(self.max_time_correction, sign * self.estimate / nominal_speed),
+            min(self.max_time_correction, time_delta),
         )
         corrected = Plan(
             target_id=plan.target_id,
