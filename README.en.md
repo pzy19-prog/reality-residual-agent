@@ -23,9 +23,10 @@ The 2D state has conveyor-axis x and lateral y. The gripper remains fixed at `(x
 Python 3.11 is required.
 
 ```bash
-python -m venv .venv
+python3.11 -m venv .venv
 . .venv/bin/activate
-pip install . pytest
+pip install -r requirements.txt
+export PATH="$PWD:$PATH"
 rra run --scenario bias --seed 7 --compensation on
 rra run --scenario bias --seed 7 --compensation off
 rra bench

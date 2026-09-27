@@ -1,0 +1,14 @@
+#!/usr/bin/env python3
+"""Source-tree CLI entry point; no package build backend is needed."""
+
+from pathlib import Path
+import sys
+
+if sys.version_info[:2] != (3, 11):
+    raise SystemExit("RRA V0 requires Python 3.11")
+
+sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
+
+from rra.cli import main
+
+raise SystemExit(main())
