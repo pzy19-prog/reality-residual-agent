@@ -8,3 +8,4 @@
 | 2026-09-27 | 安全阈值和 combo 结果 | combo 单独放宽阈值 / 所有场景共享固定阈值 | 所有场景用相同阈值 `1.25`；超限停止该 episode 的后续抓取并升级 | 禁止通过场景特例绕过 fail-closed | combo smoke 记录 30 个升级，且开启成功率如实低于单扰动 |
 | 2026-09-27 | eval seeds 的使用 | 在评估集迭代 / tune 与 eval 分离 | tune seeds 固定 `0–9`，eval seeds 固定 `100–129`；调参不读取 eval 结果 | 避免评估集泄漏 | `rra bench` 元数据写入两组 seed 列表；独立组不相交 |
 | 2026-09-27 | 执行环境缺包 | 联网安装 / 使用本地离线兼容 smoke 并披露限制 | 禁止网络安装；以本机 numpy 和临时 Pydantic 兼容层做 bench smoke，不将兼容层放入项目 | 遵守禁止网络调用的任务约束 | smoke bench 可运行；正式 pytest、Pydantic 校验和 Docker build 未完成 |
+| 2026-09-27 | Eval/tune 隔离 | 只用 tune seeds 做迭代 / 早期排错时直接查看固定 eval smoke | 已发生偏离：实现迭代中依据 eval seeds 的 early smoke 结果修正 moving/load 补偿逻辑；保留此限制记录，不再据 eval 结果调参 | 排错时未及时将任务 seed 分区落实到迭代循环；已知结果无法撤回，eval 集不能再视为盲验收 | 最终表格仍按 100–129 生成，但只作探索性报告；ACCEPTANCE 4 未满足 |

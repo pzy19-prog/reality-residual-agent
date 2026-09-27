@@ -1,0 +1,122 @@
+{
+  "schema_version": "rra.bench.v1",
+  "git_sha": "680fc73ac0a264d76e94f981b1a370780fd348e7",
+  "tune_seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "eval_seeds": [
+    100,
+    101,
+    102,
+    103,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109,
+    110,
+    111,
+    112,
+    113,
+    114,
+    115,
+    116,
+    117,
+    118,
+    119,
+    120,
+    121,
+    122,
+    123,
+    124,
+    125,
+    126,
+    127,
+    128,
+    129
+  ],
+  "seed_policy": "Tune seeds 0-9 are disjoint from fixed evaluation seeds 100-129.",
+  "rows": [
+    {
+      "scenario": "bias",
+      "off": {
+        "success_rate": 0.0,
+        "mean_abs_error": 0.452803,
+        "escalations": 0
+      },
+      "on": {
+        "success_rate": 0.991667,
+        "mean_abs_error": 0.051415,
+        "escalations": 0
+      },
+      "delta_success_rate": 0.991667
+    },
+    {
+      "scenario": "drift",
+      "off": {
+        "success_rate": 0.133333,
+        "mean_abs_error": 0.270896,
+        "escalations": 0
+      },
+      "on": {
+        "success_rate": 1.0,
+        "mean_abs_error": 0.052115,
+        "escalations": 0
+      },
+      "delta_success_rate": 0.866667
+    },
+    {
+      "scenario": "moving",
+      "off": {
+        "success_rate": 0.0,
+        "mean_abs_error": 0.596047,
+        "escalations": 0
+      },
+      "on": {
+        "success_rate": 0.847222,
+        "mean_abs_error": 0.104934,
+        "escalations": 0
+      },
+      "delta_success_rate": 0.847222
+    },
+    {
+      "scenario": "load",
+      "off": {
+        "success_rate": 0.0,
+        "mean_abs_error": 0.633322,
+        "escalations": 0
+      },
+      "on": {
+        "success_rate": 0.713889,
+        "mean_abs_error": 0.139609,
+        "escalations": 0
+      },
+      "delta_success_rate": 0.713889
+    },
+    {
+      "scenario": "combo",
+      "off": {
+        "success_rate": 0.0,
+        "mean_abs_error": 0.010563,
+        "escalations": 30
+      },
+      "on": {
+        "success_rate": 0.005556,
+        "mean_abs_error": 0.071493,
+        "escalations": 30
+      },
+      "delta_success_rate": 0.005556
+    }
+  ],
+  "markdown": "| 场景 | 补偿关闭成功率 | 补偿开启成功率 | 差值 | 关闭 MAE | 开启 MAE | 开启升级数 |\n|---|---:|---:|---:|---:|---:|---:|\n| bias | 0.000 | 0.992 | +0.992 | 0.453 | 0.051 | 0 |\n| drift | 0.133 | 1.000 | +0.867 | 0.271 | 0.052 | 0 |\n| moving | 0.000 | 0.847 | +0.847 | 0.596 | 0.105 | 0 |\n| load | 0.000 | 0.714 | +0.714 | 0.633 | 0.140 | 0 |\n| combo | 0.000 | 0.006 | +0.006 | 0.011 | 0.071 | 30 |"
+}

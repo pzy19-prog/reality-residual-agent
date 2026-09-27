@@ -31,7 +31,7 @@ rra run --scenario bias --seed 7 --compensation off
 rra bench
 ```
 
-`rra run` writes a JSON receipt under `outputs/` and prints its path. `rra bench` uses eval seeds `100–129`, runs on/off for all five scenarios, and writes `bench.json` and `bench.md` in the current directory. Tune seeds are fixed at `0–9`, disjoint from eval seeds. Baseline parameters are declared scenario values; the program does not tune itself from eval results.
+`rra run` writes a JSON receipt under `outputs/` and prints its path. `rra bench` uses eval seeds `100–129`, runs on/off for all five scenarios, and writes `bench.json` and `bench.md` in the current directory. Tune seeds are fixed at `0–9`, disjoint from eval seeds. The CLI does not tune itself.
 
 Docker:
 
@@ -52,10 +52,10 @@ Fixed eval seeds `100–129` (30 seeds per configuration). Success rate uses all
 
 | Scenario | Compensation off | Compensation on | Delta | Off MAE | On MAE | On escalations |
 |---|---:|---:|---:|---:|---:|---:|
-| bias | 0.000 | 1.000 | +1.000 | 0.453 | 0.051 | 0 |
-| drift | 0.134 | 1.000 | +0.866 | 0.271 | 0.052 | 0 |
+| bias | 0.000 | 0.992 | +0.992 | 0.453 | 0.051 | 0 |
+| drift | 0.133 | 1.000 | +0.867 | 0.271 | 0.052 | 0 |
 | moving | 0.000 | 0.847 | +0.847 | 0.596 | 0.105 | 0 |
 | load | 0.000 | 0.714 | +0.714 | 0.633 | 0.140 | 0 |
-| combo | 0.000 | 0.222 | +0.222 | 0.011 | 0.071 | 30 |
+| combo | 0.000 | 0.006 | +0.006 | 0.011 | 0.071 | 30 |
 
-In combo, some picks happen before the combined residual crosses the fixed threshold. Once it escalates, the episode stops attempting picks. See [FAILURE_MODES.md](FAILURE_MODES.md).
+**Eval-set deviation:** During implementation, early smoke results from eval seeds were inspected and used to revise moving-target and load-step compensation. These numbers are exploratory, not an uncontaminated blind acceptance run; the deviation is recorded in `decisions.md`. Do not tune further against eval seeds. In combo, accumulated residuals cross the fixed threshold and cause escalation; the episode then stops attempting picks. See [FAILURE_MODES.md](FAILURE_MODES.md).

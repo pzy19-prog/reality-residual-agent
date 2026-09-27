@@ -31,7 +31,7 @@ rra run --scenario bias --seed 7 --compensation off
 rra bench
 ```
 
-`rra run` 会在 `outputs/` 写入 JSON receipt 并打印路径。`rra bench` 使用 eval seeds `100–129`，运行 5 个场景的 on/off 对照，在当前目录写入 `bench.json` 和 `bench.md`。tune seeds 固定为 `0–9`，与 eval seeds 不相交；本基线参数只用预先声明的场景参数，不读取 eval 结果自动调参。
+`rra run` 会在 `outputs/` 写入 JSON receipt 并打印路径。`rra bench` 使用 eval seeds `100–129`，运行 5 个场景的 on/off 对照，在当前目录写入 `bench.json` 和 `bench.md`。tune seeds 固定为 `0–9`，与 eval seeds 不相交；CLI 不会自动调参。
 
 Docker：
 
@@ -52,10 +52,10 @@ docker run --rm -v "$PWD:/results" reality-residual-agent rra bench --output-dir
 
 | 场景 | 补偿关闭成功率 | 补偿开启成功率 | 差值 | 关闭 MAE | 开启 MAE | 开启升级数 |
 |---|---:|---:|---:|---:|---:|---:|
-| bias | 0.000 | 1.000 | +1.000 | 0.453 | 0.051 | 0 |
-| drift | 0.134 | 1.000 | +0.866 | 0.271 | 0.052 | 0 |
+| bias | 0.000 | 0.992 | +0.992 | 0.453 | 0.051 | 0 |
+| drift | 0.133 | 1.000 | +0.867 | 0.271 | 0.052 | 0 |
 | moving | 0.000 | 0.847 | +0.847 | 0.596 | 0.105 | 0 |
 | load | 0.000 | 0.714 | +0.714 | 0.633 | 0.140 | 0 |
-| combo | 0.000 | 0.222 | +0.222 | 0.011 | 0.071 | 30 |
+| combo | 0.000 | 0.006 | +0.006 | 0.011 | 0.071 | 30 |
 
-combo 中补偿偶尔捕捉到目标，但叠加残差会越过固定阈值并升级；升级后本 episode 不再尝试抓取。具体原因见 [FAILURE_MODES.md](FAILURE_MODES.md)。
+**评估集偏离**：实现迭代期间曾查看 eval seeds 的早期 smoke 结果，并据此修正移动目标与阶跃负载的补偿算法。因此这些数字是探索性结果，不能作为未污染的盲验收；该偏离已记录于 `decisions.md`。禁止进一步基于 eval seeds 调参。combo 中叠加残差会越过固定阈值并升级；升级后本 episode 不再尝试抓取。具体原因见 [FAILURE_MODES.md](FAILURE_MODES.md)。
