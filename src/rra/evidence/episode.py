@@ -114,6 +114,7 @@ def run_episode(
             "attempted": len(attempted_targets),
             "successes": successes,
             "success_rate": round(successes / total, 6),
+            "absolute_error_sum": round(sum(errors), 9),
             "mean_abs_error": round(sum(errors) / len(errors), 6) if errors else 0.0,
             "escalations": len(escalations),
         },

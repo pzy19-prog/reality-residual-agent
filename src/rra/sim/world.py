@@ -13,7 +13,7 @@ class WorldConfig(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    scenario: Literal["bias", "drift", "moving", "load", "combo"] = "bias"
+    scenario: Literal["nominal", "bias", "drift", "moving", "load", "combo"] = "bias"
     belt_speed: float = Field(default=1.0, gt=0)
     x_pick: float = 0.0
     tolerance: float = Field(default=0.20, gt=0)

@@ -1,62 +1,34 @@
 # Reality Residual Agent (RRA) V0
 
-A deterministic 2D conveyor pick-and-place simulation and residual-compensation baseline. V0 makes no LLM, network, NIM, or Jev calls. Object positions come only from an explicit seed.
-
-## Problem and goal
-
-A fixed nominal model can miss picks under sensor bias, a linearly changing offset, a moving target, or a speed step. RRA records observed minus nominal position, classifies a sliding residual window, and compares bounded EWMA timing compensation with an uncompensated run on the same seeds. A residual above the fixed safety threshold stops further picks and emits `ESCALATE`.
-
-## Architecture
-
-```text
-seeded 2D World → nominal ScriptedPlanner → ResidualMonitor → bounded Corrector
-        ↑                    ↓                    ↓                 ↓
- perturbations          pick plan           residual receipt    Controller
-                                                                     ↓
-                                                     episode metrics + JSON receipt
-```
-
-The 2D state has conveyor-axis x and lateral y. The gripper remains fixed at `(x_pick, y_pick)`. V0 compensates pick timing; gripper position remains fixed. Speed, position, and pick-window limits are enforced by configuration and the Controller.
+A deterministic 2D conveyor pick simulation and residual-compensation baseline. V0 makes no LLM, network, NIM, or Jev calls. Explicit seeds determine object placement; [`config/scenarios.json`](config/scenarios.json) defines the benchmark suite.
 
 ## Install and run
 
-Python 3.11 is required.
+Requires Python 3.11.
 
 ```bash
 python3.11 -m venv .venv
-. .venv/bin/activate
-pip install -r requirements.txt
+.venv/bin/pip install -r requirements.txt
 export PATH="$PWD:$PATH"
 rra run --scenario bias --seed 7 --compensation on
-rra run --scenario bias --seed 7 --compensation off
 rra bench
 ```
 
-`rra run` writes a JSON receipt under `outputs/` and prints its path. `rra bench` uses eval seeds `100–129`, runs on/off for all five scenarios, and writes `bench.json` and `bench.md` in the current directory. Tune seeds are fixed at `0–9`, disjoint from eval seeds. The CLI does not tune itself.
+`rra bench` defaults to the frozen eval seeds `1000–1099` and runs nominal, low/mid/high levels of bias, drift, moving-target, and load disturbances, plus combo. Development uses seeds `0–129`. A development smoke run can select them with `RRA_SEED_FILE=config/dev_seeds.json rra bench`.
 
-Docker:
+Docker smoke:
 
 ```bash
 docker build -t reality-residual-agent .
-docker run --rm reality-residual-agent rra bench
+docker run --rm -e RRA_SEED_FILE=/app/config/dev_seeds.json reality-residual-agent rra bench
 ```
 
-The benchmark files are written inside the container at `/app/bench.json` and `/app/bench.md`. To retain them on the host:
+## Metric definitions
 
-```bash
-docker run --rm -v "$PWD:/results" reality-residual-agent rra bench --output-dir /results
-```
+- **Success rate** = successful picks / all generated objects (12 per seed and configuration). A pick succeeds only when the controller accepts the command and the pick window is met. Objects not attempted after escalation remain in the denominator as failures. Rejected attempts are not successes.
+- **MAE** = sum of pick-window errors over all attempted picks / number of attempts. Each error is `max(2D Euclidean position error, |actual time − command time| × command speed)`, in world-distance units. Successful and failed attempts both count. Objects never attempted after escalation add no error sample. MAE is 0 only when there are no attempts in the whole group.
+- **Escalations** count residual safety escalations (once per episode) and controller rejections.
 
-## Eval benchmark
+The former `0.011` combo MAE with 0 success was a benchmark aggregation bug: the old mean of episode MAEs included 0 for episodes with no attempts, even though the few attempted picks all failed. Success still used all generated objects as its denominator. The benchmark now computes MAE from the global error sum divided by global attempts.
 
-Fixed eval seeds `100–129` (30 seeds per configuration). Success rate uses all generated objects as the denominator; objects not attempted after escalation count as failures. MAE is mean 2D position error over attempted picks. Values are from the offline smoke benchmark in `bench.json`. Formal `pytest` and Docker build were not verified because Python 3.11 Pydantic/pytest packages were unavailable in the execution environment.
-
-| Scenario | Compensation off | Compensation on | Delta | Off MAE | On MAE | On escalations |
-|---|---:|---:|---:|---:|---:|---:|
-| bias | 0.000 | 0.992 | +0.992 | 0.453 | 0.051 | 0 |
-| drift | 0.133 | 1.000 | +0.867 | 0.271 | 0.052 | 0 |
-| moving | 0.000 | 0.847 | +0.847 | 0.596 | 0.105 | 0 |
-| load | 0.000 | 0.714 | +0.714 | 0.633 | 0.140 | 0 |
-| combo | 0.000 | 0.006 | +0.006 | 0.011 | 0.071 | 30 |
-
-**Eval-set deviation:** During implementation, early smoke results from eval seeds were inspected and used to revise moving-target and load-step compensation. These numbers are exploratory, not an uncontaminated blind acceptance run; the deviation is recorded in `decisions.md`. Do not tune further against eval seeds. In combo, accumulated residuals cross the fixed threshold and cause escalation; the episode then stops attempting picks. See [FAILURE_MODES.md](FAILURE_MODES.md).
+The complete blind evaluation table is recorded in `bench.json` and `bench.md` after the final eval run. The combo fast-layer fail-closed behavior is a known failure mode described in [FAILURE_MODES.md](FAILURE_MODES.md).

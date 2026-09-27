@@ -1,0 +1,18 @@
+{
+  "cases": [
+    {"name": "nominal", "scenario": "nominal", "parameters": {}},
+    {"name": "bias-low", "scenario": "bias", "intensity": "low", "parameters": {"position_bias": 0.08}},
+    {"name": "bias-mid", "scenario": "bias", "intensity": "mid", "parameters": {"position_bias": 0.25}},
+    {"name": "bias-high", "scenario": "bias", "intensity": "high", "parameters": {"position_bias": 0.45}},
+    {"name": "drift-low", "scenario": "drift", "intensity": "low", "parameters": {"drift_per_second": 0.008}},
+    {"name": "drift-mid", "scenario": "drift", "intensity": "mid", "parameters": {"drift_per_second": 0.045}},
+    {"name": "drift-high", "scenario": "drift", "intensity": "high", "parameters": {"drift_per_second": 0.09}},
+    {"name": "moving-low", "scenario": "moving", "intensity": "low", "parameters": {"moving_speed_delta": 0.02}},
+    {"name": "moving-mid", "scenario": "moving", "intensity": "mid", "parameters": {"moving_speed_delta": 0.10}},
+    {"name": "moving-high", "scenario": "moving", "intensity": "high", "parameters": {"moving_speed_delta": 0.18}},
+    {"name": "load-low", "scenario": "load", "intensity": "low", "parameters": {"load_speed_delta": 0.04}},
+    {"name": "load-mid", "scenario": "load", "intensity": "mid", "parameters": {"load_speed_delta": 0.16}},
+    {"name": "load-high", "scenario": "load", "intensity": "high", "parameters": {"load_speed_delta": 0.28}},
+    {"name": "combo", "scenario": "combo", "parameters": {}}
+  ]
+}
