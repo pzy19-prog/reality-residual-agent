@@ -76,7 +76,18 @@ def run_episode(
                 expected_time=observation.time,
                 pick_y=config.y_pick,
             )
-            result = controller.execute_2d(command, observation.actual_x, observation.actual_y, observation.time)
+            response_delay = (
+                config.load_response_delay
+                if config.scenario in ("load", "combo") and observation.step >= config.load_step
+                else 0.0
+            )
+            delayed_x = observation.actual_x + observation.actual_speed * response_delay
+            result = controller.execute_2d(
+                command,
+                delayed_x,
+                observation.actual_y,
+                observation.time + response_delay,
+            )
             attempted_targets.add(observation.target_id)
             errors.append(result.position_error)
             successes += int(result.accepted and result.success)

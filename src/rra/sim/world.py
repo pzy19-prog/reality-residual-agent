@@ -25,7 +25,7 @@ class WorldConfig(BaseModel):
     moving_speed_delta: float = 0.10
     load_step: int = 20
     load_speed_delta: float = 0.16
-    load_response_delay: float = 0.22
+    load_response_delay: float = Field(default=0.0, ge=0)
     initial_position_min: float = -8.0
     initial_position_max: float = -4.0
     y_pick: float = 0.0
