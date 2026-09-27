@@ -23,6 +23,8 @@ def run_episode(
     planner = ScriptedPlanner()
     monitor = ResidualMonitor()
     corrector = Corrector()
+    base_plans: dict[int, Any] = {}
+    active_target: int | None = None
     controller = Controller(ControllerConfig(tolerance=config.tolerance))
     records: list[dict[str, Any]] = []
     escalations: list[dict[str, Any]] = []
@@ -33,18 +35,27 @@ def run_episode(
 
     for _ in range(config.episode_steps * config.object_count):
         observation = world.observation()
+        if active_target != observation.target_id:
+            active_target = observation.target_id
+            monitor = ResidualMonitor()
+            corrector = Corrector()
         residual = monitor.update(observation)
         disturbance = monitor.classify()
-        nominal_plan = planner.plan(observation, config.belt_speed, config.x_pick)
-        correction = corrector.correct(nominal_plan, residual, disturbance, config.belt_speed)
+        if observation.target_id not in base_plans:
+            base_plans[observation.target_id] = planner.plan(observation, config.belt_speed, config.x_pick)
+        base_plan = base_plans[observation.target_id]
+        working_plan = base_plan.model_copy(update={"observation_time": observation.time})
+        correction = corrector.correct(working_plan, residual, disturbance, config.belt_speed)
+        nominal_plan = working_plan
         if "ESCALATE:" in correction.reason:
+            if not safe_stop:
+                escalations.append({
+                    "step": observation.step,
+                    "target_id": observation.target_id,
+                    "residual": residual,
+                    "reason": correction.reason,
+                })
             safe_stop = True
-            escalations.append({
-                "step": observation.step,
-                "target_id": observation.target_id,
-                "residual": residual,
-                "reason": correction.reason,
-            })
         applied_plan = correction.plan if compensation else nominal_plan
         if compensation:
             records.append({
@@ -63,12 +74,14 @@ def run_episode(
                 speed=config.belt_speed,
                 pick_position=applied_plan.pick_position,
                 expected_time=observation.time,
+                pick_y=config.y_pick,
             )
-            result = controller.execute(command, observation.actual_x, observation.time)
+            result = controller.execute_2d(command, observation.actual_x, observation.actual_y, observation.time)
             attempted_targets.add(observation.target_id)
             errors.append(result.position_error)
             successes += int(result.accepted and result.success)
             if not result.accepted:
+                safe_stop = True
                 escalations.append({
                     "step": observation.step,
                     "target_id": observation.target_id,
