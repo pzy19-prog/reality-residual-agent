@@ -9,6 +9,8 @@ class ControllerConfig:
     max_speed: float = 1.50
     min_pick_position: float = -0.75
     max_pick_position: float = 0.75
+    min_pick_y: float = -0.75
+    max_pick_y: float = 0.75
     tolerance: float = 0.20
 
 
@@ -18,6 +20,7 @@ class Command:
     speed: float
     pick_position: float
     expected_time: float
+    pick_y: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -35,15 +38,23 @@ class Controller:
 
     def execute(self, command: Command, actual_x: float, actual_time: float) -> Execution:
         """Reject out-of-bounds commands; otherwise evaluate the physical pick window."""
+        return self.execute_2d(command, actual_x, command.pick_y, actual_time)
+
+    def execute_2d(self, command: Command, actual_x: float, actual_y: float, actual_time: float) -> Execution:
+        """2D plant entry point; ``execute`` remains as a backward-compatible y=0 call."""
         if not self.config.min_speed <= command.speed <= self.config.max_speed:
             reason = f"rejected speed {command.speed:.6f} outside controller limits"
             self.rejections.append(reason)
-            return Execution(False, False, abs(actual_x - command.pick_position), reason)
+            return Execution(False, False, ((actual_x - command.pick_position) ** 2 + (actual_y - command.pick_y) ** 2) ** 0.5, reason)
         if not self.config.min_pick_position <= command.pick_position <= self.config.max_pick_position:
             reason = f"rejected pick position {command.pick_position:.6f} outside controller limits"
             self.rejections.append(reason)
-            return Execution(False, False, abs(actual_x - command.pick_position), reason)
-        error = abs(actual_x - command.pick_position)
+            return Execution(False, False, ((actual_x - command.pick_position) ** 2 + (actual_y - command.pick_y) ** 2) ** 0.5, reason)
+        if not self.config.min_pick_y <= command.pick_y <= self.config.max_pick_y:
+            reason = f"rejected pick y {command.pick_y:.6f} outside controller limits"
+            self.rejections.append(reason)
+            return Execution(False, False, ((actual_x - command.pick_position) ** 2 + (actual_y - command.pick_y) ** 2) ** 0.5, reason)
+        error = ((actual_x - command.pick_position) ** 2 + (actual_y - command.pick_y) ** 2) ** 0.5
         time_error = abs(actual_time - command.expected_time) * command.speed
         ok = max(error, time_error) <= self.config.tolerance
         return Execution(True, ok, max(error, time_error), "picked" if ok else "missed pick window")
