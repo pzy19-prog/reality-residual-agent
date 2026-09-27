@@ -1,122 +1,402 @@
 {
-  "schema_version": "rra.bench.v1",
-  "git_sha": "7a2bc630fc378fa11794590aa4e74345950a6e6d",
-  "tune_seeds": [
-    0,
-    1,
-    2,
-    3,
-    4,
-    5,
-    6,
-    7,
-    8,
-    9
+  "schema_version": "rra.bench.v2",
+  "git_sha": "b025bd457ca30172371c9e0e8d4a16db7c634c31",
+  "seed_role": "eval",
+  "seeds": [
+    1000,
+    1001,
+    1002,
+    1003,
+    1004,
+    1005,
+    1006,
+    1007,
+    1008,
+    1009,
+    1010,
+    1011,
+    1012,
+    1013,
+    1014,
+    1015,
+    1016,
+    1017,
+    1018,
+    1019,
+    1020,
+    1021,
+    1022,
+    1023,
+    1024,
+    1025,
+    1026,
+    1027,
+    1028,
+    1029,
+    1030,
+    1031,
+    1032,
+    1033,
+    1034,
+    1035,
+    1036,
+    1037,
+    1038,
+    1039,
+    1040,
+    1041,
+    1042,
+    1043,
+    1044,
+    1045,
+    1046,
+    1047,
+    1048,
+    1049,
+    1050,
+    1051,
+    1052,
+    1053,
+    1054,
+    1055,
+    1056,
+    1057,
+    1058,
+    1059,
+    1060,
+    1061,
+    1062,
+    1063,
+    1064,
+    1065,
+    1066,
+    1067,
+    1068,
+    1069,
+    1070,
+    1071,
+    1072,
+    1073,
+    1074,
+    1075,
+    1076,
+    1077,
+    1078,
+    1079,
+    1080,
+    1081,
+    1082,
+    1083,
+    1084,
+    1085,
+    1086,
+    1087,
+    1088,
+    1089,
+    1090,
+    1091,
+    1092,
+    1093,
+    1094,
+    1095,
+    1096,
+    1097,
+    1098,
+    1099
   ],
-  "eval_seeds": [
-    100,
-    101,
-    102,
-    103,
-    104,
-    105,
-    106,
-    107,
-    108,
-    109,
-    110,
-    111,
-    112,
-    113,
-    114,
-    115,
-    116,
-    117,
-    118,
-    119,
-    120,
-    121,
-    122,
-    123,
-    124,
-    125,
-    126,
-    127,
-    128,
-    129
-  ],
-  "seed_policy": "Tune seeds 0-9 are disjoint from fixed evaluation seeds 100-129.",
+  "seed_policy": "Dev seeds 0-129 are for iteration. Eval seeds 1000-1099 are frozen and used only for the final benchmark.",
+  "scenario_config": "config/scenarios.json",
   "rows": [
     {
-      "scenario": "bias",
+      "scenario": "nominal",
+      "disturbance": "nominal",
+      "intensity": null,
+      "parameters": {},
       "off": {
-        "success_rate": 0.0,
-        "mean_abs_error": 0.452803,
+        "success_rate": 0.985833,
+        "mean_abs_error": 0.050453,
+        "attempted": 1183,
         "escalations": 0
       },
       "on": {
-        "success_rate": 0.991667,
-        "mean_abs_error": 0.051415,
+        "success_rate": 0.985833,
+        "mean_abs_error": 0.050453,
+        "attempted": 1183,
         "escalations": 0
       },
-      "delta_success_rate": 0.991667
+      "delta_success_rate": 0.0
     },
     {
-      "scenario": "drift",
+      "scenario": "bias-low",
+      "disturbance": "bias",
+      "intensity": "low",
+      "parameters": {
+        "position_bias": 0.08
+      },
       "off": {
-        "success_rate": 0.133333,
-        "mean_abs_error": 0.270896,
+        "success_rate": 1.0,
+        "mean_abs_error": 0.093794,
+        "attempted": 1200,
+        "escalations": 0
+      },
+      "on": {
+        "success_rate": 0.985833,
+        "mean_abs_error": 0.050453,
+        "attempted": 1183,
+        "escalations": 0
+      },
+      "delta_success_rate": -0.014167
+    },
+    {
+      "scenario": "bias-mid",
+      "disturbance": "bias",
+      "intensity": "mid",
+      "parameters": {
+        "position_bias": 0.25
+      },
+      "off": {
+        "success_rate": 0.0,
+        "mean_abs_error": 0.252749,
+        "attempted": 1200,
+        "escalations": 0
+      },
+      "on": {
+        "success_rate": 0.985833,
+        "mean_abs_error": 0.050453,
+        "attempted": 1183,
+        "escalations": 0
+      },
+      "delta_success_rate": 0.985833
+    },
+    {
+      "scenario": "bias-high",
+      "disturbance": "bias",
+      "intensity": "high",
+      "parameters": {
+        "position_bias": 0.45
+      },
+      "off": {
+        "success_rate": 0.0,
+        "mean_abs_error": 0.450858,
+        "attempted": 1200,
+        "escalations": 0
+      },
+      "on": {
+        "success_rate": 0.985833,
+        "mean_abs_error": 0.050453,
+        "attempted": 1183,
+        "escalations": 0
+      },
+      "delta_success_rate": 0.985833
+    },
+    {
+      "scenario": "drift-low",
+      "disturbance": "drift",
+      "intensity": "low",
+      "parameters": {
+        "drift_per_second": 0.008
+      },
+      "off": {
+        "success_rate": 0.985833,
+        "mean_abs_error": 0.06727,
+        "attempted": 1183,
+        "escalations": 0
+      },
+      "on": {
+        "success_rate": 0.9725,
+        "mean_abs_error": 0.104005,
+        "attempted": 1167,
+        "escalations": 0
+      },
+      "delta_success_rate": -0.013333
+    },
+    {
+      "scenario": "drift-mid",
+      "disturbance": "drift",
+      "intensity": "mid",
+      "parameters": {
+        "drift_per_second": 0.045
+      },
+      "off": {
+        "success_rate": 0.1425,
+        "mean_abs_error": 0.269949,
+        "attempted": 1183,
         "escalations": 0
       },
       "on": {
         "success_rate": 1.0,
-        "mean_abs_error": 0.052115,
+        "mean_abs_error": 0.051283,
+        "attempted": 1200,
         "escalations": 0
       },
-      "delta_success_rate": 0.866667
+      "delta_success_rate": 0.8575
     },
     {
-      "scenario": "moving",
+      "scenario": "drift-high",
+      "disturbance": "drift",
+      "intensity": "high",
+      "parameters": {
+        "drift_per_second": 0.09
+      },
       "off": {
         "success_rate": 0.0,
-        "mean_abs_error": 0.596047,
+        "mean_abs_error": 0.534617,
+        "attempted": 1183,
         "escalations": 0
       },
       "on": {
-        "success_rate": 0.847222,
-        "mean_abs_error": 0.104934,
+        "success_rate": 0.986667,
+        "mean_abs_error": 0.076733,
+        "attempted": 1200,
         "escalations": 0
       },
-      "delta_success_rate": 0.847222
+      "delta_success_rate": 0.986667
     },
     {
-      "scenario": "load",
+      "scenario": "moving-low",
+      "disturbance": "moving",
+      "intensity": "low",
+      "parameters": {
+        "moving_speed_delta": 0.02
+      },
       "off": {
-        "success_rate": 0.0,
-        "mean_abs_error": 0.633322,
+        "success_rate": 0.971667,
+        "mean_abs_error": 0.126879,
+        "attempted": 1183,
         "escalations": 0
       },
       "on": {
-        "success_rate": 0.713889,
-        "mean_abs_error": 0.139609,
+        "success_rate": 1.0,
+        "mean_abs_error": 0.050712,
+        "attempted": 1200,
         "escalations": 0
       },
-      "delta_success_rate": 0.713889
+      "delta_success_rate": 0.028333
+    },
+    {
+      "scenario": "moving-mid",
+      "disturbance": "moving",
+      "intensity": "mid",
+      "parameters": {
+        "moving_speed_delta": 0.1
+      },
+      "off": {
+        "success_rate": 0.0,
+        "mean_abs_error": 0.593687,
+        "attempted": 1183,
+        "escalations": 0
+      },
+      "on": {
+        "success_rate": 0.865,
+        "mean_abs_error": 0.103552,
+        "attempted": 1200,
+        "escalations": 0
+      },
+      "delta_success_rate": 0.865
+    },
+    {
+      "scenario": "moving-high",
+      "disturbance": "moving",
+      "intensity": "high",
+      "parameters": {
+        "moving_speed_delta": 0.18
+      },
+      "off": {
+        "success_rate": 0.0,
+        "mean_abs_error": 0.974586,
+        "attempted": 74,
+        "escalations": 100
+      },
+      "on": {
+        "success_rate": 0.009167,
+        "mean_abs_error": 0.426033,
+        "attempted": 85,
+        "escalations": 100
+      },
+      "delta_success_rate": 0.009167
+    },
+    {
+      "scenario": "load-low",
+      "disturbance": "load",
+      "intensity": "low",
+      "parameters": {
+        "load_speed_delta": 0.04
+      },
+      "off": {
+        "success_rate": 0.715833,
+        "mean_abs_error": 0.163591,
+        "attempted": 1183,
+        "escalations": 0
+      },
+      "on": {
+        "success_rate": 1.0,
+        "mean_abs_error": 0.051137,
+        "attempted": 1200,
+        "escalations": 0
+      },
+      "delta_success_rate": 0.284167
+    },
+    {
+      "scenario": "load-mid",
+      "disturbance": "load",
+      "intensity": "mid",
+      "parameters": {
+        "load_speed_delta": 0.16
+      },
+      "off": {
+        "success_rate": 0.0,
+        "mean_abs_error": 0.629354,
+        "attempted": 1183,
+        "escalations": 0
+      },
+      "on": {
+        "success_rate": 0.73,
+        "mean_abs_error": 0.136817,
+        "attempted": 1200,
+        "escalations": 0
+      },
+      "delta_success_rate": 0.73
+    },
+    {
+      "scenario": "load-high",
+      "disturbance": "load",
+      "intensity": "high",
+      "parameters": {
+        "load_speed_delta": 0.28
+      },
+      "off": {
+        "success_rate": 0.0,
+        "mean_abs_error": 0.854969,
+        "attempted": 58,
+        "escalations": 100
+      },
+      "on": {
+        "success_rate": 0.026667,
+        "mean_abs_error": 0.331521,
+        "attempted": 74,
+        "escalations": 100
+      },
+      "delta_success_rate": 0.026667
     },
     {
       "scenario": "combo",
+      "disturbance": "combo",
+      "intensity": null,
+      "parameters": {},
       "off": {
         "success_rate": 0.0,
-        "mean_abs_error": 0.010563,
-        "escalations": 30
+        "mean_abs_error": 0.346554,
+        "attempted": 5,
+        "escalations": 100
       },
       "on": {
-        "success_rate": 0.005556,
-        "mean_abs_error": 0.071493,
-        "escalations": 30
+        "success_rate": 0.003333,
+        "mean_abs_error": 0.238818,
+        "attempted": 18,
+        "escalations": 100
       },
-      "delta_success_rate": 0.005556
+      "delta_success_rate": 0.003333
     }
   ],
-  "markdown": "| 场景 | 补偿关闭成功率 | 补偿开启成功率 | 差值 | 关闭 MAE | 开启 MAE | 开启升级数 |\n|---|---:|---:|---:|---:|---:|---:|\n| bias | 0.000 | 0.992 | +0.992 | 0.453 | 0.051 | 0 |\n| drift | 0.133 | 1.000 | +0.867 | 0.271 | 0.052 | 0 |\n| moving | 0.000 | 0.847 | +0.847 | 0.596 | 0.105 | 0 |\n| load | 0.000 | 0.714 | +0.714 | 0.633 | 0.140 | 0 |\n| combo | 0.000 | 0.006 | +0.006 | 0.011 | 0.071 | 30 |"
+  "markdown": "| 场景 | 补偿关闭成功率 | 补偿开启成功率 | 差值 | 关闭 MAE | 开启 MAE | 开启升级数 |\n|---|---:|---:|---:|---:|---:|---:|\n| nominal | 0.986 | 0.986 | +0.000 | 0.050 | 0.050 | 0 |\n| bias-low | 1.000 | 0.986 | -0.014 | 0.094 | 0.050 | 0 |\n| bias-mid | 0.000 | 0.986 | +0.986 | 0.253 | 0.050 | 0 |\n| bias-high | 0.000 | 0.986 | +0.986 | 0.451 | 0.050 | 0 |\n| drift-low | 0.986 | 0.973 | -0.013 | 0.067 | 0.104 | 0 |\n| drift-mid | 0.142 | 1.000 | +0.858 | 0.270 | 0.051 | 0 |\n| drift-high | 0.000 | 0.987 | +0.987 | 0.535 | 0.077 | 0 |\n| moving-low | 0.972 | 1.000 | +0.028 | 0.127 | 0.051 | 0 |\n| moving-mid | 0.000 | 0.865 | +0.865 | 0.594 | 0.104 | 0 |\n| moving-high | 0.000 | 0.009 | +0.009 | 0.975 | 0.426 | 100 |\n| load-low | 0.716 | 1.000 | +0.284 | 0.164 | 0.051 | 0 |\n| load-mid | 0.000 | 0.730 | +0.730 | 0.629 | 0.137 | 0 |\n| load-high | 0.000 | 0.027 | +0.027 | 0.855 | 0.332 | 100 |\n| combo | 0.000 | 0.003 | +0.003 | 0.347 | 0.239 | 100 |"
 }

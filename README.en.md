@@ -31,4 +31,4 @@ docker run --rm -e RRA_SEED_FILE=/app/config/dev_seeds.json reality-residual-age
 
 The former `0.011` combo MAE with 0 success was a benchmark aggregation bug: the old mean of episode MAEs included 0 for episodes with no attempts, even though the few attempted picks all failed. Success still used all generated objects as its denominator. The benchmark now computes MAE from the global error sum divided by global attempts.
 
-The complete blind evaluation table is recorded in `bench.json` and `bench.md` after the final eval run. The combo fast-layer fail-closed behavior is a known failure mode described in [FAILURE_MODES.md](FAILURE_MODES.md).
+The final 100-seed blind evaluation produced 0.986 nominal success with both compensation modes; all four low-disturbance off success rates were above zero. Combo success was 0.000 off and 0.003 on, with 100 escalations in each mode. The complete scenario table is in the Chinese README; raw results are in `bench.json` and `bench.md`. Combo fast-layer fail-closed behavior is a known failure mode described in [FAILURE_MODES.md](FAILURE_MODES.md).
