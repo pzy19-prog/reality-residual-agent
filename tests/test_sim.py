@@ -13,7 +13,7 @@ def test_world_is_seeded_and_bias_is_sensor_only():
 def test_world_moves_target_and_applies_load_after_step():
     config = WorldConfig(scenario="load")
     world = World(config, 2)
-    world.step_index = config.load_step
+    world.step_index = config.load_step - 1
     before = world.observation()
     world.step_index += 1
     after = world.observation()
