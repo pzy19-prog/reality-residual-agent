@@ -11,6 +11,8 @@ class Plan(BaseModel):
     target_id: int
     expected_arrival_time: float
     pick_position: float
+    pick_position_y: float = 0.0
+    observation_time: float = 0.0
 
 
 class ScriptedPlanner:
@@ -24,4 +26,5 @@ class ScriptedPlanner:
             target_id=observation.target_id,
             expected_arrival_time=eta,
             pick_position=x_pick,
+            observation_time=observation.time,
         )
