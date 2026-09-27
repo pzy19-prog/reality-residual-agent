@@ -1,0 +1,12 @@
+# Open Agent Hackathon 2026 — V0 pre-hackathon baseline
+
+All components listed below are declared as existing before the hackathon implementation period. They form the complete V0 baseline; V0 has no LLM integration.
+
+- Seeded 2D conveyor world with position bias, linear drift, moving-target speed delta, load speed step, and combinations.
+- Nominal scripted pick planner.
+- Sliding-window residual monitor and heuristic disturbance classifier.
+- EWMA residual estimator with bounded timing correction and fixed fail-closed safety threshold.
+- Deterministic controller with speed, position, and pick-window limits.
+- JSON episode receipts, fixed-seed on/off benchmark, CLI, Dockerfile, tests, and project documentation.
+
+This statement records the project baseline as pre-hackathon work for the applicable rules 4.2 and 5.2. It does not claim hackathon judging eligibility or acceptance beyond that declaration.
