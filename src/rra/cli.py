@@ -57,7 +57,7 @@ def run_bench(output_dir: Path = Path(".")) -> dict[str, Any]:
             attempted = sum(item["attempted"] for item in metrics)
             successes = sum(item["successes"] for item in metrics)
             summary[mode] = {
-                "success_rate": round(successes / attempted, 6) if attempted else 0.0,
+                "success_rate": round(successes / (len(metrics) * config.object_count), 6) if metrics else 0.0,
                 "mean_abs_error": round(fmean(item["mean_abs_error"] for item in metrics), 6),
                 "escalations": sum(item["escalations"] for item in metrics),
             }
