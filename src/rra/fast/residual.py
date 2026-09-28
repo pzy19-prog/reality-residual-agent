@@ -58,6 +58,7 @@ class Correction:
     disturbance: Disturbance
     position_delta: float
     time_delta: float
+    saturated: bool
     reason: str
 
 
@@ -100,6 +101,7 @@ class Corrector:
                 disturbance=disturbance,
                 position_delta=0.0,
                 time_delta=0.0,
+                saturated=False,
                 reason="ESCALATE: residual exceeded fixed safety threshold",
             )
         self.estimate = self.alpha * residual + (1 - self.alpha) * self.estimate
@@ -128,16 +130,18 @@ class Corrector:
                 disturbance=disturbance,
                 position_delta=0.0,
                 time_delta=0.0,
+                saturated=False,
                 reason="ESCALATE: predicted motion speed is non-positive",
             )
         # Sensor offset is measured against nominal geometry; only physical
         # motion lead is converted using the residual-adjusted speed estimate.
-        time_delta = sensor_offset / nominal_speed - predicted_lead / (
+        uncapped_time_delta = sensor_offset / nominal_speed - predicted_lead / (
             motion_speed if disturbance in ("moving_target", "drift", "load_change") else nominal_speed
         )
+        saturated = abs(uncapped_time_delta) > self.max_time_correction
         time_delta = max(
             -self.max_time_correction,
-            min(self.max_time_correction, time_delta),
+            min(self.max_time_correction, uncapped_time_delta),
         )
         corrected = Plan(
             target_id=plan.target_id,
@@ -150,8 +154,9 @@ class Corrector:
             disturbance=disturbance,
             position_delta=position_delta,
             time_delta=time_delta,
+            saturated=saturated,
             reason=(
                 f"sensor offset {sensor_offset:.6f}; predicted motion lead "
-                f"{predicted_lead:.6f}; clamped to configured limits"
+                f"{predicted_lead:.6f}; clamped={saturated}"
             ),
         )

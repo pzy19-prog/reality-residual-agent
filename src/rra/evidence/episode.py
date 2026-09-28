@@ -150,11 +150,31 @@ def run_episode(
                 "time_delta": round(correction.time_delta, 6),
                 "reason": correction.reason,
             })
+        command_window_reached = (
+            abs(observation.time - applied_plan.expected_arrival_time)
+            <= config.dt / 2 + 0.001
+        )
+        if (
+            compensation
+            and correction.saturated
+            and command_window_reached
+            and not safe_stop
+            and observation.target_id not in attempted_targets
+            and observation.target_id not in outcomes_by_target
+        ):
+            record_outcome(
+                observation.target_id,
+                "skipped",
+                "correction_saturated",
+                observation.step,
+                residual,
+            )
         # A changing prediction can move by a fraction of one sample between
         # observations. Keep a 1 ms scheduling margin so the half-step window
         # remains catchable at the low-drift boundary without changing the
         # controller's pick tolerance.
         if (not safe_stop and observation.target_id not in attempted_targets
+                and observation.target_id not in outcomes_by_target
                 and abs(observation.time - applied_plan.expected_arrival_time) <= config.dt / 2 + 0.001):
             command = Command(
                 target_id=observation.target_id,
