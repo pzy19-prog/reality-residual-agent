@@ -17,3 +17,7 @@
 ## 评估纪律
 
 盲测冻结提交：`6377fa67a7252ac540b8f5fc6a6e403dd608c452`（`freeze blind eval seeds`）。实现与 dev 验证提交：`b025bd457ca30172371c9e0e8d4a16db7c634c31`。eval seeds 只在该实现提交后运行一次，生成 artifact 的 `git_sha` 为 `b025bd4`；运行后没有修改 `src/`。nominal on/off success 均为 `0.986`，四种 low 档 off success 均大于零；combo 两种模式均在 100/100 episodes 升级。完整结果在 README 和 `bench.json`。
+
+### RRA V0 freeze v2
+
+旧 eval（seeds `1000–1099`）保留为历史记录。v2 seeds `2000–2099` 在 `ff1ac91` 单独冻结；实现提交为 `c66b4bf5b35dedbbf102a77c36f4d0d8a1938246`，盲评只运行一次，artifact 提交为 `2418406`，`bench.json` 的 `git_sha` 与实现提交一致。盲评结束后没有修改 `src/`。本轮固定使用 Python 3.11 venv 运行 CLI，完整结果见 README 与 bench artifacts。

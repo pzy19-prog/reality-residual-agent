@@ -9,12 +9,13 @@ Requires Python 3.11.
 ```bash
 python3.11 -m venv .venv
 .venv/bin/pip install -r requirements.txt
-export PATH="$PWD:$PATH"
-rra run --scenario bias --seed 7 --compensation on
-rra bench
+.venv/bin/python ./rra run --scenario bias --seed 7 --compensation on
+.venv/bin/python ./rra bench
 ```
 
-`rra bench` defaults to the frozen eval seeds `1000–1099` and runs nominal, low/mid/high levels of bias, drift, moving-target, and load disturbances, plus combo. Development uses seeds `0–129`. A development smoke run can select them with `RRA_SEED_FILE=config/dev_seeds.json rra bench`.
+You can also activate the virtual environment first, then run `./rra ...` or `rra ...`. Use the virtual environment's Python so the `rra` script's `#!/usr/bin/env python3` shebang does not select the system Python.
+
+`rra bench` defaults to the frozen eval seeds `2000–2099` and runs nominal, low/mid/high levels of bias, drift, moving-target, and load disturbances, plus combo. Development uses seeds `0–129`. A development smoke run can select them with `RRA_SEED_FILE=config/dev_seeds.json .venv/bin/python ./rra bench`.
 
 Docker smoke:
 
@@ -31,4 +32,4 @@ docker run --rm -e RRA_SEED_FILE=/app/config/dev_seeds.json reality-residual-age
 
 The former `0.011` combo MAE with 0 success was a benchmark aggregation bug: the old mean of episode MAEs included 0 for episodes with no attempts, even though the few attempted picks all failed. Success still used all generated objects as its denominator. The benchmark now computes MAE from the global error sum divided by global attempts.
 
-The final 100-seed blind evaluation produced 0.986 nominal success with both compensation modes; all four low-disturbance off success rates were above zero. Combo success was 0.000 off and 0.003 on, with 100 escalations in each mode. The complete scenario table is in the Chinese README; raw results are in `bench.json` and `bench.md`. Combo fast-layer fail-closed behavior is a known failure mode described in [FAILURE_MODES.md](FAILURE_MODES.md).
+The frozen v2 blind evaluation uses 100 seeds (`2000–2099`) at code version `c66b4bf`. Nominal success was 1.000 with both compensation modes; combo success was 0.000 off and 0.008 on, with 100 escalations in each mode. The complete scenario table is in the Chinese README; raw results are in `bench.json` and `bench.md`. Combo fast-layer fail-closed behavior is a known failure mode described in [FAILURE_MODES.md](FAILURE_MODES.md).

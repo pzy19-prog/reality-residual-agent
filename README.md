@@ -23,16 +23,17 @@ seeded 2D World → nominal ScriptedPlanner → ResidualMonitor → bounded Corr
 ```bash
 python3.11 -m venv .venv
 .venv/bin/pip install -r requirements.txt
-export PATH="$PWD:$PATH"
-rra run --scenario bias --seed 7 --compensation on
-rra run --scenario bias --seed 7 --compensation off
-rra bench
+.venv/bin/python ./rra run --scenario bias --seed 7 --compensation on
+.venv/bin/python ./rra run --scenario bias --seed 7 --compensation off
+.venv/bin/python ./rra bench
 ```
 
-`rra run` 会在 `outputs/` 写入 JSON receipt 并打印路径。`rra bench` 默认使用冻结的 eval seeds `1000–1099`，对 nominal、四种扰动的 low/mid/high 档和 combo 执行补偿开/关对照，在当前目录写入 `bench.json` 和 `bench.md`。迭代只用 dev seeds `0–129`。本地开发冒烟可运行：
+也可以先激活虚拟环境，再运行 `./rra ...` 或 `rra ...`。请使用虚拟环境中的 Python，避免 `rra` 的 `#!/usr/bin/env python3` shebang 命中系统 Python。
+
+`rra run` 会在 `outputs/` 写入 JSON receipt 并打印路径。`rra bench` 默认使用冻结的 eval seeds `2000–2099`，对 nominal、四种扰动的 low/mid/high 档和 combo 执行补偿开/关对照，在当前目录写入 `bench.json` 和 `bench.md`。迭代只用 dev seeds `0–129`。本地开发冒烟可运行：
 
 ```bash
-RRA_SEED_FILE=config/dev_seeds.json rra bench
+RRA_SEED_FILE=config/dev_seeds.json .venv/bin/python ./rra bench
 ```
 
 Docker：
@@ -56,25 +57,25 @@ docker run --rm -e RRA_SEED_FILE=/app/config/dev_seeds.json -v "$PWD:/results" r
 
 因此，旧聚合口径下 combo 补偿关闭曾出现 MAE `0.011`、成功率 `0`：多数 episode 升级后没有抓取，episode MAE 被记为 0 并参与 episode 均值；少数已尝试抓取全部失败，所以按全部生成物体计算的成功率仍为 0。该 MAE 聚合是 bug，当前 bench 改为按实际尝试数加权，未尝试物体只影响成功率分母。
 
-### 冻结 eval 结果
+### 冻结 eval v2 结果
 
-以下结果使用冻结的 100 个 eval seeds，代码版本 `b025bd4`；每个配置 × seed 运行 12 个物体，补偿开/关使用相同 seeds。
+以下结果使用冻结的 100 个 eval seeds `2000–2099`，代码版本 `c66b4bf`；每个配置 × seed 运行 12 个物体，补偿开/关使用相同 seeds。完整 coverage、precision 和终态计数见 [`bench.md`](bench.md) 与 [`bench.json`](bench.json)。
 
 | 场景 | 参数 | off 成功率 | on 成功率 | 差值 | off MAE | on MAE | off 升级 | on 升级 |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| nominal | — | 0.986 | 0.986 | +0.000 | 0.050 | 0.050 | 0 | 0 |
-| bias-low | `position_bias=0.08` | 1.000 | 0.986 | -0.014 | 0.094 | 0.050 | 0 | 0 |
-| bias-mid | `position_bias=0.25` | 0.000 | 0.986 | +0.986 | 0.253 | 0.050 | 0 | 0 |
-| bias-high | `position_bias=0.45` | 0.000 | 0.986 | +0.986 | 0.451 | 0.050 | 0 | 0 |
-| drift-low | `drift_per_second=0.008` | 0.986 | 0.973 | -0.013 | 0.067 | 0.104 | 0 | 0 |
-| drift-mid | `drift_per_second=0.045` | 0.142 | 1.000 | +0.858 | 0.270 | 0.051 | 0 | 0 |
-| drift-high | `drift_per_second=0.09` | 0.000 | 0.987 | +0.987 | 0.535 | 0.077 | 0 | 0 |
-| moving-low | `moving_speed_delta=0.02` | 0.972 | 1.000 | +0.028 | 0.127 | 0.051 | 0 | 0 |
-| moving-mid | `moving_speed_delta=0.10` | 0.000 | 0.865 | +0.865 | 0.594 | 0.104 | 0 | 0 |
-| moving-high | `moving_speed_delta=0.18` | 0.000 | 0.009 | +0.009 | 0.975 | 0.426 | 100 | 100 |
-| load-low | `load_speed_delta=0.04` | 0.716 | 1.000 | +0.284 | 0.164 | 0.051 | 0 | 0 |
-| load-mid | `load_speed_delta=0.16` | 0.000 | 0.730 | +0.730 | 0.629 | 0.137 | 0 | 0 |
-| load-high | `load_speed_delta=0.28` | 0.000 | 0.027 | +0.027 | 0.855 | 0.332 | 100 | 100 |
-| combo | existing defaults | 0.000 | 0.003 | +0.003 | 0.347 | 0.239 | 100 | 100 |
+| nominal | — | 1.000 | 1.000 | +0.000 | 0.050 | 0.050 | 0 | 0 |
+| bias-low | `position_bias=0.08` | 1.000 | 1.000 | +0.000 | 0.093 | 0.050 | 0 | 0 |
+| bias-mid | `position_bias=0.25` | 0.000 | 1.000 | +1.000 | 0.255 | 0.050 | 100 | 0 |
+| bias-high | `position_bias=0.45` | 0.000 | 1.000 | +1.000 | 0.453 | 0.050 | 100 | 0 |
+| drift-low | `drift_per_second=0.008` | 1.000 | 1.000 | +0.000 | 0.070 | 0.050 | 0 | 0 |
+| drift-mid | `drift_per_second=0.045` | 0.049 | 1.000 | +0.951 | 0.273 | 0.051 | 100 | 0 |
+| drift-high | `drift_per_second=0.09` | 0.000 | 0.981 | +0.981 | 0.534 | 0.076 | 100 | 0 |
+| moving-low | `moving_speed_delta=0.02` | 0.977 | 1.000 | +0.023 | 0.129 | 0.051 | 0 | 0 |
+| moving-mid | `moving_speed_delta=0.10` | 0.000 | 0.849 | +0.849 | 0.593 | 0.087 | 100 | 1 |
+| moving-high | `moving_speed_delta=0.18` | 0.000 | 0.010 | +0.010 | 0.968 | 0.154 | 100 | 100 |
+| load-low | `load_speed_delta=0.04` | 0.664 | 1.000 | +0.336 | 0.166 | 0.051 | 18 | 0 |
+| load-mid | `load_speed_delta=0.16` | 0.000 | 0.656 | +0.656 | 0.627 | 0.081 | 100 | 18 |
+| load-high | `load_speed_delta=0.28` | 0.000 | 0.023 | +0.023 | 0.877 | 0.094 | 100 | 100 |
+| combo | existing defaults | 0.000 | 0.008 | +0.008 | 0.315 | 0.154 | 100 | 100 |
 
 结果文件：[`bench.json`](bench.json)、[`bench.md`](bench.md)。combo 规则快速层的全部升级是 V0 核心失败模式；赛中 System-2 层应解决该状态的恢复决策，详见 [FAILURE_MODES.md](FAILURE_MODES.md)。
