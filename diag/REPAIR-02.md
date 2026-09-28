@@ -26,7 +26,13 @@ objects per scenario and mode). The first row is the test-only baseline at
 |---|---:|---:|---:|---:|---:|---:|
 | Baseline `edb8b44` | 0.985 / 0.985 | 1.000 / 0.985 | 0.985 / 0.970 | 0.000 / 0.852 | 0.000 / 0.712 | 0.000 / 0.005 |
 | R1 `4972e4b` | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 1.000 | 0.000 / 0.852 | 0.000 / 0.712 | 0.000 / 0.005 |
+| R2 `cceee71` | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 0.992 | 0.000 / 0.852 | 0.000 / 0.712 | 0.000 / 0.014 |
 
 R1 restored the nominal, bias-low, and drift-low successes lost to the short
 episode horizon. At R1, moving-mid had 231 misses and load-mid had 449 misses
-in compensation-on mode (out of 1,560 objects each).
+in compensation-on mode (out of 1,560 objects each). At R2, those counts are
+unchanged. The R2 on success rates for bias-high, drift-high, moving-high, and
+load-high are respectively `1.000`, `0.987`, `0.011`, and `0.023`; none fell
+from R1. Drift-low has 12 misses, all caused by a prediction window crossing
+the exact half-sample boundary between observations; R3 will use the planned
+arrival time for the controller check and handle the floating-point boundary.

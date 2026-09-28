@@ -62,7 +62,7 @@ class Correction:
 
 
 class Corrector:
-    """Use EWMA residual estimate; clamp corrections and fail closed on unsafe residuals."""
+    """Separate fixed sensor offset from motion lead and bound time corrections."""
 
     def __init__(
         self,
@@ -80,9 +80,9 @@ class Corrector:
         self.max_time_correction = max_time_correction
         self.safe_residual_threshold = safe_residual_threshold
         self.estimate = 0.0
+        self._sensor_offset: float | None = None
         self._last_residual: float | None = None
         self._last_time: float | None = None
-        self._latched_time_delta: float | None = None
 
     def correct(
         self,
@@ -103,6 +103,10 @@ class Corrector:
                 reason="ESCALATE: residual exceeded fixed safety threshold",
             )
         self.estimate = self.alpha * residual + (1 - self.alpha) * self.estimate
+        if self._sensor_offset is None:
+            self._sensor_offset = residual
+        sensor_offset = self._sensor_offset
+        kinematic_lead = residual - sensor_offset
         now = plan.observation_time
         slope = 0.0
         if self._last_residual is not None and self._last_time is not None and now > self._last_time:
@@ -112,13 +116,11 @@ class Corrector:
         # spatial correction to zero and compensates in time.
         position_delta = 0.0
         if disturbance in ("moving_target", "drift", "load_change"):
-            if self._latched_time_delta is None and abs(slope) > 1e-9:
-                offset_start = max(0.0, now - residual / slope)
-                remaining_after_offset = max(0.0, plan.expected_arrival_time - offset_start)
-                self._latched_time_delta = -slope * remaining_after_offset / (nominal_speed + slope)
-            time_delta = self._latched_time_delta or 0.0
+            time_to_arrival = max(0.0, plan.expected_arrival_time - now)
+            predicted_lead = kinematic_lead + slope * time_to_arrival
         else:
-            time_delta = self.estimate / nominal_speed
+            predicted_lead = kinematic_lead
+        time_delta = (sensor_offset - predicted_lead) / nominal_speed
         time_delta = max(
             -self.max_time_correction,
             min(self.max_time_correction, time_delta),
@@ -134,5 +136,8 @@ class Corrector:
             disturbance=disturbance,
             position_delta=position_delta,
             time_delta=time_delta,
-            reason=f"EWMA {self.estimate:.6f}; clamped to configured limits",
+            reason=(
+                f"sensor offset {sensor_offset:.6f}; predicted motion lead "
+                f"{predicted_lead:.6f}; clamped to configured limits"
+            ),
         )
