@@ -15,7 +15,7 @@ from rra.sim import WorldConfig
 ROOT = Path(__file__).resolve().parents[2]
 SCENARIOS = ("bias", "drift", "moving", "load", "combo")
 SCENARIO_CONFIG_PATH = ROOT / "config" / "scenarios.json"
-EVAL_SEED_PATH = ROOT / "config" / "eval_seeds.json"
+EVAL_SEED_PATH = ROOT / "config" / "eval_seeds_v2.json"
 
 
 def _git_sha() -> str:
@@ -102,7 +102,7 @@ def _run_bench(seeds: list[int], output_dir: Path) -> dict[str, Any]:
         "git_sha": sha,
         "seed_role": "eval" if seeds == json.loads(EVAL_SEED_PATH.read_text())["seeds"] else "dev",
         "seeds": seeds,
-        "seed_policy": "Dev seeds 0-129 are for iteration. Eval seeds 1000-1099 are frozen and used only for the final benchmark.",
+        "seed_policy": "Dev seeds 0-129 are for iteration. Eval v1 seeds 1000-1099 are burned historical data. Eval v2 seeds 2000-2099 are frozen for the final benchmark.",
         "scenario_config": str(SCENARIO_CONFIG_PATH.relative_to(ROOT)),
         "rows": rows,
         "markdown": _markdown(rows),
