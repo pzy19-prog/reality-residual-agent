@@ -4,7 +4,7 @@
 
 ## 问题与架构
 
-固定名义模型会在传感器偏移、随时间变化的偏移、移动目标或速度阶跃下产生抓取误差。RRA 记录“观测值 − 名义预测值”，用滑动窗口分类，并由 EWMA 估计和受限时刻补偿器与无补偿基线做同 seed 对照。残差超过固定安全阈值时停止抓取并发出 `ESCALATE`。
+固定名义模型会在传感器偏移、随时间变化的偏移、移动目标或速度阶跃下产生抓取误差。RRA 记录“观测值 − 名义预测值”，用滑动窗口分类，将残差拆分为传感器偏移与运动领先，经受限时刻补偿与可行性检查后，与无补偿基线做同 seed 对照；修正不可行的对象显式跳过（correction_infeasible）。残差超过固定安全阈值时停止抓取并发出 `ESCALATE`。
 
 ```text
 seeded 2D World → nominal ScriptedPlanner → ResidualMonitor → bounded Corrector
@@ -31,6 +31,8 @@ python3.11 -m venv .venv
 也可以先激活虚拟环境，再运行 `./rra ...` 或 `rra ...`。请使用虚拟环境中的 Python，避免 `rra` 的 `#!/usr/bin/env python3` shebang 命中系统 Python。
 
 `rra run` 会在 `outputs/` 写入 JSON receipt 并打印路径。`rra bench` 默认使用冻结的 eval seeds `2000–2099`，对 nominal、四种扰动的 low/mid/high 档和 combo 执行补偿开/关对照，在当前目录写入 `bench.json` 和 `bench.md`。迭代只用 dev seeds `0–129`。本地开发冒烟可运行：
+
+评估协议见 [docs/EVAL_PROTOCOL.md](docs/EVAL_PROTOCOL.md)。
 
 ```bash
 RRA_SEED_FILE=config/dev_seeds.json .venv/bin/python ./rra bench

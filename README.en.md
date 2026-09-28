@@ -17,6 +17,8 @@ You can also activate the virtual environment first, then run `./rra ...` or `rr
 
 `rra bench` defaults to the frozen eval seeds `2000–2099` and runs nominal, low/mid/high levels of bias, drift, moving-target, and load disturbances, plus combo. Development uses seeds `0–129`. A development smoke run can select them with `RRA_SEED_FILE=config/dev_seeds.json .venv/bin/python ./rra bench`.
 
+Evaluation protocol: [docs/EVAL_PROTOCOL.md](docs/EVAL_PROTOCOL.md).
+
 Docker smoke:
 
 ```bash
