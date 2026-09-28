@@ -12,6 +12,7 @@ from rra.planner import ScriptedPlanner
 from rra.sim import World, WorldConfig
 
 TERMINAL_STATES = ("picked", "attempt_failed", "rejected", "escalated", "skipped")
+CONSECUTIVE_OUTCOME_FAILURE_THRESHOLD = 3
 
 
 def run_episode(
@@ -35,6 +36,7 @@ def run_episode(
     successes = 0
     attempted_targets: set[int] = set()
     safe_stop = False
+    consecutive_outcome_failures = 0
     outcomes_by_target: dict[int, dict[str, Any]] = {}
     trace_by_target: dict[int, dict[str, Any]] = {}
     object_grab_end_times: dict[int, float] = {}
@@ -43,7 +45,10 @@ def run_episode(
         target_id: int,
         status: str,
         reason: str,
+        step: int,
+        residual: float,
     ) -> None:
+        nonlocal consecutive_outcome_failures, safe_stop
         if target_id in outcomes_by_target:
             return
         outcomes_by_target[target_id] = {
@@ -51,6 +56,20 @@ def run_episode(
             "status": status,
             "reason": reason,
         }
+        if status in ("attempt_failed", "skipped"):
+            consecutive_outcome_failures += 1
+            if consecutive_outcome_failures >= CONSECUTIVE_OUTCOME_FAILURE_THRESHOLD:
+                escalation_reason = "outcome: consecutive failures"
+                if not any(row["reason"] == escalation_reason for row in escalations):
+                    escalations.append({
+                        "step": step,
+                        "target_id": target_id,
+                        "residual": residual,
+                        "reason": escalation_reason,
+                    })
+                safe_stop = True
+        else:
+            consecutive_outcome_failures = 0
 
     for _ in range(config.episode_steps * config.object_count):
         observation = world.observation()
@@ -60,6 +79,8 @@ def run_episode(
                     active_target,
                     "skipped",
                     "safe_stop_before_command" if safe_stop else "prediction_window_missed_before_command",
+                    config.episode_steps - 1,
+                    0.0,
                 )
             active_target = observation.target_id
             monitor = ResidualMonitor()
@@ -77,6 +98,8 @@ def run_episode(
                 observation.target_id,
                 "escalated",
                 correction.reason,
+                observation.step,
+                residual,
             )
             if not safe_stop:
                 escalations.append({
@@ -156,11 +179,11 @@ def run_episode(
             errors.append(result.position_error)
             successes += int(result.accepted and result.success)
             if result.accepted and result.success:
-                record_outcome(observation.target_id, "picked", result.reason)
+                record_outcome(observation.target_id, "picked", result.reason, observation.step, residual)
             elif result.accepted:
-                record_outcome(observation.target_id, "attempt_failed", result.reason)
+                record_outcome(observation.target_id, "attempt_failed", result.reason, observation.step, residual)
             else:
-                record_outcome(observation.target_id, "rejected", result.reason)
+                record_outcome(observation.target_id, "rejected", result.reason, observation.step, residual)
             if include_trace:
                 trace = trace_by_target[observation.target_id]
                 trace.update({
@@ -193,6 +216,8 @@ def run_episode(
                 target_id,
                 "skipped",
                 "safe_stop_before_command" if safe_stop else "prediction_window_missed_before_command",
+                config.episode_steps - 1,
+                0.0,
             )
 
     outcomes = [outcomes_by_target[target_id] for target_id in sorted(outcomes_by_target)]
