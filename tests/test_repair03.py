@@ -11,7 +11,7 @@ def _plan(eta: float, now: float = 0.0) -> Plan:
     return Plan(target_id=0, expected_arrival_time=eta, pick_position=0.0, observation_time=now)
 
 
-def test_saturated_moving_correction_skips_without_command():
+def test_infeasible_moving_correction_skips_without_command():
     config = WorldConfig(
         scenario="moving", object_count=1, initial_position_min=-8.0,
         initial_position_max=-8.0, episode_steps=100,
@@ -19,9 +19,37 @@ def test_saturated_moving_correction_skips_without_command():
     receipt = run_episode(config, 0, True, include_trace=True)
 
     assert receipt["outcomes"][0]["status"] == "skipped"
-    assert receipt["outcomes"][0]["reason"] == "correction_saturated"
+    assert receipt["outcomes"][0]["reason"] == "correction_infeasible"
     assert receipt["metrics"]["attempted"] == 0
     assert not receipt["failure_trace"][0]["command_issued"]
+
+
+def test_clamped_but_feasible_drift_still_issues_command():
+    config = WorldConfig(
+        scenario="drift", drift_per_second=0.09, object_count=1,
+        initial_position_min=-8.0, initial_position_max=-8.0,
+    )
+    receipt = run_episode(config, 0, True, include_trace=True)
+
+    trace = receipt["compensation_records"]
+    assert any(row["clamped"] and not row["infeasible"] for row in trace)
+    assert receipt["metrics"]["attempted"] == 1
+    assert receipt["outcomes"][0]["status"] == "picked"
+
+
+def test_large_moving_correction_is_infeasible_and_skipped():
+    config = WorldConfig(
+        scenario="moving", moving_speed_delta=0.10, object_count=1,
+        initial_position_min=-7.934, initial_position_max=-7.934,
+    )
+    receipt = run_episode(config, 0, True, include_trace=True)
+
+    trace = receipt["failure_trace"][0]
+    assert trace["excess"] * trace["v_hat"] > config.tolerance
+    assert trace["infeasible"] is True
+    assert trace["command_issued"] is False
+    assert receipt["outcomes"][0]["status"] == "skipped"
+    assert receipt["outcomes"][0]["reason"] == "correction_infeasible"
 
 
 def test_moving_lead_uses_actual_speed_for_eta_conversion():

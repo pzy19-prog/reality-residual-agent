@@ -33,16 +33,20 @@ def _load_scenarios() -> list[dict[str, Any]]:
 
 def _markdown(rows: list[dict[str, Any]]) -> str:
     lines = [
-        "| 场景 | 补偿关闭成功率 | 补偿开启成功率 | 差值 | 关闭 MAE | 开启 MAE | 开启升级数 |",
-        "|---|---:|---:|---:|---:|---:|---:|",
+        "| 场景 | 关闭成功率 | 开启成功率 | 开启 coverage | 开启 precision | 关闭 MAE* | 开启 MAE* | 开启终态 picked/failed/rejected/escalated/skipped | 开启升级数 |",
+        "|---|---:|---:|---:|---:|---:|---:|---|---:|",
     ]
     for row in rows:
         lines.append(
             f"| {row['scenario']} | {row['off']['success_rate']:.3f} | "
-            f"{row['on']['success_rate']:.3f} | {row['delta_success_rate']:+.3f} | "
-            f"{row['off']['mean_abs_error']:.3f} | {row['on']['mean_abs_error']:.3f} | "
+            f"{row['on']['success_rate']:.3f} | {row['on']['coverage']:.3f} | "
+            f"{row['on']['precision']:.3f} | {row['off']['mean_abs_error']:.3f} | "
+            f"{row['on']['mean_abs_error']:.3f} | "
+            f"{'/'.join(str(row['on']['terminal_counts'][s]) for s in ('picked', 'attempt_failed', 'rejected', 'escalated', 'skipped'))} | "
             f"{row['on']['escalations']} |"
         )
+    lines.append("")
+    lines.append("* MAE 仅统计已发命令对象；coverage = 发出命令对象数 / 总对象数；precision = picked / 发出命令对象数。")
     return "\n".join(lines)
 
 
@@ -53,9 +57,15 @@ def _summarize(metrics: list[dict[str, Any]], object_count: int) -> dict[str, An
     total_objects = len(metrics) * object_count
     return {
         "success_rate": round(successes / total_objects, 6) if total_objects else 0.0,
+        "coverage": round(attempts / total_objects, 6) if total_objects else 0.0,
+        "precision": round(successes / attempts, 6) if attempts else 0.0,
         "mean_abs_error": round(error_sum / attempts, 6) if attempts else 0.0,
         "attempted": attempts,
         "escalations": sum(item["escalations"] for item in metrics),
+        "terminal_counts": {
+            state: sum(item.get("terminal_counts", {}).get(state, 0) for item in metrics)
+            for state in ("picked", "attempt_failed", "rejected", "escalated", "skipped")
+        },
     }
 
 

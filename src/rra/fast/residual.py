@@ -63,7 +63,11 @@ class Correction:
     disturbance: Disturbance
     position_delta: float
     time_delta: float
-    saturated: bool
+    uncapped_time_delta: float
+    clamped: bool
+    excess: float
+    v_hat: float
+    infeasible: bool
     reason: str
 
 
@@ -76,15 +80,17 @@ class Corrector:
         max_position_correction: float = 0.50,
         max_time_correction: float = MAX_TIME_CORRECTION,
         safe_residual_threshold: float = 1.25,
+        tolerance: float = 0.20,
     ):
         if not 0 < alpha <= 1:
             raise ValueError("alpha must be in (0, 1]")
-        if min(max_position_correction, max_time_correction, safe_residual_threshold) <= 0:
+        if min(max_position_correction, max_time_correction, safe_residual_threshold, tolerance) <= 0:
             raise ValueError("correction limits and safety threshold must be positive")
         self.alpha = alpha
         self.max_position_correction = max_position_correction
         self.max_time_correction = max_time_correction
         self.safe_residual_threshold = safe_residual_threshold
+        self.tolerance = tolerance
         self.estimate = 0.0
         self._sensor_offset: float | None = None
         self._last_residual: float | None = None
@@ -106,7 +112,11 @@ class Corrector:
                 disturbance=disturbance,
                 position_delta=0.0,
                 time_delta=0.0,
-                saturated=False,
+                uncapped_time_delta=0.0,
+                clamped=False,
+                excess=0.0,
+                v_hat=nominal_speed,
+                infeasible=False,
                 reason="ESCALATE: residual exceeded fixed safety threshold",
             )
         self.estimate = self.alpha * residual + (1 - self.alpha) * self.estimate
@@ -135,7 +145,11 @@ class Corrector:
                 disturbance=disturbance,
                 position_delta=0.0,
                 time_delta=0.0,
-                saturated=False,
+                uncapped_time_delta=0.0,
+                clamped=False,
+                excess=0.0,
+                v_hat=motion_speed,
+                infeasible=False,
                 reason="ESCALATE: predicted motion speed is non-positive",
             )
         # Sensor offset is measured against nominal geometry; only physical
@@ -143,11 +157,14 @@ class Corrector:
         uncapped_time_delta = sensor_offset / nominal_speed - predicted_lead / (
             motion_speed if disturbance in ("moving_target", "drift", "load_change") else nominal_speed
         )
-        saturated = abs(uncapped_time_delta) > self.max_time_correction
         time_delta = max(
             -self.max_time_correction,
             min(self.max_time_correction, uncapped_time_delta),
         )
+        excess = abs(uncapped_time_delta - time_delta)
+        clamped = excess > 0
+        v_hat = motion_speed if disturbance in ("moving_target", "drift", "load_change") else nominal_speed
+        infeasible = excess * v_hat > self.tolerance
         corrected = Plan(
             target_id=plan.target_id,
             expected_arrival_time=plan.expected_arrival_time + time_delta,
@@ -159,9 +176,14 @@ class Corrector:
             disturbance=disturbance,
             position_delta=position_delta,
             time_delta=time_delta,
-            saturated=saturated,
+            uncapped_time_delta=uncapped_time_delta,
+            clamped=clamped,
+            excess=excess,
+            v_hat=v_hat,
+            infeasible=infeasible,
             reason=(
                 f"sensor offset {sensor_offset:.6f}; predicted motion lead "
-                f"{predicted_lead:.6f}; clamped={saturated}"
+                f"{predicted_lead:.6f}; clamped={clamped}; excess={excess:.6f}; "
+                f"v_hat={v_hat:.6f}; infeasible={infeasible}"
             ),
         )

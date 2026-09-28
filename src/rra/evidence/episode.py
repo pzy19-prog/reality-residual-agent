@@ -26,7 +26,7 @@ def run_episode(
     world = World(config, seed)
     planner = ScriptedPlanner()
     monitor = ResidualMonitor()
-    corrector = Corrector()
+    corrector = Corrector(tolerance=config.tolerance)
     base_plans: dict[int, Any] = {}
     active_target: int | None = None
     controller = Controller(ControllerConfig(tolerance=config.tolerance))
@@ -84,7 +84,7 @@ def run_episode(
                 )
             active_target = observation.target_id
             monitor = ResidualMonitor()
-            corrector = Corrector()
+            corrector = Corrector(tolerance=config.tolerance)
         residual = monitor.update(observation)
         disturbance = monitor.classify()
         if observation.target_id not in base_plans:
@@ -127,7 +127,11 @@ def run_episode(
                     "decision_time": round(observation.time, 6),
                     "decision_time_sample_count": trace["decision_sample_count"],
                     "applied_eta": round(predicted_center, 6),
-                    "correction_saturated": correction.saturated,
+                    "clamped": correction.clamped,
+                    "uncapped_time_delta": round(correction.uncapped_time_delta, 6),
+                    "excess": round(correction.excess, 6),
+                    "v_hat": round(correction.v_hat, 6),
+                    "infeasible": correction.infeasible,
                     "window_remaining_time": round(
                         predicted_center + window_half_width - observation.time, 6
                     ),
@@ -152,6 +156,11 @@ def run_episode(
                 "classification": disturbance,
                 "position_delta": round(correction.position_delta, 6),
                 "time_delta": round(correction.time_delta, 6),
+                "uncapped_time_delta": round(correction.uncapped_time_delta, 6),
+                "clamped": correction.clamped,
+                "excess": round(correction.excess, 6),
+                "v_hat": round(correction.v_hat, 6),
+                "infeasible": correction.infeasible,
                 "reason": correction.reason,
             })
         command_window_reached = (
@@ -159,7 +168,7 @@ def run_episode(
         )
         if (
             compensation
-            and correction.saturated
+            and correction.infeasible
             and command_window_reached
             and not safe_stop
             and observation.target_id not in attempted_targets
@@ -168,7 +177,7 @@ def run_episode(
             record_outcome(
                 observation.target_id,
                 "skipped",
-                "correction_saturated",
+                "correction_infeasible",
                 observation.step,
                 residual,
             )
