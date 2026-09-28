@@ -11,6 +11,8 @@ from rra.fast import Corrector, ResidualMonitor
 from rra.planner import ScriptedPlanner
 from rra.sim import World, WorldConfig
 
+TERMINAL_STATES = ("picked", "attempt_failed", "rejected", "escalated", "skipped")
+
 
 def run_episode(
     config: WorldConfig,
@@ -33,12 +35,32 @@ def run_episode(
     successes = 0
     attempted_targets: set[int] = set()
     safe_stop = False
+    outcomes_by_target: dict[int, dict[str, Any]] = {}
     trace_by_target: dict[int, dict[str, Any]] = {}
     object_grab_end_times: dict[int, float] = {}
+
+    def record_outcome(
+        target_id: int,
+        status: str,
+        reason: str,
+    ) -> None:
+        if target_id in outcomes_by_target:
+            return
+        outcomes_by_target[target_id] = {
+            "target_id": target_id,
+            "status": status,
+            "reason": reason,
+        }
 
     for _ in range(config.episode_steps * config.object_count):
         observation = world.observation()
         if active_target != observation.target_id:
+            if active_target is not None and active_target not in outcomes_by_target:
+                record_outcome(
+                    active_target,
+                    "skipped",
+                    "safe_stop_before_command" if safe_stop else "prediction_window_missed_before_command",
+                )
             active_target = observation.target_id
             monitor = ResidualMonitor()
             corrector = Corrector()
@@ -51,6 +73,11 @@ def run_episode(
         correction = corrector.correct(working_plan, residual, disturbance, config.belt_speed)
         nominal_plan = working_plan
         if "ESCALATE:" in correction.reason:
+            record_outcome(
+                observation.target_id,
+                "escalated",
+                correction.reason,
+            )
             if not safe_stop:
                 escalations.append({
                     "step": observation.step,
@@ -128,6 +155,12 @@ def run_episode(
             attempted_targets.add(observation.target_id)
             errors.append(result.position_error)
             successes += int(result.accepted and result.success)
+            if result.accepted and result.success:
+                record_outcome(observation.target_id, "picked", result.reason)
+            elif result.accepted:
+                record_outcome(observation.target_id, "attempt_failed", result.reason)
+            else:
+                record_outcome(observation.target_id, "rejected", result.reason)
             if include_trace:
                 trace = trace_by_target[observation.target_id]
                 trace.update({
@@ -154,6 +187,20 @@ def run_episode(
                 })
         world.advance()
 
+    for target_id in range(config.object_count):
+        if target_id not in outcomes_by_target:
+            record_outcome(
+                target_id,
+                "skipped",
+                "safe_stop_before_command" if safe_stop else "prediction_window_missed_before_command",
+            )
+
+    outcomes = [outcomes_by_target[target_id] for target_id in sorted(outcomes_by_target)]
+    terminal_counts = {
+        state: sum(outcome["status"] == state for outcome in outcomes)
+        for state in TERMINAL_STATES
+    }
+
     total = max(1, config.object_count)
     receipt: dict[str, Any] = {
         "schema_version": "rra.receipt.v1",
@@ -163,6 +210,8 @@ def run_episode(
         "compensation": "on" if compensation else "off",
         "compensation_records": records,
         "escalations": escalations,
+        "outcomes": outcomes,
+        "safe_stop": safe_stop,
         "metrics": {
             "attempted": len(attempted_targets),
             "successes": successes,
@@ -170,6 +219,7 @@ def run_episode(
             "absolute_error_sum": round(sum(errors), 9),
             "mean_abs_error": round(sum(errors) / len(errors), 6) if errors else 0.0,
             "escalations": len(escalations),
+            "terminal_counts": terminal_counts,
         },
     }
     if include_trace:
