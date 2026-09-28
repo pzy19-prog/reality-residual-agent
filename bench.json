@@ -1,110 +1,110 @@
 {
   "schema_version": "rra.bench.v2",
-  "git_sha": "b025bd457ca30172371c9e0e8d4a16db7c634c31",
+  "git_sha": "c66b4bf5b35dedbbf102a77c36f4d0d8a1938246",
   "seed_role": "eval",
   "seeds": [
-    1000,
-    1001,
-    1002,
-    1003,
-    1004,
-    1005,
-    1006,
-    1007,
-    1008,
-    1009,
-    1010,
-    1011,
-    1012,
-    1013,
-    1014,
-    1015,
-    1016,
-    1017,
-    1018,
-    1019,
-    1020,
-    1021,
-    1022,
-    1023,
-    1024,
-    1025,
-    1026,
-    1027,
-    1028,
-    1029,
-    1030,
-    1031,
-    1032,
-    1033,
-    1034,
-    1035,
-    1036,
-    1037,
-    1038,
-    1039,
-    1040,
-    1041,
-    1042,
-    1043,
-    1044,
-    1045,
-    1046,
-    1047,
-    1048,
-    1049,
-    1050,
-    1051,
-    1052,
-    1053,
-    1054,
-    1055,
-    1056,
-    1057,
-    1058,
-    1059,
-    1060,
-    1061,
-    1062,
-    1063,
-    1064,
-    1065,
-    1066,
-    1067,
-    1068,
-    1069,
-    1070,
-    1071,
-    1072,
-    1073,
-    1074,
-    1075,
-    1076,
-    1077,
-    1078,
-    1079,
-    1080,
-    1081,
-    1082,
-    1083,
-    1084,
-    1085,
-    1086,
-    1087,
-    1088,
-    1089,
-    1090,
-    1091,
-    1092,
-    1093,
-    1094,
-    1095,
-    1096,
-    1097,
-    1098,
-    1099
+    2000,
+    2001,
+    2002,
+    2003,
+    2004,
+    2005,
+    2006,
+    2007,
+    2008,
+    2009,
+    2010,
+    2011,
+    2012,
+    2013,
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025,
+    2026,
+    2027,
+    2028,
+    2029,
+    2030,
+    2031,
+    2032,
+    2033,
+    2034,
+    2035,
+    2036,
+    2037,
+    2038,
+    2039,
+    2040,
+    2041,
+    2042,
+    2043,
+    2044,
+    2045,
+    2046,
+    2047,
+    2048,
+    2049,
+    2050,
+    2051,
+    2052,
+    2053,
+    2054,
+    2055,
+    2056,
+    2057,
+    2058,
+    2059,
+    2060,
+    2061,
+    2062,
+    2063,
+    2064,
+    2065,
+    2066,
+    2067,
+    2068,
+    2069,
+    2070,
+    2071,
+    2072,
+    2073,
+    2074,
+    2075,
+    2076,
+    2077,
+    2078,
+    2079,
+    2080,
+    2081,
+    2082,
+    2083,
+    2084,
+    2085,
+    2086,
+    2087,
+    2088,
+    2089,
+    2090,
+    2091,
+    2092,
+    2093,
+    2094,
+    2095,
+    2096,
+    2097,
+    2098,
+    2099
   ],
-  "seed_policy": "Dev seeds 0-129 are for iteration. Eval seeds 1000-1099 are frozen and used only for the final benchmark.",
+  "seed_policy": "Dev seeds 0-129 are for iteration. Eval v1 seeds 1000-1099 are burned historical data. Eval v2 seeds 2000-2099 are frozen for the final benchmark.",
   "scenario_config": "config/scenarios.json",
   "rows": [
     {
@@ -113,16 +113,34 @@
       "intensity": null,
       "parameters": {},
       "off": {
-        "success_rate": 0.985833,
-        "mean_abs_error": 0.050453,
-        "attempted": 1183,
-        "escalations": 0
+        "success_rate": 1.0,
+        "coverage": 1.0,
+        "precision": 1.0,
+        "mean_abs_error": 0.050102,
+        "attempted": 1200,
+        "escalations": 0,
+        "terminal_counts": {
+          "picked": 1200,
+          "attempt_failed": 0,
+          "rejected": 0,
+          "escalated": 0,
+          "skipped": 0
+        }
       },
       "on": {
-        "success_rate": 0.985833,
-        "mean_abs_error": 0.050453,
-        "attempted": 1183,
-        "escalations": 0
+        "success_rate": 1.0,
+        "coverage": 1.0,
+        "precision": 1.0,
+        "mean_abs_error": 0.050102,
+        "attempted": 1200,
+        "escalations": 0,
+        "terminal_counts": {
+          "picked": 1200,
+          "attempt_failed": 0,
+          "rejected": 0,
+          "escalated": 0,
+          "skipped": 0
+        }
       },
       "delta_success_rate": 0.0
     },
@@ -135,17 +153,35 @@
       },
       "off": {
         "success_rate": 1.0,
-        "mean_abs_error": 0.093794,
+        "coverage": 1.0,
+        "precision": 1.0,
+        "mean_abs_error": 0.092858,
         "attempted": 1200,
-        "escalations": 0
+        "escalations": 0,
+        "terminal_counts": {
+          "picked": 1200,
+          "attempt_failed": 0,
+          "rejected": 0,
+          "escalated": 0,
+          "skipped": 0
+        }
       },
       "on": {
-        "success_rate": 0.985833,
-        "mean_abs_error": 0.050453,
-        "attempted": 1183,
-        "escalations": 0
+        "success_rate": 1.0,
+        "coverage": 1.0,
+        "precision": 1.0,
+        "mean_abs_error": 0.050102,
+        "attempted": 1200,
+        "escalations": 0,
+        "terminal_counts": {
+          "picked": 1200,
+          "attempt_failed": 0,
+          "rejected": 0,
+          "escalated": 0,
+          "skipped": 0
+        }
       },
-      "delta_success_rate": -0.014167
+      "delta_success_rate": 0.0
     },
     {
       "scenario": "bias-mid",
@@ -156,17 +192,35 @@
       },
       "off": {
         "success_rate": 0.0,
-        "mean_abs_error": 0.252749,
-        "attempted": 1200,
-        "escalations": 0
+        "coverage": 0.25,
+        "precision": 0.0,
+        "mean_abs_error": 0.255225,
+        "attempted": 300,
+        "escalations": 100,
+        "terminal_counts": {
+          "picked": 0,
+          "attempt_failed": 300,
+          "rejected": 0,
+          "escalated": 0,
+          "skipped": 900
+        }
       },
       "on": {
-        "success_rate": 0.985833,
-        "mean_abs_error": 0.050453,
-        "attempted": 1183,
-        "escalations": 0
+        "success_rate": 1.0,
+        "coverage": 1.0,
+        "precision": 1.0,
+        "mean_abs_error": 0.050102,
+        "attempted": 1200,
+        "escalations": 0,
+        "terminal_counts": {
+          "picked": 1200,
+          "attempt_failed": 0,
+          "rejected": 0,
+          "escalated": 0,
+          "skipped": 0
+        }
       },
-      "delta_success_rate": 0.985833
+      "delta_success_rate": 1.0
     },
     {
       "scenario": "bias-high",
@@ -177,17 +231,35 @@
       },
       "off": {
         "success_rate": 0.0,
-        "mean_abs_error": 0.450858,
-        "attempted": 1200,
-        "escalations": 0
+        "coverage": 0.25,
+        "precision": 0.0,
+        "mean_abs_error": 0.45336,
+        "attempted": 300,
+        "escalations": 100,
+        "terminal_counts": {
+          "picked": 0,
+          "attempt_failed": 300,
+          "rejected": 0,
+          "escalated": 0,
+          "skipped": 900
+        }
       },
       "on": {
-        "success_rate": 0.985833,
-        "mean_abs_error": 0.050453,
-        "attempted": 1183,
-        "escalations": 0
+        "success_rate": 1.0,
+        "coverage": 1.0,
+        "precision": 1.0,
+        "mean_abs_error": 0.050102,
+        "attempted": 1200,
+        "escalations": 0,
+        "terminal_counts": {
+          "picked": 1200,
+          "attempt_failed": 0,
+          "rejected": 0,
+          "escalated": 0,
+          "skipped": 0
+        }
       },
-      "delta_success_rate": 0.985833
+      "delta_success_rate": 1.0
     },
     {
       "scenario": "drift-low",
@@ -197,18 +269,36 @@
         "drift_per_second": 0.008
       },
       "off": {
-        "success_rate": 0.985833,
-        "mean_abs_error": 0.06727,
-        "attempted": 1183,
-        "escalations": 0
+        "success_rate": 1.0,
+        "coverage": 1.0,
+        "precision": 1.0,
+        "mean_abs_error": 0.069743,
+        "attempted": 1200,
+        "escalations": 0,
+        "terminal_counts": {
+          "picked": 1200,
+          "attempt_failed": 0,
+          "rejected": 0,
+          "escalated": 0,
+          "skipped": 0
+        }
       },
       "on": {
-        "success_rate": 0.9725,
-        "mean_abs_error": 0.104005,
-        "attempted": 1167,
-        "escalations": 0
+        "success_rate": 1.0,
+        "coverage": 1.0,
+        "precision": 1.0,
+        "mean_abs_error": 0.050215,
+        "attempted": 1200,
+        "escalations": 0,
+        "terminal_counts": {
+          "picked": 1200,
+          "attempt_failed": 0,
+          "rejected": 0,
+          "escalated": 0,
+          "skipped": 0
+        }
       },
-      "delta_success_rate": -0.013333
+      "delta_success_rate": 0.0
     },
     {
       "scenario": "drift-mid",
@@ -218,18 +308,36 @@
         "drift_per_second": 0.045
       },
       "off": {
-        "success_rate": 0.1425,
-        "mean_abs_error": 0.269949,
-        "attempted": 1183,
-        "escalations": 0
+        "success_rate": 0.049167,
+        "coverage": 0.3325,
+        "precision": 0.14787,
+        "mean_abs_error": 0.272845,
+        "attempted": 399,
+        "escalations": 100,
+        "terminal_counts": {
+          "picked": 59,
+          "attempt_failed": 340,
+          "rejected": 0,
+          "escalated": 0,
+          "skipped": 801
+        }
       },
       "on": {
         "success_rate": 1.0,
-        "mean_abs_error": 0.051283,
+        "coverage": 1.0,
+        "precision": 1.0,
+        "mean_abs_error": 0.050993,
         "attempted": 1200,
-        "escalations": 0
+        "escalations": 0,
+        "terminal_counts": {
+          "picked": 1200,
+          "attempt_failed": 0,
+          "rejected": 0,
+          "escalated": 0,
+          "skipped": 0
+        }
       },
-      "delta_success_rate": 0.8575
+      "delta_success_rate": 0.950833
     },
     {
       "scenario": "drift-high",
@@ -240,17 +348,35 @@
       },
       "off": {
         "success_rate": 0.0,
-        "mean_abs_error": 0.534617,
-        "attempted": 1183,
-        "escalations": 0
+        "coverage": 0.25,
+        "precision": 0.0,
+        "mean_abs_error": 0.534254,
+        "attempted": 300,
+        "escalations": 100,
+        "terminal_counts": {
+          "picked": 0,
+          "attempt_failed": 300,
+          "rejected": 0,
+          "escalated": 0,
+          "skipped": 900
+        }
       },
       "on": {
-        "success_rate": 0.986667,
-        "mean_abs_error": 0.076733,
+        "success_rate": 0.980833,
+        "coverage": 1.0,
+        "precision": 0.980833,
+        "mean_abs_error": 0.076398,
         "attempted": 1200,
-        "escalations": 0
+        "escalations": 0,
+        "terminal_counts": {
+          "picked": 1177,
+          "attempt_failed": 23,
+          "rejected": 0,
+          "escalated": 0,
+          "skipped": 0
+        }
       },
-      "delta_success_rate": 0.986667
+      "delta_success_rate": 0.980833
     },
     {
       "scenario": "moving-low",
@@ -260,18 +386,36 @@
         "moving_speed_delta": 0.02
       },
       "off": {
-        "success_rate": 0.971667,
-        "mean_abs_error": 0.126879,
-        "attempted": 1183,
-        "escalations": 0
+        "success_rate": 0.976667,
+        "coverage": 1.0,
+        "precision": 0.976667,
+        "mean_abs_error": 0.128823,
+        "attempted": 1200,
+        "escalations": 0,
+        "terminal_counts": {
+          "picked": 1172,
+          "attempt_failed": 28,
+          "rejected": 0,
+          "escalated": 0,
+          "skipped": 0
+        }
       },
       "on": {
         "success_rate": 1.0,
-        "mean_abs_error": 0.050712,
+        "coverage": 1.0,
+        "precision": 1.0,
+        "mean_abs_error": 0.050667,
         "attempted": 1200,
-        "escalations": 0
+        "escalations": 0,
+        "terminal_counts": {
+          "picked": 1200,
+          "attempt_failed": 0,
+          "rejected": 0,
+          "escalated": 0,
+          "skipped": 0
+        }
       },
-      "delta_success_rate": 0.028333
+      "delta_success_rate": 0.023333
     },
     {
       "scenario": "moving-mid",
@@ -282,17 +426,35 @@
       },
       "off": {
         "success_rate": 0.0,
-        "mean_abs_error": 0.593687,
-        "attempted": 1183,
-        "escalations": 0
+        "coverage": 0.25,
+        "precision": 0.0,
+        "mean_abs_error": 0.593059,
+        "attempted": 300,
+        "escalations": 100,
+        "terminal_counts": {
+          "picked": 0,
+          "attempt_failed": 300,
+          "rejected": 0,
+          "escalated": 0,
+          "skipped": 900
+        }
       },
       "on": {
-        "success_rate": 0.865,
-        "mean_abs_error": 0.103552,
-        "attempted": 1200,
-        "escalations": 0
+        "success_rate": 0.849167,
+        "coverage": 0.881667,
+        "precision": 0.963138,
+        "mean_abs_error": 0.086958,
+        "attempted": 1058,
+        "escalations": 1,
+        "terminal_counts": {
+          "picked": 1019,
+          "attempt_failed": 39,
+          "rejected": 0,
+          "escalated": 0,
+          "skipped": 142
+        }
       },
-      "delta_success_rate": 0.865
+      "delta_success_rate": 0.849167
     },
     {
       "scenario": "moving-high",
@@ -303,17 +465,35 @@
       },
       "off": {
         "success_rate": 0.0,
-        "mean_abs_error": 0.974586,
-        "attempted": 74,
-        "escalations": 100
+        "coverage": 0.064167,
+        "precision": 0.0,
+        "mean_abs_error": 0.967671,
+        "attempted": 77,
+        "escalations": 100,
+        "terminal_counts": {
+          "picked": 0,
+          "attempt_failed": 77,
+          "rejected": 0,
+          "escalated": 1123,
+          "skipped": 0
+        }
       },
       "on": {
-        "success_rate": 0.009167,
-        "mean_abs_error": 0.426033,
-        "attempted": 85,
-        "escalations": 100
+        "success_rate": 0.01,
+        "coverage": 0.010833,
+        "precision": 0.923077,
+        "mean_abs_error": 0.1539,
+        "attempted": 13,
+        "escalations": 100,
+        "terminal_counts": {
+          "picked": 12,
+          "attempt_failed": 1,
+          "rejected": 0,
+          "escalated": 1111,
+          "skipped": 76
+        }
       },
-      "delta_success_rate": 0.009167
+      "delta_success_rate": 0.01
     },
     {
       "scenario": "load-low",
@@ -323,18 +503,36 @@
         "load_speed_delta": 0.04
       },
       "off": {
-        "success_rate": 0.715833,
-        "mean_abs_error": 0.163591,
-        "attempted": 1183,
-        "escalations": 0
+        "success_rate": 0.664167,
+        "coverage": 0.924167,
+        "precision": 0.718665,
+        "mean_abs_error": 0.166351,
+        "attempted": 1109,
+        "escalations": 18,
+        "terminal_counts": {
+          "picked": 797,
+          "attempt_failed": 312,
+          "rejected": 0,
+          "escalated": 0,
+          "skipped": 91
+        }
       },
       "on": {
         "success_rate": 1.0,
-        "mean_abs_error": 0.051137,
+        "coverage": 1.0,
+        "precision": 1.0,
+        "mean_abs_error": 0.05091,
         "attempted": 1200,
-        "escalations": 0
+        "escalations": 0,
+        "terminal_counts": {
+          "picked": 1200,
+          "attempt_failed": 0,
+          "rejected": 0,
+          "escalated": 0,
+          "skipped": 0
+        }
       },
-      "delta_success_rate": 0.284167
+      "delta_success_rate": 0.335833
     },
     {
       "scenario": "load-mid",
@@ -345,17 +543,35 @@
       },
       "off": {
         "success_rate": 0.0,
-        "mean_abs_error": 0.629354,
-        "attempted": 1183,
-        "escalations": 0
+        "coverage": 0.25,
+        "precision": 0.0,
+        "mean_abs_error": 0.627139,
+        "attempted": 300,
+        "escalations": 100,
+        "terminal_counts": {
+          "picked": 0,
+          "attempt_failed": 300,
+          "rejected": 0,
+          "escalated": 0,
+          "skipped": 900
+        }
       },
       "on": {
-        "success_rate": 0.73,
-        "mean_abs_error": 0.136817,
-        "attempted": 1200,
-        "escalations": 0
+        "success_rate": 0.655833,
+        "coverage": 0.679167,
+        "precision": 0.965644,
+        "mean_abs_error": 0.081008,
+        "attempted": 815,
+        "escalations": 18,
+        "terminal_counts": {
+          "picked": 787,
+          "attempt_failed": 28,
+          "rejected": 0,
+          "escalated": 0,
+          "skipped": 385
+        }
       },
-      "delta_success_rate": 0.73
+      "delta_success_rate": 0.655833
     },
     {
       "scenario": "load-high",
@@ -366,17 +582,35 @@
       },
       "off": {
         "success_rate": 0.0,
-        "mean_abs_error": 0.854969,
-        "attempted": 58,
-        "escalations": 100
+        "coverage": 0.054167,
+        "precision": 0.0,
+        "mean_abs_error": 0.876723,
+        "attempted": 65,
+        "escalations": 100,
+        "terminal_counts": {
+          "picked": 0,
+          "attempt_failed": 65,
+          "rejected": 0,
+          "escalated": 1135,
+          "skipped": 0
+        }
       },
       "on": {
-        "success_rate": 0.026667,
-        "mean_abs_error": 0.331521,
-        "attempted": 74,
-        "escalations": 100
+        "success_rate": 0.023333,
+        "coverage": 0.025833,
+        "precision": 0.903226,
+        "mean_abs_error": 0.093803,
+        "attempted": 31,
+        "escalations": 100,
+        "terminal_counts": {
+          "picked": 28,
+          "attempt_failed": 3,
+          "rejected": 0,
+          "escalated": 1123,
+          "skipped": 46
+        }
       },
-      "delta_success_rate": 0.026667
+      "delta_success_rate": 0.023333
     },
     {
       "scenario": "combo",
@@ -385,18 +619,36 @@
       "parameters": {},
       "off": {
         "success_rate": 0.0,
-        "mean_abs_error": 0.346554,
-        "attempted": 5,
-        "escalations": 100
+        "coverage": 0.003333,
+        "precision": 0.0,
+        "mean_abs_error": 0.315055,
+        "attempted": 4,
+        "escalations": 100,
+        "terminal_counts": {
+          "picked": 0,
+          "attempt_failed": 4,
+          "rejected": 0,
+          "escalated": 1196,
+          "skipped": 0
+        }
       },
       "on": {
-        "success_rate": 0.003333,
-        "mean_abs_error": 0.238818,
-        "attempted": 18,
-        "escalations": 100
+        "success_rate": 0.0075,
+        "coverage": 0.008333,
+        "precision": 0.9,
+        "mean_abs_error": 0.153995,
+        "attempted": 10,
+        "escalations": 100,
+        "terminal_counts": {
+          "picked": 9,
+          "attempt_failed": 1,
+          "rejected": 0,
+          "escalated": 1190,
+          "skipped": 0
+        }
       },
-      "delta_success_rate": 0.003333
+      "delta_success_rate": 0.0075
     }
   ],
-  "markdown": "| 场景 | 补偿关闭成功率 | 补偿开启成功率 | 差值 | 关闭 MAE | 开启 MAE | 开启升级数 |\n|---|---:|---:|---:|---:|---:|---:|\n| nominal | 0.986 | 0.986 | +0.000 | 0.050 | 0.050 | 0 |\n| bias-low | 1.000 | 0.986 | -0.014 | 0.094 | 0.050 | 0 |\n| bias-mid | 0.000 | 0.986 | +0.986 | 0.253 | 0.050 | 0 |\n| bias-high | 0.000 | 0.986 | +0.986 | 0.451 | 0.050 | 0 |\n| drift-low | 0.986 | 0.973 | -0.013 | 0.067 | 0.104 | 0 |\n| drift-mid | 0.142 | 1.000 | +0.858 | 0.270 | 0.051 | 0 |\n| drift-high | 0.000 | 0.987 | +0.987 | 0.535 | 0.077 | 0 |\n| moving-low | 0.972 | 1.000 | +0.028 | 0.127 | 0.051 | 0 |\n| moving-mid | 0.000 | 0.865 | +0.865 | 0.594 | 0.104 | 0 |\n| moving-high | 0.000 | 0.009 | +0.009 | 0.975 | 0.426 | 100 |\n| load-low | 0.716 | 1.000 | +0.284 | 0.164 | 0.051 | 0 |\n| load-mid | 0.000 | 0.730 | +0.730 | 0.629 | 0.137 | 0 |\n| load-high | 0.000 | 0.027 | +0.027 | 0.855 | 0.332 | 100 |\n| combo | 0.000 | 0.003 | +0.003 | 0.347 | 0.239 | 100 |"
+  "markdown": "| 场景 | 关闭成功率 | 开启成功率 | 开启 coverage | 开启 precision | 关闭 MAE* | 开启 MAE* | 开启终态 picked/failed/rejected/escalated/skipped | 开启升级数 |\n|---|---:|---:|---:|---:|---:|---:|---|---:|\n| nominal | 1.000 | 1.000 | 1.000 | 1.000 | 0.050 | 0.050 | 1200/0/0/0/0 | 0 |\n| bias-low | 1.000 | 1.000 | 1.000 | 1.000 | 0.093 | 0.050 | 1200/0/0/0/0 | 0 |\n| bias-mid | 0.000 | 1.000 | 1.000 | 1.000 | 0.255 | 0.050 | 1200/0/0/0/0 | 0 |\n| bias-high | 0.000 | 1.000 | 1.000 | 1.000 | 0.453 | 0.050 | 1200/0/0/0/0 | 0 |\n| drift-low | 1.000 | 1.000 | 1.000 | 1.000 | 0.070 | 0.050 | 1200/0/0/0/0 | 0 |\n| drift-mid | 0.049 | 1.000 | 1.000 | 1.000 | 0.273 | 0.051 | 1200/0/0/0/0 | 0 |\n| drift-high | 0.000 | 0.981 | 1.000 | 0.981 | 0.534 | 0.076 | 1177/23/0/0/0 | 0 |\n| moving-low | 0.977 | 1.000 | 1.000 | 1.000 | 0.129 | 0.051 | 1200/0/0/0/0 | 0 |\n| moving-mid | 0.000 | 0.849 | 0.882 | 0.963 | 0.593 | 0.087 | 1019/39/0/0/142 | 1 |\n| moving-high | 0.000 | 0.010 | 0.011 | 0.923 | 0.968 | 0.154 | 12/1/0/1111/76 | 100 |\n| load-low | 0.664 | 1.000 | 1.000 | 1.000 | 0.166 | 0.051 | 1200/0/0/0/0 | 0 |\n| load-mid | 0.000 | 0.656 | 0.679 | 0.966 | 0.627 | 0.081 | 787/28/0/0/385 | 18 |\n| load-high | 0.000 | 0.023 | 0.026 | 0.903 | 0.877 | 0.094 | 28/3/0/1123/46 | 100 |\n| combo | 0.000 | 0.007 | 0.008 | 0.900 | 0.315 | 0.154 | 9/1/0/1190/0 | 100 |\n\n* MAE 仅统计已发命令对象；coverage = 发出命令对象数 / 总对象数；precision = picked / 发出命令对象数。"
 }
