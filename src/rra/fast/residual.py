@@ -120,7 +120,21 @@ class Corrector:
             predicted_lead = kinematic_lead + slope * time_to_arrival
         else:
             predicted_lead = kinematic_lead
-        time_delta = (sensor_offset - predicted_lead) / nominal_speed
+        motion_speed = nominal_speed + slope
+        if disturbance in ("moving_target", "drift", "load_change") and motion_speed <= 0:
+            return Correction(
+                plan=plan,
+                residual=residual,
+                disturbance=disturbance,
+                position_delta=0.0,
+                time_delta=0.0,
+                reason="ESCALATE: predicted motion speed is non-positive",
+            )
+        # Sensor offset is measured against nominal geometry; only physical
+        # motion lead is converted using the residual-adjusted speed estimate.
+        time_delta = sensor_offset / nominal_speed - predicted_lead / (
+            motion_speed if disturbance in ("moving_target", "drift", "load_change") else nominal_speed
+        )
         time_delta = max(
             -self.max_time_correction,
             min(self.max_time_correction, time_delta),
