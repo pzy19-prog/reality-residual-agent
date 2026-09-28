@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Literal
 
 import numpy as np
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class WorldConfig(BaseModel):
@@ -18,7 +18,7 @@ class WorldConfig(BaseModel):
     x_pick: float = 0.0
     tolerance: float = Field(default=0.20, gt=0)
     dt: float = Field(default=0.10, gt=0)
-    episode_steps: int = Field(default=80, ge=8)
+    episode_steps: int = Field(default=90, ge=8)
     object_count: int = Field(default=12, ge=1)
     position_bias: float = 0.45
     drift_per_second: float = 0.045
@@ -31,6 +31,28 @@ class WorldConfig(BaseModel):
     y_pick: float = 0.0
     initial_y_min: float = -0.08
     initial_y_max: float = 0.08
+
+    @model_validator(mode="after")
+    def validate_prediction_horizon(self) -> "WorldConfig":
+        """Keep the sampled world horizon beyond the latest corrected pick window."""
+        sensor_offset = (
+            self.position_bias
+            if self.scenario in ("bias", "combo")
+            else 0.0
+        )
+        latest_initial_eta = max(
+            0.0,
+            (self.x_pick - self.initial_position_min - sensor_offset) / self.belt_speed,
+        )
+        max_time_correction = 0.50
+        required_horizon = latest_initial_eta + max_time_correction + self.dt
+        sampled_horizon = (self.episode_steps - 1) * self.dt
+        if sampled_horizon + 1e-12 < required_horizon:
+            raise ValueError(
+                "episode_steps do not cover the latest corrected prediction window: "
+                f"sampled horizon {sampled_horizon:.6f}s < required {required_horizon:.6f}s"
+            )
+        return self
 
 
 class Observation(BaseModel):

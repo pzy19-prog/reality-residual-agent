@@ -18,4 +18,15 @@ so the old sampling-time behavior cannot pass by matching a grid-aligned plan.
 
 ## Dev benchmark deltas
 
-Will be recorded after each implementation commit using only seeds `0–129`.
+All runs below use exactly `config/dev_seeds.json` (seeds `0–129`, 1,560
+objects per scenario and mode). The first row is the test-only baseline at
+`edb8b44`; each later row records the code at the named implementation commit.
+
+| Stage | nominal off/on | bias-low off/on | drift-low off/on | moving-mid off/on | load-mid off/on | combo off/on |
+|---|---:|---:|---:|---:|---:|---:|
+| Baseline `edb8b44` | 0.985 / 0.985 | 1.000 / 0.985 | 0.985 / 0.970 | 0.000 / 0.852 | 0.000 / 0.712 | 0.000 / 0.005 |
+| R1 `4972e4b` | 1.000 / 1.000 | 1.000 / 1.000 | 1.000 / 1.000 | 0.000 / 0.852 | 0.000 / 0.712 | 0.000 / 0.005 |
+
+R1 restored the nominal, bias-low, and drift-low successes lost to the short
+episode horizon. At R1, moving-mid had 231 misses and load-mid had 449 misses
+in compensation-on mode (out of 1,560 objects each).
