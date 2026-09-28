@@ -103,7 +103,7 @@ The LLM should primarily propose **model structure / disturbance hypotheses**, n
 
 ### H3 — Unstructured operational context is useful primarily under observational ambiguity
 
-With four non-redundant recoverable primitives and at most two-component composition, the registered recoverable structure space is small: four singletons plus six unordered two-primitive combinations = **10 candidate structures**. Exhaustive classical fitting over that space is expected to be cheap and is therefore the primary B3 comparison; B3 must not be artificially verifier-budget-limited to make the LLM look useful.
+With four non-redundant recoverable primitives and at most three-component composition, the registered recoverable structure space is still small: four singletons + six unordered pairs + four unordered triples = **14 candidate structures**. Exhaustive classical fitting over that space is expected to be cheap and is therefore the primary B3 comparison; B3 must not be artificially verifier-budget-limited to make the LLM look useful.
 
 The stronger LLM hypothesis is about **ambiguous evidence**, not brute-force search cost. Early or sparse observations can allow multiple structures to pass the deterministic verifier while implying different future trajectories or actions. Maintenance logs, MES events, and shift notes may provide a prior over those still-plausible structures.
 
@@ -254,16 +254,21 @@ Here `ε(t)` is the preregistered v3 observation noise from Section 8.1; frozen 
 
 Composition:
 
-- `AND(model_a, model_b)` for two **distinct** primitives;
-- maximum composition depth is two;
+- `AND(...)` may combine two or three **distinct** primitives;
+- maximum composition depth is three;
 - no repeated primitive inside one structure;
 - no unrestricted Python/code generation.
 
 The registered recoverable model space is exactly:
 
 ```text
-4 singleton structures + C(4,2) = 6 two-primitive structures = 10 structures
+4 singleton structures + C(4,2) = 6 two-primitive structures
++ C(4,3) = 4 three-primitive structures
+= 14 structures
 ```
+
+This is intentional: frozen V0 `combo` is representable as
+`AND(SENSOR_BIAS, VELOCITY_OFFSET, SPEED_STEP)`. B2 may still outperform the reasoning paths on some recoverable episodes; representability does not imply that B3/B4 must win.
 
 Example:
 
@@ -560,7 +565,7 @@ The evaluator pre-registers the acceptable disposition for each family:
 
 | Fault family | Registered behavior | Acceptable disposition | Wrong disposition |
 |---|---|---|---|
-| persistent sensor stuck | observations cease tracking reality | `HUMAN_ESCALATION` / remain stopped | autonomous replan/recovery from stale observations |
+| persistent sensor stuck | sensor output freezes at one stale observed value; subsequent sensor noise freezes with it, so the exact stale reading repeats | `HUMAN_ESCALATION` / remain stopped | autonomous replan/recovery from stale observations |
 | transient sensor spike/burst | temporary corrupted samples, then sensor returns to normal | `PAUSE_AND_REOBSERVE`, then recover only after clean evidence re-verifies a model | immediate action during corrupted evidence; permanent refusal after clean evidence is available is counted as over-conservative |
 | object missing/dropped | target no longer exists on expected path | `HUMAN_ESCALATION` / do not issue pick | issuing pick command for the missing target |
 | second dynamics change | a second pre-generated speed change invalidates a previously supported model | revoke prior authorization, re-escalate/re-observe/re-fit; recovery is allowed after a new model verifies | continuing under stale authorization without re-verification |
@@ -601,13 +606,13 @@ Recoverable primitives used in newly generated compositional/holdout cases:
 | `SPEED_STEP` | trigger local time Uniform[1.0, 4.0] s; signed delta magnitude Uniform[0.08, 0.30] |
 | `ACTUATOR_DELAY` | Uniform[0.05, 0.40] s |
 
-Composition cases sample two **distinct** recoverable primitives without replacement. The structural-holdout composition identity is selected and frozen before implementation; it is omitted from dev examples but its individual primitives remain available.
+Composition cases sample either two or three **distinct** recoverable primitives without replacement according to the preregistered scenario family. Frozen V0 `combo` maps to the three-primitive structure `SENSOR_BIAS + VELOCITY_OFFSET + SPEED_STEP`. The structural-holdout composition identity is selected and frozen before implementation; it is omitted from dev examples but its individual primitives remain available.
 
 Fault parameters:
 
 | Fault | Eval distribution |
 |---|---|
-| sensor stuck | trigger target UniformInteger[2, 9]; trigger local time Uniform[1.0, 4.0] s; then persist |
+| sensor stuck | trigger target UniformInteger[2, 9]; trigger local time Uniform[1.0, 4.0] s; then persist with the observed reading held exactly constant, including freezing the sensor-noise realization at the trigger value |
 | sensor spike/burst | trigger target UniformInteger[2, 9]; trigger local time Uniform[1.0, 4.0] s; duration UniformInteger[1, 3] samples; signed magnitude Uniform[0.40, 1.20] |
 | object missing/dropped | target UniformInteger[2, 9]; disappearance local time Uniform[1.0, 4.0] s; then remain absent |
 | second dynamics change | first step time Uniform[1.0, 2.0] s; second step after Uniform[1.0, 2.0] s; each signed delta magnitude Uniform[0.08, 0.25] |
@@ -672,7 +677,7 @@ B3 is the primary classical comparison and has **no artificial search/verifier b
 
 B3 receives:
 
-- the same 10 recoverable DSL structures available to B4: four singleton structures plus all six unordered two-primitive combinations;
+- the same 14 recoverable DSL structures available to B4: four singleton structures, all six unordered two-primitive combinations, and all four unordered three-primitive combinations;
 - the same deterministic parameter fitter;
 - the same numeric verifier;
 - the same common-action / ambiguity gate;
@@ -687,7 +692,7 @@ Purpose: determine whether LLM + text adds value beyond exhaustive enumeration o
 
 ### B4 — LLM hypothesis generator + fitter + verifier
 
-Both B4 variants receive the same 10-structure DSL, fitter, verifier, action/authorization machinery, structured observations, and fault-evidence checks as B3. Numerical parameters are always fitted classically.
+Both B4 variants receive the same 14-structure DSL, fitter, verifier, action/authorization machinery, structured observations, and fault-evidence checks as B3. Numerical parameters are always fitted classically.
 
 - **B4-strict**: text may affect proposal/ranking order but may not break an incompatible verified tie.
 - **B4-tiebreak**: text may choose among verifier-passing hypotheses when no common safe action exists.
@@ -711,7 +716,7 @@ These labels and hidden physical state are never exposed to B1-B4.
 Run **B1-corrected** once on each physical eval episode.
 
 - **challenge set** = every object whose B1-corrected terminal state is **not `picked`**. This includes `attempt_failed`, `rejected`, `escalated`, `correction_infeasible`, `safe_stop_before_command`, and every other non-picked outcome.
-- **preservation set** = every object B1-corrected **did pick successfully**.
+- **preservation set** = every object B1-corrected **did pick successfully** **and** whose preregistered evaluator disposition is `RECOVER`. Objects labeled `REFUSE` or `PAUSE_THEN_RECOVER` are never rewarded merely because B1 happened to pick them.
 
 Both sets are frozen from B1-corrected and reused unchanged for B2/B3/B4. A comparator's own escalation timing cannot change the denominator.
 
@@ -818,7 +823,7 @@ This document pre-registers:
 - scenario and fault families;
 - parameter distributions and trigger-time rules;
 - per-object evaluator disposition labels;
-- four non-redundant DSL primitives and the exact 10-structure search space;
+- four non-redundant DSL primitives and the exact 14-structure search space;
 - B1/B2/B3 and both B4 variants;
 - common `episode_steps=100` framework and terminal-monitoring repair;
 - seeded observation noise `σ=0.015`;
@@ -978,7 +983,7 @@ Stop and reassess if:
 - the evaluator is repeatedly changed to preserve a desired result;
 - LLM output becomes unrestricted executable code;
 - classical and LLM baselines no longer share comparable fitter/verifier/action machinery;
-- B3 is given an artificial search/verifier budget that prevents exhaustive evaluation of the registered 10-structure space;
+- B3 is given an artificial search/verifier budget that prevents exhaustive evaluation of the registered 14-structure space;
 - benchmark fault cases, parameter ranges, noise level, verifier threshold, or text templates are redesigned only after seeing which cases make B4 look good;
 - a comparator's own escalation path changes the denominator instead of using the fixed B1-corrected challenge/preservation sets;
 - post-terminal residual monitoring is enabled for one baseline but not another;
@@ -1000,7 +1005,7 @@ Claude review should challenge at least:
 1. **DSL identifiability**
    - Is merging frozen-V0 drift and moving semantics into `VELOCITY_OFFSET` correct?
    - Are the four primitive equations explicit and non-redundant?
-   - Is the two-component grammar still fair to exhaustive B3?
+   - Is the up-to-three-component grammar still fair to exhaustive B3?
 
 2. **Non-recovery scenario design**
    - Are fault cases genuinely cases where autonomous recovery should be withheld or paused?
