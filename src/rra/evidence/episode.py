@@ -113,7 +113,9 @@ def run_episode(
         if include_trace:
             trace = trace_by_target.setdefault(observation.target_id, {
                 "target_id": observation.target_id,
+                "x0": round(observation.actual_x, 6),
                 "command_issued": False,
+                "command_count": 0,
                 "command_success": False,
                 "decision_sample_count": 0,
             })
@@ -124,6 +126,8 @@ def run_episode(
                 trace.update({
                     "decision_time": round(observation.time, 6),
                     "decision_time_sample_count": trace["decision_sample_count"],
+                    "applied_eta": round(predicted_center, 6),
+                    "correction_saturated": correction.saturated,
                     "window_remaining_time": round(
                         predicted_center + window_half_width - observation.time, 6
                     ),
@@ -193,6 +197,8 @@ def run_episode(
                 observation.time + response_delay,
             )
             attempted_targets.add(observation.target_id)
+            if include_trace:
+                trace_by_target[observation.target_id]["command_count"] += 1
             errors.append(result.position_error)
             successes += int(result.accepted and result.success)
             if result.accepted and result.success:
@@ -206,6 +212,23 @@ def run_episode(
                 trace.update({
                     "command_issued": True,
                     "command_success": bool(result.accepted and result.success),
+                    "command_time": round(observation.time, 6),
+                    "execution_time": round(observation.time + response_delay, 6),
+                    "true_eta": round(
+                        observation.time
+                        + (config.x_pick - observation.actual_x) / observation.actual_speed,
+                        6,
+                    ),
+                    "position_error": round(
+                        ((delayed_x - applied_plan.pick_position) ** 2
+                         + (observation.actual_y - config.y_pick) ** 2) ** 0.5,
+                        6,
+                    ),
+                    "time_error": round(
+                        abs(observation.time + response_delay - applied_plan.expected_arrival_time)
+                        * config.belt_speed,
+                        6,
+                    ),
                     "command_result": result.reason,
                     "skip_reason": (
                         None if result.accepted and result.success
@@ -270,13 +293,18 @@ def run_episode(
             if trace["command_success"]:
                 continue
             if not trace["command_issued"]:
-                if safe_stop:
+                outcome = outcomes_by_target.get(target_id)
+                if outcome is not None:
+                    reason = outcome["reason"]
+                elif safe_stop:
                     reason = "safe_stop_before_command"
                 elif trace["window_remaining_time"] < 0:
                     reason = "prediction_window_expired_without_command"
                 else:
                     reason = "prediction_window_not_reached_before_episode_end"
                 trace["skip_reason"] = reason
+            if target_id in outcomes_by_target:
+                trace["terminal_status"] = outcomes_by_target[target_id]["status"]
             trace["seed"] = int(seed)
             trace["compensation"] = "on" if compensation else "off"
             trace["scenario"] = config.scenario
