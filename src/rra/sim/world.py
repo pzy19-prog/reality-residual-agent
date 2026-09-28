@@ -7,6 +7,8 @@ from typing import Literal
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from rra.fast.residual import MAX_TIME_CORRECTION
+
 
 class WorldConfig(BaseModel):
     """Frozen simulation inputs. Positions are in arbitrary world units, time in s."""
@@ -44,8 +46,7 @@ class WorldConfig(BaseModel):
             0.0,
             (self.x_pick - self.initial_position_min - sensor_offset) / self.belt_speed,
         )
-        max_time_correction = 0.50
-        required_horizon = latest_initial_eta + max_time_correction + self.dt
+        required_horizon = latest_initial_eta + MAX_TIME_CORRECTION + self.dt
         sampled_horizon = (self.episode_steps - 1) * self.dt
         if sampled_horizon + 1e-12 < required_horizon:
             raise ValueError(

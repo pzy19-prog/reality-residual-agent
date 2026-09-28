@@ -2,6 +2,7 @@
 
 from rra.evidence import run_episode
 from rra.fast import Corrector
+from rra.fast.residual import MAX_TIME_CORRECTION
 from rra.planner import Plan
 from rra.sim import World, WorldConfig
 
@@ -31,6 +32,24 @@ def test_moving_lead_uses_actual_speed_for_eta_conversion():
     # A +0.10 speed delta over a 3 s nominal ETA advances arrival by 3 - 3/1.1.
     true_eta_delta = 3.0 / 1.1 - 3.0
     assert abs(correction.time_delta - true_eta_delta) < 0.01 / 2
+
+
+def test_default_time_correction_limit_uses_shared_constant():
+    """Regression guard: default correction bound stays linked to horizon policy."""
+    assert Corrector().max_time_correction == MAX_TIME_CORRECTION == 0.50
+
+
+def test_world_horizon_uses_shared_time_correction_limit(monkeypatch):
+    """Regression guard: changing the shared bound changes the validated horizon."""
+    import pytest
+    import rra.sim.world as world_module
+
+    monkeypatch.setattr(world_module, "MAX_TIME_CORRECTION", MAX_TIME_CORRECTION + 0.01)
+    with pytest.raises(ValueError, match="do not cover"):
+        WorldConfig(
+            scenario="nominal", initial_position_min=-8.0,
+            initial_position_max=-8.0, episode_steps=87,
+        )
 
 
 def test_window_crossed_between_samples_still_issues_one_command(monkeypatch):

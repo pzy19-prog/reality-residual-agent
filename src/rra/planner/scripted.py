@@ -1,8 +1,13 @@
 """Nominal-model scripted pick planner."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from pydantic import BaseModel, ConfigDict
 
-from rra.sim.world import Observation
+if TYPE_CHECKING:
+    from rra.sim.world import Observation
 
 
 class Plan(BaseModel):

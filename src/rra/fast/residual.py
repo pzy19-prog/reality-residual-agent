@@ -1,14 +1,19 @@
 """Bounded residual monitoring and EWMA correction."""
 
+from __future__ import annotations
+
 from collections import deque
 from dataclasses import dataclass
 from statistics import fmean
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from rra.planner.scripted import Plan
-from rra.sim.world import Observation
+
+if TYPE_CHECKING:
+    from rra.sim.world import Observation
 
 Disturbance = Literal["position_bias", "drift", "moving_target", "load_change", "none", "unknown"]
+MAX_TIME_CORRECTION = 0.50
 
 
 class ResidualMonitor:
@@ -69,7 +74,7 @@ class Corrector:
         self,
         alpha: float = 0.25,
         max_position_correction: float = 0.50,
-        max_time_correction: float = 0.50,
+        max_time_correction: float = MAX_TIME_CORRECTION,
         safe_residual_threshold: float = 1.25,
     ):
         if not 0 < alpha <= 1:
