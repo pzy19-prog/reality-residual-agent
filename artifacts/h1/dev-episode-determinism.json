@@ -1,0 +1,21 @@
+{
+  "schema_version": "rra.h1.dev-episode-determinism.v1",
+  "source_head": "dfecbb798a04625de847637e52f6c19714e5c5b8",
+  "scenario_config": "config/scenarios.json",
+  "scenario_count": 14,
+  "dev_seeds": [
+    0,
+    1,
+    2
+  ],
+  "episode_modes": [
+    "off",
+    "on"
+  ],
+  "runs": 2,
+  "receipt_count_per_run": 84,
+  "aggregate_sha256": "f465a6e03b1d96786b29385fa504077557f07ed8f96969f1c8708b23c59c93e3",
+  "byte_identical": true,
+  "eval_seed_files_read": false,
+  "runtime_seconds": 11.294
+}

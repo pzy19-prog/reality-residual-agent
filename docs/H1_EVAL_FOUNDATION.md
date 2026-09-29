@@ -63,6 +63,8 @@ The C4 receipt selects index 5, `AND(SPEED_STEP,ACTUATOR_DELAY)`: [structural-ho
 
 ## Verification
 
+The two-run all-scenario dev episode determinism receipt is [dev-episode-determinism.json](../artifacts/h1/dev-episode-determinism.json). It compares 84 episode receipts per run using dev seeds only and does not read eval seed files.
+
 Run the existing suite and H1-specific checks with:
 
 ```bash
