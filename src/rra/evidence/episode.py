@@ -10,7 +10,12 @@ from typing import Any, Literal
 from rra.controller import Command, Controller, ControllerConfig
 from rra.fast import Corrector, ResidualMonitor
 from rra.planner import ScriptedPlanner
-from rra.evidence.policy import command_feedback, sanitize_config, sanitize_observation
+from rra.evidence.policy import (
+    command_feedback,
+    sanitize_config,
+    sanitize_observation,
+    target_presence_event,
+)
 from rra.sim import World, WorldConfig
 from rra.eval.scenarios import EpisodeRealization
 from rra.sim.v3_world import V3World
@@ -56,6 +61,7 @@ def run_episode(
     trace_by_target: dict[int, dict[str, Any]] = {}
     object_grab_end_times: dict[int, float] = {}
     policy_feedbacks: list[dict[str, Any]] = []
+    policy_target_presence_events: list[dict[str, Any]] = []
 
     def record_outcome(
         target_id: int,
@@ -98,9 +104,16 @@ def run_episode(
             "position_error": None,
             "stale_authorization": False,
         })
+        # One registered detector event is emitted for every expected sample,
+        # including samples where no positional observation is available.
+        policy_target_presence_events.append(asdict(target_presence_event(
+            target_id=plant_observation.target_id,
+            step=plant_observation.step,
+            time=plant_observation.time,
+            target_observed=plant_observation.target_present,
+        )))
         if not plant_observation.target_present:
-            # A dropped object yields no policy observation. Its existence flag
-            # remains evaluator-side and the raw sample never reaches sanitizer.
+            # The detector event remains visible; positional data never reaches policy.
             world.advance()
             continue
         observation = sanitize_observation(plant_observation)
@@ -342,6 +355,7 @@ def run_episode(
         "git_sha": git_sha or "unknown",
         "compensation": "on" if compensation else "off",
         "compensation_records": records,
+        "policy_target_presence_events": policy_target_presence_events,
         "policy_command_feedback": policy_feedbacks,
         "operational_text_context": text_context,
         "escalations": escalations,

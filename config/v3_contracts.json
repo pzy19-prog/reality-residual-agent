@@ -1,6 +1,7 @@
 {
   "schema_version": "rra.eval.v3.contracts",
   "policy_observation_fields": ["target_id", "step", "time", "observed_x", "observed_y", "nominal_x", "nominal_y", "nominal_speed"],
+  "policy_target_presence_event_fields": ["target_id", "step", "time", "target_observed"],
   "policy_known_config_fields": ["dt", "tolerance", "x_pick", "y_pick", "belt_speed"],
   "policy_command_feedback_fields": ["command_id", "target_id", "issued_time", "execution_time", "accepted", "success", "reason_code"],
   "policy_forbidden_fields": ["actual_x", "actual_y", "actual_speed", "true_eta", "hidden_truth_position_error", "hidden_truth_time_error", "response_delay", "scenario", "scenario_label", "true_disturbance_parameters", "hidden_fault_state", "target_present", "evaluator_disposition", "unsafe_action_label", "final_eval_label", "omniscient_information"],

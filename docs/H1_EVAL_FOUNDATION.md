@@ -8,9 +8,11 @@ H1 implements no System-2, LLM, NVIDIA NIM, Nemotron, B3/B4 runtime, authorizati
 
 ## Policy information boundary
 
-`src/rra/evidence/policy.py` is the only structured sanitizer. Policy observation samples contain only `target_id`, `step`, `time`, `observed_x`, `observed_y`, `nominal_x`, `nominal_y`, and `nominal_speed`. Known configuration contains only `dt`, `tolerance`, `x_pick`, `y_pick`, and `belt_speed`. Command feedback contains only `command_id`, `target_id`, `issued_time`, `execution_time`, `accepted`, `success`, and `reason_code`.
+`src/rra/evidence/policy.py` is the only structured sanitizer. Policy observation samples contain only `target_id`, `step`, `time`, `observed_x`, `observed_y`, `nominal_x`, `nominal_y`, and `nominal_speed`. Target-presence events contain only `target_id`, `step`, `time`, and `target_observed`. Known configuration contains only `dt`, `tolerance`, `x_pick`, `y_pick`, and `belt_speed`. Command feedback contains only `command_id`, `target_id`, `issued_time`, `execution_time`, `accepted`, `success`, and `reason_code`.
 
-The runner supplies sanitized samples to the planner, residual monitor, and corrector. Hidden `actual_x`, `actual_y`, `actual_speed`, true ETA, response delay, target existence, fault realization, and evaluator dispositions remain in the plant/controller/evaluator domain. The controller executes against true plant coordinates and time. The policy can derive timing history from command feedback as `execution_time - issued_time`; the hidden simulator delay is not part of feedback.
+The runner supplies sanitized samples to the planner, residual monitor, and corrector. Hidden `actual_x`, `actual_y`, `actual_speed`, true ETA, response delay, target existence (`target_present`), fault realization, and evaluator dispositions remain in the plant/controller/evaluator domain. The registered target-presence detector event is emitted once at every expected policy sample opportunity: `target_observed=true` when the target is observed and `false` when it is not. Event silence is never used as an absence signal. For `OBJECT_MISSING`, false presence events continue after disappearance while positional `PolicyObservationSample` records stop. The controller executes against true plant coordinates and time. The policy can derive timing history from command feedback as `execution_time - issued_time`; the hidden simulator delay is not part of feedback.
+
+This additive observable evidence-channel repair restores the P3 §13.3.1 `OBJECT_MISSING` contract. It does not change fault distributions, B2 calibration, or evaluator difficulty.
 
 Free-form operational text is a separate channel. The H1 text generator derives it only from registered seed and observable residual inputs. It does not receive or encode scenario/fault labels, hidden parameters, dispositions, or action answers.
 
@@ -41,7 +43,7 @@ Invalidating faults and parameters are:
 
 Recoverable and fault streams use separate deterministic seed streams. The realization object is evaluator-side; it is never passed through the policy sanitizer.
 
-For an object-missing event, the plant emits no policy observation after disappearance. Its hidden existence flag remains available only to the evaluator and physical execution path.
+For an object-missing event, the plant emits no positional policy observation after disappearance and the registered observable target-presence event continues with `target_observed=false` at every expected sample. Its hidden existence flag remains available only to the evaluator and physical execution path.
 
 ## Dispositions and scoring
 

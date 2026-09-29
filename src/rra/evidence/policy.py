@@ -20,6 +20,14 @@ class PolicyObservationSample:
 
 
 @dataclass(frozen=True, slots=True)
+class PolicyTargetPresenceEvent:
+    target_id: int
+    step: int
+    time: float
+    target_observed: bool
+
+
+@dataclass(frozen=True, slots=True)
 class PolicyKnownConfig:
     dt: float
     tolerance: float
@@ -52,6 +60,18 @@ def sanitize_observation(observation: Observation) -> PolicyObservationSample:
         nominal_x=observation.nominal_x,
         nominal_y=observation.nominal_y,
         nominal_speed=observation.nominal_speed,
+    )
+
+
+def target_presence_event(
+    *, target_id: int, step: int, time: float, target_observed: bool,
+) -> PolicyTargetPresenceEvent:
+    """Create the registered detector event without exposing simulator truth."""
+    return PolicyTargetPresenceEvent(
+        target_id=target_id,
+        step=step,
+        time=time,
+        target_observed=target_observed,
     )
 
 
