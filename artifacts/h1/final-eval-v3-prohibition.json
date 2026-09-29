@@ -1,0 +1,11 @@
+{
+  "source_commit": "2eddf7b81f684c4c5f3db252f12a598903adde3c",
+  "schema_version": "rra.h1.final-eval-v3-prohibition.v1",
+  "checked_path_existence_only": "config/eval_seeds_v3.json",
+  "forbidden_seed_file_exists": false,
+  "tracked_equivalent_seed_paths": [],
+  "final_eval_v3_seed_values_created": false,
+  "final_eval_v3_seed_values_inspected": false,
+  "generation_stage": "H5 only, after implementation-candidate freeze, isolated process/context, P3 \u00a718.1",
+  "receipt_sha256": "be1c6de779eb1e360e32376700dec3e7cdaae8e6e957bbc2f951fb5419edffbd"
+}
