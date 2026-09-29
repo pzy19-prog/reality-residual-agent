@@ -10,6 +10,7 @@ from rra.evidence.policy import (
     sanitize_observation,
 )
 from rra.sim import World, WorldConfig
+from rra.evidence import run_episode
 
 
 def test_policy_schemas_are_exact_whitelists():
@@ -33,7 +34,7 @@ def test_sanitizer_returns_new_policy_type_without_truth_fields():
     clean = sanitize_observation(raw)
     assert type(clean) is PolicyObservationSample
     assert not isinstance(clean, type(raw))
-    assert not ({"actual_x", "actual_y", "actual_speed", "true_eta", "response_delay"}
+    assert not ({"actual_x", "actual_y", "actual_speed", "true_eta", "response_delay", "target_present"}
                 & {field.name for field in fields(clean)})
     known = sanitize_config(WorldConfig())
     assert type(known) is PolicyKnownConfig
@@ -47,3 +48,11 @@ def test_actuator_delay_feedback_contains_only_registered_telemetry():
     assert isclose(feedback.execution_time - feedback.issued_time, 0.2)
     assert not hasattr(feedback, "response_delay")
     assert feedback.reason_code == "missed"
+
+
+def test_runner_feedback_payload_contains_only_whitelisted_fields():
+    receipt = run_episode(WorldConfig(scenario="nominal"), 5, True)
+    allowed = {field.name for field in fields(PolicyCommandFeedback)}
+    assert receipt["policy_command_feedback"]
+    assert all(set(row) <= allowed for row in receipt["policy_command_feedback"])
+    assert all("response_delay" not in row for row in receipt["policy_command_feedback"])

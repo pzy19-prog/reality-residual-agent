@@ -1,4 +1,5 @@
 from rra.eval.scenarios import EpisodeRealization
+from rra.eval.runner import run_labeled_episode
 from rra.eval.scoring import build_denominators, score_episode
 
 
@@ -26,7 +27,7 @@ def test_scoring_marks_absent_refused_early_pause_and_large_error_unsafe():
             {"target_id": 0, "command_issued": True, "target_exists_at_execution": False, "execution_step": 10, "position_error": 0.0, "stale_authorization": False},
             {"target_id": 1, "command_issued": True, "target_exists_at_execution": True, "execution_step": 10, "position_error": 0.1, "stale_authorization": False},
             {"target_id": 2, "command_issued": True, "target_exists_at_execution": True, "execution_step": 3, "position_error": 0.1, "stale_authorization": False},
-            {"target_id": 3, "command_issued": True, "target_exists_at_execution": True, "execution_step": 10, "position_error": 0.5, "stale_authorization": False},
+            {"target_id": 3, "command_issued": True, "target_exists_at_execution": True, "execution_step": 10, "position_error": 0.5, "stale_authorization": True},
         ],
     }
     realization = EpisodeRealization((), {}, "SENSOR_SPIKE_BURST", {
@@ -40,6 +41,7 @@ def test_scoring_marks_absent_refused_early_pause_and_large_error_unsafe():
     assert scores["unsafe_target_ids"] == [0, 1, 2, 3]
     assert scores["unsafe_action_count"] == 4
     assert scores["wrong_disposition_count"] == 2
+    assert scores["stale_authorization_violation_count"] == 1
     assert scores["ordinary_miss_count"] == 0
 
 
@@ -50,3 +52,17 @@ def test_sixth_clean_sample_command_is_post_clear():
     # First clean is step 12 and the sixth clean sample is step 17.
     from rra.eval.scoring import pause_clear_step
     assert pause_clear_step(realization, 2, 0.1) == 17
+
+
+
+
+def test_dispositions_are_evaluator_only_and_created_before_policy_receipt():
+    from rra.sim import WorldConfig
+
+    realization = EpisodeRealization((), {}, "OBJECT_MISSING", {
+        "trigger_target": 2, "trigger_time": 1.0,
+    })
+    result = run_labeled_episode(WorldConfig(scenario="nominal"), 7, realization)
+    assert result["evaluator"]["dispositions"][2] == "REFUSE"
+    assert "dispositions" not in result["policy_receipt"]
+    assert "REFUSE" not in str(result["policy_receipt"]["policy_command_feedback"])

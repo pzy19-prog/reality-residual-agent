@@ -34,6 +34,7 @@ def test_text_variant_does_not_change_plant_or_noise():
 @pytest.mark.parametrize("text,secret", [
     ("SENSOR_BIAS value 0.237", 0.237),
     ("Scenario drift-high is active", 0.2),
+    ("The bias is still present", 0.2),
     ("You should pause now", 0.2),
 ])
 def test_leakage_validator_rejects_hidden_values_and_labels(text, secret):

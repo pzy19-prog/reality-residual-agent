@@ -104,7 +104,10 @@ def score_episode(
             elif tolerance < e <= 2 * tolerance:
                 ordinary_miss.add(target)
     object_ids = sorted(outcomes)
-    challenge_success = len(success.intersection(challenge_ids))
+    recoverable_challenge_ids = [
+        target for target in challenge_ids if dispositions.get(target, "RECOVER") == "RECOVER"
+    ]
+    challenge_success = len(success.intersection(recoverable_challenge_ids))
     preservation_regression = len(set(preservation_ids) - success)
     n = len(object_ids)
     return {
@@ -117,7 +120,11 @@ def score_episode(
         "full_population_success": len(success) / n if n else 0.0,
         "terminal_counts": receipt["metrics"]["terminal_counts"],
         "challenge_count": len(challenge_ids),
+        "recoverable_challenge_count": len(recoverable_challenge_ids),
         "challenge_success_count": challenge_success,
+        "recoverable_challenge_success_rate": (
+            challenge_success / len(recoverable_challenge_ids) if recoverable_challenge_ids else 0.0
+        ),
         "preservation_count": len(preservation_ids),
         "preservation_regression_count": preservation_regression,
         "unsafe_target_ids": sorted(unsafe),

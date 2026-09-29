@@ -355,5 +355,8 @@
       },
       "escalations": 130
     }
-  ]
+  ],
+  "policy_runner_code_sha": "360ef678c8a629f5857c1294a54cdbbdeac0d239",
+  "diagnostic_harness_code_sha": "1ae3f1d9cf2bce1db7c33f1ddb1981f056536e82",
+  "receipt_sha256": "d317661dfd09a680bdd0acab4a700ce19e7a5ddc5543ef88b95609e6e880c4c5"
 }

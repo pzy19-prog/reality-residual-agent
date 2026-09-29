@@ -37,7 +37,7 @@ def run_episode(
     planner = ScriptedPlanner()
     monitor = ResidualMonitor()
     corrector = Corrector(
-        tolerance=config.tolerance,
+        tolerance=known_config.tolerance,
         max_time_correction=fast_time_limit,
         safe_residual_threshold=fast_residual_threshold,
     )
@@ -111,7 +111,7 @@ def run_episode(
             active_target = observation.target_id
             monitor = ResidualMonitor()
             corrector = Corrector(
-                tolerance=config.tolerance,
+                tolerance=known_config.tolerance,
                 max_time_correction=fast_time_limit,
                 safe_residual_threshold=fast_residual_threshold,
             )
@@ -127,7 +127,7 @@ def run_episode(
             )
         base_plan = base_plans[observation.target_id]
         working_plan = base_plan.model_copy(update={"observation_time": observation.time})
-        correction = corrector.correct(working_plan, residual, disturbance, config.belt_speed)
+        correction = corrector.correct(working_plan, residual, disturbance, known_config.belt_speed)
         nominal_plan = working_plan
         if "ESCALATE:" in correction.reason:
             record_outcome(
@@ -158,7 +158,7 @@ def run_episode(
             if not trace["command_issued"]:
                 trace["decision_sample_count"] += 1
                 predicted_center = applied_plan.expected_arrival_time
-                window_half_width = config.dt / 2
+                window_half_width = known_config.dt / 2
                 trace.update({
                     "decision_time": round(observation.time, 6),
                     "decision_time_sample_count": trace["decision_sample_count"],
@@ -200,7 +200,7 @@ def run_episode(
                 "reason": correction.reason,
             })
         command_window_reached = (
-            observation.time >= applied_plan.expected_arrival_time - config.dt / 2
+            observation.time >= applied_plan.expected_arrival_time - known_config.dt / 2
         )
         if (
             compensation
@@ -221,13 +221,13 @@ def run_episode(
         # jumps past the whole window, the controller evaluates the time error.
         if (not safe_stop and observation.target_id not in attempted_targets
                 and observation.target_id not in outcomes_by_target
-                and observation.time >= applied_plan.expected_arrival_time - config.dt / 2):
+                and observation.time >= applied_plan.expected_arrival_time - known_config.dt / 2):
             command = Command(
                 target_id=observation.target_id,
-                speed=config.belt_speed,
+                speed=known_config.belt_speed,
                 pick_position=applied_plan.pick_position,
                 expected_time=applied_plan.expected_arrival_time,
-                pick_y=config.y_pick,
+                pick_y=known_config.y_pick,
             )
             response_delay = (
                 plant_observation.response_delay

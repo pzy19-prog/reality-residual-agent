@@ -30,6 +30,11 @@ _FORBIDDEN = re.compile(
     r"should\s+(?:pick|act|pause|refuse)|expected\s+answer)",
     re.IGNORECASE,
 )
+_SCENARIO_LABEL = re.compile(r"\b(?:nominal|bias|drift|moving|load)(?:-(?:low|mid|high))?\b", re.IGNORECASE)
+_DIRECT_ANSWER = re.compile(
+    r"(?:\b(?:action|answer)\s*[:=]|\b(?:pick|act|pause|refuse|recover)\s+(?:now|this|target|object)\b)",
+    re.IGNORECASE,
+)
 
 
 def generate_text_context(
@@ -58,6 +63,9 @@ def validate_text_context(text: str, hidden_values: Sequence[float | int | str] 
     match = _FORBIDDEN.search(text)
     if match:
         raise ValueError(f"forbidden policy-text leakage token: {match.group(0)}")
+    match = _SCENARIO_LABEL.search(text) or _DIRECT_ANSWER.search(text)
+    if match:
+        raise ValueError(f"forbidden policy-text label or answer cue: {match.group(0)}")
     for value in hidden_values:
         if isinstance(value, str):
             candidate = value.strip()

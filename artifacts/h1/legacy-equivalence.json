@@ -224,5 +224,8 @@
       ],
       "escalations": 130
     }
-  ]
+  ],
+  "policy_boundary_code_sha": "16cac13aeb8e579b6e678eee7be97268cb71dd63",
+  "analysis_harness_code_sha": "3048b5545060e9ec6c85f1841999c87de574a75a",
+  "receipt_sha256": "dbca6996b8edf72dfaa9ae1515369574e409a6a073c55f7c73b8cfd147fe8ff4"
 }
