@@ -1,0 +1,231 @@
+{
+  "schema_version": "rra.h1.legacy-equivalence.v1",
+  "subject": "diag/REPAIR-04.md",
+  "seeds": {
+    "path": "config/dev_seeds.json",
+    "count": 130,
+    "first": 0,
+    "last": 129
+  },
+  "config": {
+    "sigma": 0,
+    "episode_steps": 90,
+    "post_terminal_monitoring": "legacy-on",
+    "compensation": "on"
+  },
+  "rows": [
+    {
+      "scenario": "nominal",
+      "success": 1.0,
+      "coverage": 1.0,
+      "precision": 1.0,
+      "mae": 0.051,
+      "terminal_counts": [
+        1560,
+        0,
+        0,
+        0,
+        0
+      ],
+      "escalations": 0
+    },
+    {
+      "scenario": "bias-low",
+      "success": 1.0,
+      "coverage": 1.0,
+      "precision": 1.0,
+      "mae": 0.051,
+      "terminal_counts": [
+        1560,
+        0,
+        0,
+        0,
+        0
+      ],
+      "escalations": 0
+    },
+    {
+      "scenario": "bias-mid",
+      "success": 1.0,
+      "coverage": 1.0,
+      "precision": 1.0,
+      "mae": 0.051,
+      "terminal_counts": [
+        1560,
+        0,
+        0,
+        0,
+        0
+      ],
+      "escalations": 0
+    },
+    {
+      "scenario": "bias-high",
+      "success": 1.0,
+      "coverage": 1.0,
+      "precision": 1.0,
+      "mae": 0.051,
+      "terminal_counts": [
+        1560,
+        0,
+        0,
+        0,
+        0
+      ],
+      "escalations": 0
+    },
+    {
+      "scenario": "drift-low",
+      "success": 1.0,
+      "coverage": 1.0,
+      "precision": 1.0,
+      "mae": 0.051,
+      "terminal_counts": [
+        1560,
+        0,
+        0,
+        0,
+        0
+      ],
+      "escalations": 0
+    },
+    {
+      "scenario": "drift-mid",
+      "success": 1.0,
+      "coverage": 1.0,
+      "precision": 1.0,
+      "mae": 0.052,
+      "terminal_counts": [
+        1560,
+        0,
+        0,
+        0,
+        0
+      ],
+      "escalations": 0
+    },
+    {
+      "scenario": "drift-high",
+      "success": 0.987,
+      "coverage": 1.0,
+      "precision": 0.987,
+      "mae": 0.079,
+      "terminal_counts": [
+        1539,
+        21,
+        0,
+        0,
+        0
+      ],
+      "escalations": 0
+    },
+    {
+      "scenario": "moving-low",
+      "success": 1.0,
+      "coverage": 1.0,
+      "precision": 1.0,
+      "mae": 0.052,
+      "terminal_counts": [
+        1560,
+        0,
+        0,
+        0,
+        0
+      ],
+      "escalations": 0
+    },
+    {
+      "scenario": "moving-mid",
+      "success": 0.818,
+      "coverage": 0.863,
+      "precision": 0.947,
+      "mae": 0.088,
+      "terminal_counts": [
+        1276,
+        71,
+        0,
+        0,
+        213
+      ],
+      "escalations": 5
+    },
+    {
+      "scenario": "moving-high",
+      "success": 0.008,
+      "coverage": 0.011,
+      "precision": 0.765,
+      "mae": 0.179,
+      "terminal_counts": [
+        13,
+        4,
+        0,
+        1442,
+        101
+      ],
+      "escalations": 130
+    },
+    {
+      "scenario": "load-low",
+      "success": 1.0,
+      "coverage": 1.0,
+      "precision": 1.0,
+      "mae": 0.052,
+      "terminal_counts": [
+        1560,
+        0,
+        0,
+        0,
+        0
+      ],
+      "escalations": 0
+    },
+    {
+      "scenario": "load-mid",
+      "success": 0.651,
+      "coverage": 0.676,
+      "precision": 0.964,
+      "mae": 0.08,
+      "terminal_counts": [
+        1016,
+        38,
+        0,
+        0,
+        506
+      ],
+      "escalations": 21
+    },
+    {
+      "scenario": "load-high",
+      "success": 0.022,
+      "coverage": 0.025,
+      "precision": 0.897,
+      "mae": 0.099,
+      "terminal_counts": [
+        35,
+        4,
+        0,
+        1456,
+        65
+      ],
+      "escalations": 130
+    },
+    {
+      "scenario": "combo",
+      "success": 0.008,
+      "coverage": 0.009,
+      "precision": 0.929,
+      "mae": 0.149,
+      "terminal_counts": [
+        13,
+        1,
+        0,
+        1546,
+        0
+      ],
+      "escalations": 130
+    }
+  ],
+  "policy_boundary_code_sha": "16cac13aeb8e579b6e678eee7be97268cb71dd63",
+  "analysis_harness_code_sha": "3048b5545060e9ec6c85f1841999c87de574a75a",
+  "receipt_sha256": "dbca6996b8edf72dfaa9ae1515369574e409a6a073c55f7c73b8cfd147fe8ff4"
+}

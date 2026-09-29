@@ -1,0 +1,13 @@
+{
+  "schema_version": "rra.eval.v3.contracts",
+  "policy_observation_fields": ["target_id", "step", "time", "observed_x", "observed_y", "nominal_x", "nominal_y", "nominal_speed"],
+  "policy_target_presence_event_fields": ["target_id", "step", "time", "target_observed"],
+  "policy_known_config_fields": ["dt", "tolerance", "x_pick", "y_pick", "belt_speed"],
+  "policy_command_feedback_fields": ["command_id", "target_id", "issued_time", "execution_time", "accepted", "success", "reason_code"],
+  "policy_forbidden_fields": ["actual_x", "actual_y", "actual_speed", "true_eta", "hidden_truth_position_error", "hidden_truth_time_error", "response_delay", "scenario", "scenario_label", "true_disturbance_parameters", "hidden_fault_state", "target_present", "evaluator_disposition", "unsafe_action_label", "final_eval_label", "omniscient_information"],
+  "pause_clear_samples": 6,
+  "framework": {"dt": 0.1, "episode_steps": 100, "observation_noise_sigma": 0.015},
+  "b2_scenarios": ["drift-high", "moving-mid", "load-mid", "moving-high", "load-high", "combo"],
+  "canonical_primitives": ["SENSOR_BIAS", "VELOCITY_OFFSET", "SPEED_STEP", "ACTUATOR_DELAY"],
+  "final_eval_v3_seed_values_created": false
+}

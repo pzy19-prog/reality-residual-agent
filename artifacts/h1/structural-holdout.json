@@ -1,0 +1,160 @@
+{
+  "schema_version": "rra.h1.structural-holdout.v1",
+  "source_commit": "2eddf7b81f684c4c5f3db252f12a598903adde3c",
+  "canonical_primitive_order": [
+    "SENSOR_BIAS",
+    "VELOCITY_OFFSET",
+    "SPEED_STEP",
+    "ACTUATOR_DELAY"
+  ],
+  "pre_exclusion_candidates": [
+    {
+      "id": "AND(SENSOR_BIAS,VELOCITY_OFFSET)",
+      "primitives": [
+        "SENSOR_BIAS",
+        "VELOCITY_OFFSET"
+      ]
+    },
+    {
+      "id": "AND(SENSOR_BIAS,SPEED_STEP)",
+      "primitives": [
+        "SENSOR_BIAS",
+        "SPEED_STEP"
+      ]
+    },
+    {
+      "id": "AND(SENSOR_BIAS,ACTUATOR_DELAY)",
+      "primitives": [
+        "SENSOR_BIAS",
+        "ACTUATOR_DELAY"
+      ]
+    },
+    {
+      "id": "AND(VELOCITY_OFFSET,SPEED_STEP)",
+      "primitives": [
+        "VELOCITY_OFFSET",
+        "SPEED_STEP"
+      ]
+    },
+    {
+      "id": "AND(VELOCITY_OFFSET,ACTUATOR_DELAY)",
+      "primitives": [
+        "VELOCITY_OFFSET",
+        "ACTUATOR_DELAY"
+      ]
+    },
+    {
+      "id": "AND(SPEED_STEP,ACTUATOR_DELAY)",
+      "primitives": [
+        "SPEED_STEP",
+        "ACTUATOR_DELAY"
+      ]
+    },
+    {
+      "id": "AND(SENSOR_BIAS,VELOCITY_OFFSET,SPEED_STEP)",
+      "primitives": [
+        "SENSOR_BIAS",
+        "VELOCITY_OFFSET",
+        "SPEED_STEP"
+      ]
+    },
+    {
+      "id": "AND(SENSOR_BIAS,VELOCITY_OFFSET,ACTUATOR_DELAY)",
+      "primitives": [
+        "SENSOR_BIAS",
+        "VELOCITY_OFFSET",
+        "ACTUATOR_DELAY"
+      ]
+    },
+    {
+      "id": "AND(SENSOR_BIAS,SPEED_STEP,ACTUATOR_DELAY)",
+      "primitives": [
+        "SENSOR_BIAS",
+        "SPEED_STEP",
+        "ACTUATOR_DELAY"
+      ]
+    },
+    {
+      "id": "AND(VELOCITY_OFFSET,SPEED_STEP,ACTUATOR_DELAY)",
+      "primitives": [
+        "VELOCITY_OFFSET",
+        "SPEED_STEP",
+        "ACTUATOR_DELAY"
+      ]
+    }
+  ],
+  "excluded_frozen_v0_combo": "AND(SENSOR_BIAS,VELOCITY_OFFSET,SPEED_STEP)",
+  "eligible_ordered_candidates": [
+    {
+      "id": "AND(SENSOR_BIAS,VELOCITY_OFFSET)",
+      "primitives": [
+        "SENSOR_BIAS",
+        "VELOCITY_OFFSET"
+      ]
+    },
+    {
+      "id": "AND(SENSOR_BIAS,SPEED_STEP)",
+      "primitives": [
+        "SENSOR_BIAS",
+        "SPEED_STEP"
+      ]
+    },
+    {
+      "id": "AND(SENSOR_BIAS,ACTUATOR_DELAY)",
+      "primitives": [
+        "SENSOR_BIAS",
+        "ACTUATOR_DELAY"
+      ]
+    },
+    {
+      "id": "AND(VELOCITY_OFFSET,SPEED_STEP)",
+      "primitives": [
+        "VELOCITY_OFFSET",
+        "SPEED_STEP"
+      ]
+    },
+    {
+      "id": "AND(VELOCITY_OFFSET,ACTUATOR_DELAY)",
+      "primitives": [
+        "VELOCITY_OFFSET",
+        "ACTUATOR_DELAY"
+      ]
+    },
+    {
+      "id": "AND(SPEED_STEP,ACTUATOR_DELAY)",
+      "primitives": [
+        "SPEED_STEP",
+        "ACTUATOR_DELAY"
+      ]
+    },
+    {
+      "id": "AND(SENSOR_BIAS,VELOCITY_OFFSET,ACTUATOR_DELAY)",
+      "primitives": [
+        "SENSOR_BIAS",
+        "VELOCITY_OFFSET",
+        "ACTUATOR_DELAY"
+      ]
+    },
+    {
+      "id": "AND(SENSOR_BIAS,SPEED_STEP,ACTUATOR_DELAY)",
+      "primitives": [
+        "SENSOR_BIAS",
+        "SPEED_STEP",
+        "ACTUATOR_DELAY"
+      ]
+    },
+    {
+      "id": "AND(VELOCITY_OFFSET,SPEED_STEP,ACTUATOR_DELAY)",
+      "primitives": [
+        "VELOCITY_OFFSET",
+        "SPEED_STEP",
+        "ACTUATOR_DELAY"
+      ]
+    }
+  ],
+  "p3_sha": "024ea2e3e66b91f5a2157a66c073493e7107e109",
+  "modulus": 9,
+  "holdout_index": 5,
+  "holdout_id": "AND(SPEED_STEP,ACTUATOR_DELAY)",
+  "receipt_sha256": "c707739d8324b11a817c0cfc9c85937f1c1d1c19f093939971ee840f18b2e096"
+}

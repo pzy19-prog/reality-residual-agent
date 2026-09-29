@@ -21,6 +21,7 @@ class WorldConfig(BaseModel):
     tolerance: float = Field(default=0.20, gt=0)
     dt: float = Field(default=0.10, gt=0)
     episode_steps: int = Field(default=90, ge=8)
+    observation_noise_sigma: float = Field(default=0.0, ge=0.0)
     object_count: int = Field(default=12, ge=1)
     position_bias: float = 0.45
     drift_per_second: float = 0.045
@@ -72,6 +73,8 @@ class Observation(BaseModel):
     observed_y: float = 0.0
     nominal_y: float = 0.0
     actual_y: float = 0.0
+    target_present: bool = True
+    response_delay: float = 0.0
 
 
 class World:
@@ -111,7 +114,12 @@ class World:
         bias = 0.0
         if c.scenario in ("bias", "combo"):
             bias += c.position_bias
-        observed_x = actual_x + bias
+        # Keyed per physical sample so the noise stream is stable across text
+        # variants and independent of random draws used for world placement.
+        noise_rng = np.random.default_rng(
+            np.random.SeedSequence([self.seed, 0x525241, target, self.step_index])
+        )
+        observed_x = actual_x + bias + noise_rng.normal(0.0, c.observation_noise_sigma)
         return Observation(
             step=self.step_index,
             time=t,
