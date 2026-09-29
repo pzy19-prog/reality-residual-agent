@@ -1,6 +1,6 @@
 # Open Agent Hackathon 2026 — declared pre-existing components (V0)
 
-Per rules 4.2 and 5.2, everything reachable from tag `v0-baseline` is pre-existing work, committed before the build window (2026-10-15T00:00Z), and is **not** submitted for judging. Hackathon work consists only of commits after that tag.
+Per rules 4.2 and 5.2, everything reachable from tag `v0-baseline` is pre-existing work, committed before the build window (2026-10-15T00:00Z), and is **not** submitted for judging. Hackathon work consists only of commits after that tag, excluding the pre-window infrastructure listed below.
 
 ## Declared components
 
@@ -14,6 +14,13 @@ Per rules 4.2 and 5.2, everything reachable from tag `v0-baseline` is pre-existi
 - CLI, Dockerfile, tests, documentation, and the rules snapshot `docs/HACKATHON_RULES.md`.
 
 V0 contains **no LLM integration** and no sponsor (NVIDIA / Zetaris) technology.
+
+## Pre-window infrastructure committed after the tag
+
+These commits land after `v0-baseline` but before the build window opens. They are tooling only, change no agent behaviour or results, and are **not** submitted for judging:
+
+- CI workflow `.github/workflows/ci.yml`: pytest plus a dev-seed bench determinism check.
+- Repository tool settings `.claude/settings.json`.
 
 ## Baseline result (blind eval v2, 100 seeds, compensation on)
 
