@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt pytest
+      - name: Run tests
+        run: pytest -q
+
+  determinism:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt pytest
+      - name: Run bench twice with dev seeds
+        run: |
+          A="$(mktemp -d)"
+          B="$(mktemp -d)"
+          echo "BENCH_A=$A" >> "$GITHUB_ENV"
+          echo "BENCH_B=$B" >> "$GITHUB_ENV"
+          RRA_SEED_FILE=config/dev_seeds.json python ./rra bench --output-dir "$A"
+          RRA_SEED_FILE=config/dev_seeds.json python ./rra bench --output-dir "$B"
+      - name: Compare bench.json
+        run: diff -u "$BENCH_A/bench.json" "$BENCH_B/bench.json"
