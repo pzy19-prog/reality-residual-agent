@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from hashlib import sha256
 import json
-from typing import Any
+from typing import Any, Literal
 
 from rra.controller import Command, Controller, ControllerConfig
 from rra.fast import Corrector, ResidualMonitor
@@ -22,6 +22,7 @@ def run_episode(
     compensation: bool,
     git_sha: str | None = None,
     include_trace: bool = False,
+    terminal_monitoring: Literal["legacy", "corrected"] = "legacy",
 ) -> dict[str, Any]:
     """Run a fixed-step episode and return its complete reproducibility receipt."""
     world = World(config, seed)
@@ -88,6 +89,10 @@ def run_episode(
             active_target = observation.target_id
             monitor = ResidualMonitor()
             corrector = Corrector(tolerance=config.tolerance)
+        if terminal_monitoring == "corrected" and observation.target_id in outcomes_by_target:
+            # Terminal objects are inert for all policy diagnostics and updates.
+            world.advance()
+            continue
         residual = monitor.update(observation)
         disturbance = monitor.classify()
         if observation.target_id not in base_plans:
