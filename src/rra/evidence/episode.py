@@ -9,6 +9,7 @@ from typing import Any
 from rra.controller import Command, Controller, ControllerConfig
 from rra.fast import Corrector, ResidualMonitor
 from rra.planner import ScriptedPlanner
+from rra.evidence.policy import sanitize_config, sanitize_observation
 from rra.sim import World, WorldConfig
 
 TERMINAL_STATES = ("picked", "attempt_failed", "rejected", "escalated", "skipped")
@@ -24,6 +25,7 @@ def run_episode(
 ) -> dict[str, Any]:
     """Run a fixed-step episode and return its complete reproducibility receipt."""
     world = World(config, seed)
+    known_config = sanitize_config(config)
     planner = ScriptedPlanner()
     monitor = ResidualMonitor()
     corrector = Corrector(tolerance=config.tolerance)
@@ -72,7 +74,8 @@ def run_episode(
             consecutive_outcome_failures = 0
 
     for _ in range(config.episode_steps * config.object_count):
-        observation = world.observation()
+        plant_observation = world.observation()
+        observation = sanitize_observation(plant_observation)
         if active_target != observation.target_id:
             if active_target is not None and active_target not in outcomes_by_target:
                 record_outcome(
@@ -88,7 +91,9 @@ def run_episode(
         residual = monitor.update(observation)
         disturbance = monitor.classify()
         if observation.target_id not in base_plans:
-            base_plans[observation.target_id] = planner.plan(observation, config.belt_speed, config.x_pick)
+            base_plans[observation.target_id] = planner.plan(
+                observation, known_config.belt_speed, known_config.x_pick
+            )
         base_plan = base_plans[observation.target_id]
         working_plan = base_plan.model_copy(update={"observation_time": observation.time})
         correction = corrector.correct(working_plan, residual, disturbance, config.belt_speed)
@@ -113,7 +118,7 @@ def run_episode(
         if include_trace:
             trace = trace_by_target.setdefault(observation.target_id, {
                 "target_id": observation.target_id,
-                "x0": round(observation.actual_x, 6),
+                "x0": round(plant_observation.actual_x, 6),
                 "command_issued": False,
                 "command_count": 0,
                 "command_success": False,
@@ -198,11 +203,11 @@ def run_episode(
                 if config.scenario in ("load", "combo") and observation.step >= config.load_step
                 else 0.0
             )
-            delayed_x = observation.actual_x + observation.actual_speed * response_delay
+            delayed_x = plant_observation.actual_x + plant_observation.actual_speed * response_delay
             result = controller.execute_2d(
                 command,
                 delayed_x,
-                observation.actual_y,
+                plant_observation.actual_y,
                 observation.time + response_delay,
             )
             attempted_targets.add(observation.target_id)
@@ -225,12 +230,12 @@ def run_episode(
                     "execution_time": round(observation.time + response_delay, 6),
                     "true_eta": round(
                         observation.time
-                        + (config.x_pick - observation.actual_x) / observation.actual_speed,
+                        + (config.x_pick - plant_observation.actual_x) / plant_observation.actual_speed,
                         6,
                     ),
                     "position_error": round(
                         ((delayed_x - applied_plan.pick_position) ** 2
-                         + (observation.actual_y - config.y_pick) ** 2) ** 0.5,
+                         + (plant_observation.actual_y - config.y_pick) ** 2) ** 0.5,
                         6,
                     ),
                     "time_error": round(
