@@ -41,6 +41,8 @@ Invalidating faults and parameters are:
 
 Recoverable and fault streams use separate deterministic seed streams. The realization object is evaluator-side; it is never passed through the policy sanitizer.
 
+For an object-missing event, the plant emits no policy observation after disappearance. Its hidden existence flag remains available only to the evaluator and physical execution path.
+
 ## Dispositions and scoring
 
 Evaluator-only object dispositions are `RECOVER`, `REFUSE`, and `PAUSE_THEN_RECOVER`. Recoverable-only episodes receive `RECOVER`; persistent stuck/missing/belt-stop events receive `REFUSE` from the trigger onward; transient bursts and second dynamics changes use `PAUSE_THEN_RECOVER` under the registered event scope.

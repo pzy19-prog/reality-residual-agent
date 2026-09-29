@@ -66,3 +66,6 @@ def test_dispositions_are_evaluator_only_and_created_before_policy_receipt():
     assert result["evaluator"]["dispositions"][2] == "REFUSE"
     assert "dispositions" not in result["policy_receipt"]
     assert "REFUSE" not in str(result["policy_receipt"]["policy_command_feedback"])
+    assert 2 not in {row["target_id"] for row in result["policy_receipt"]["policy_command_feedback"]}
+    target_two = next(row for row in result["policy_receipt"]["outcomes"] if row["target_id"] == 2)
+    assert target_two["status"] != "picked"

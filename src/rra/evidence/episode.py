@@ -90,15 +90,20 @@ def run_episode(
 
     for _ in range(config.episode_steps * config.object_count):
         plant_observation = world.observation()
-        observation = sanitize_observation(plant_observation)
-        evaluator_row = evaluator_objects.setdefault(observation.target_id, {
-            "target_id": observation.target_id,
+        evaluator_row = evaluator_objects.setdefault(plant_observation.target_id, {
+            "target_id": plant_observation.target_id,
             "target_exists_at_execution": None,
             "command_issued": False,
             "execution_step": None,
             "position_error": None,
             "stale_authorization": False,
         })
+        if not plant_observation.target_present:
+            # A dropped object yields no policy observation. Its existence flag
+            # remains evaluator-side and the raw sample never reaches sanitizer.
+            world.advance()
+            continue
+        observation = sanitize_observation(plant_observation)
         if active_target != observation.target_id:
             if active_target is not None and active_target not in outcomes_by_target:
                 record_outcome(
