@@ -1,4 +1,6 @@
 import json
+from hashlib import sha256
+from hashlib import sha256
 
 import pytest
 
@@ -39,3 +41,9 @@ def test_grid_is_441_points_over_exact_six_scenarios_and_selects_deterministical
     assert first["scenario_set"] == ["drift-high", "moving-mid", "load-mid", "moving-high", "load-high", "combo"]
     assert all(value == 1 for value in first["grid_point_execution_count"].values())
     assert first["selected"] == second["selected"]
+    assert [(row["T"], row["R"]) for row in first["rows"]] == sorted(
+        (row["T"], row["R"]) for row in first["rows"]
+    )
+    hashed = {key: value for key, value in first.items() if key != "receipt_sha256"}
+    expected_hash = sha256(json.dumps(hashed, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    assert first["receipt_sha256"] == expected_hash

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from hashlib import sha256
 import subprocess
 from math import isclose, sqrt
 from pathlib import Path
@@ -191,7 +192,7 @@ def run_b2_grid(seeds: list[int] | None = None) -> dict[str, Any]:
         tied_cost = [row for row in tied_ratio if isclose(row["cost"], min_cost, rel_tol=0.0, abs_tol=1e-12)]
         selected = min(tied_cost, key=lambda row: (row["T"], row["R"]))
         reason = "fallback maximum minimum success/U_s ratio"
-    return {
+    receipt = {
         "schema_version": "rra.h1.b2-grid.v1",
         "git_sha": subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, check=True, capture_output=True, text=True).stdout.strip(),
         "seed_identity": {"path": "config/dev_seeds.json", "values": seeds},
@@ -207,3 +208,6 @@ def run_b2_grid(seeds: list[int] | None = None) -> dict[str, Any]:
         "selected": selected,
         "rows": pairs,
     }
+    canonical = json.dumps(receipt, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    receipt["receipt_sha256"] = sha256(canonical).hexdigest()
+    return receipt
