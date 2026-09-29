@@ -28,13 +28,19 @@ def run_episode(
     terminal_monitoring: Literal["legacy", "corrected"] = "legacy",
     realization: EpisodeRealization | None = None,
     text_context: str = "",
+    fast_time_limit: float = 0.50,
+    fast_residual_threshold: float = 1.25,
 ) -> dict[str, Any]:
     """Run a fixed-step episode and return its complete reproducibility receipt."""
     world = V3World(config, seed, realization) if realization is not None else World(config, seed)
     known_config = sanitize_config(config)
     planner = ScriptedPlanner()
     monitor = ResidualMonitor()
-    corrector = Corrector(tolerance=config.tolerance)
+    corrector = Corrector(
+        tolerance=config.tolerance,
+        max_time_correction=fast_time_limit,
+        safe_residual_threshold=fast_residual_threshold,
+    )
     base_plans: dict[int, Any] = {}
     active_target: int | None = None
     controller = Controller(ControllerConfig(tolerance=config.tolerance))
@@ -104,7 +110,11 @@ def run_episode(
                 )
             active_target = observation.target_id
             monitor = ResidualMonitor()
-            corrector = Corrector(tolerance=config.tolerance)
+            corrector = Corrector(
+                tolerance=config.tolerance,
+                max_time_correction=fast_time_limit,
+                safe_residual_threshold=fast_residual_threshold,
+            )
         if terminal_monitoring == "corrected" and observation.target_id in outcomes_by_target:
             # Terminal objects are inert for all policy diagnostics and updates.
             world.advance()
