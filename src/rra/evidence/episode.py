@@ -27,6 +27,7 @@ def run_episode(
     include_trace: bool = False,
     terminal_monitoring: Literal["legacy", "corrected"] = "legacy",
     realization: EpisodeRealization | None = None,
+    text_context: str = "",
 ) -> dict[str, Any]:
     """Run a fixed-step episode and return its complete reproducibility receipt."""
     world = V3World(config, seed, realization) if realization is not None else World(config, seed)
@@ -311,6 +312,7 @@ def run_episode(
         "compensation": "on" if compensation else "off",
         "compensation_records": records,
         "policy_command_feedback": policy_feedbacks,
+        "operational_text_context": text_context,
         "escalations": escalations,
         "outcomes": outcomes,
         "safe_stop": safe_stop,
