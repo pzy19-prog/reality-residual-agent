@@ -73,6 +73,8 @@ class Observation(BaseModel):
     observed_y: float = 0.0
     nominal_y: float = 0.0
     actual_y: float = 0.0
+    target_present: bool = True
+    response_delay: float = 0.0
 
 
 class World:

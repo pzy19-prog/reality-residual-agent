@@ -68,7 +68,7 @@ def sanitize_config(config: WorldConfig) -> PolicyKnownConfig:
 
 def command_feedback(
     *, command_id: str, target_id: int, issued_time: float, execution_time: float,
-    accepted: bool, success: bool, reason: str,
+    accepted: bool, success: bool,
 ) -> PolicyCommandFeedback:
     """Expose registered controller telemetry; never expose simulator delay."""
     reason_code = "picked" if accepted and success else "missed" if accepted else "rejected"

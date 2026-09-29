@@ -42,7 +42,7 @@ def test_sanitizer_returns_new_policy_type_without_truth_fields():
 def test_actuator_delay_feedback_contains_only_registered_telemetry():
     feedback = command_feedback(
         command_id="cmd-1", target_id=2, issued_time=1.0, execution_time=1.2,
-        accepted=True, success=False, reason="missed pick window",
+        accepted=True, success=False,
     )
     assert isclose(feedback.execution_time - feedback.issued_time, 0.2)
     assert not hasattr(feedback, "response_delay")

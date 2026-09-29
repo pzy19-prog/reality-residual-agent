@@ -4,13 +4,16 @@ from __future__ import annotations
 
 from hashlib import sha256
 import json
+from dataclasses import asdict, replace
 from typing import Any, Literal
 
 from rra.controller import Command, Controller, ControllerConfig
 from rra.fast import Corrector, ResidualMonitor
 from rra.planner import ScriptedPlanner
-from rra.evidence.policy import sanitize_config, sanitize_observation
+from rra.evidence.policy import command_feedback, sanitize_config, sanitize_observation
 from rra.sim import World, WorldConfig
+from rra.eval.scenarios import EpisodeRealization
+from rra.sim.v3_world import V3World
 
 TERMINAL_STATES = ("picked", "attempt_failed", "rejected", "escalated", "skipped")
 CONSECUTIVE_OUTCOME_FAILURE_THRESHOLD = 3
@@ -23,9 +26,10 @@ def run_episode(
     git_sha: str | None = None,
     include_trace: bool = False,
     terminal_monitoring: Literal["legacy", "corrected"] = "legacy",
+    realization: EpisodeRealization | None = None,
 ) -> dict[str, Any]:
     """Run a fixed-step episode and return its complete reproducibility receipt."""
-    world = World(config, seed)
+    world = V3World(config, seed, realization) if realization is not None else World(config, seed)
     known_config = sanitize_config(config)
     planner = ScriptedPlanner()
     monitor = ResidualMonitor()
@@ -43,6 +47,7 @@ def run_episode(
     outcomes_by_target: dict[int, dict[str, Any]] = {}
     trace_by_target: dict[int, dict[str, Any]] = {}
     object_grab_end_times: dict[int, float] = {}
+    policy_feedbacks: list[dict[str, Any]] = []
 
     def record_outcome(
         target_id: int,
@@ -204,7 +209,9 @@ def run_episode(
                 pick_y=config.y_pick,
             )
             response_delay = (
-                config.load_response_delay
+                plant_observation.response_delay
+                if realization is not None
+                else config.load_response_delay
                 if config.scenario in ("load", "combo") and observation.step >= config.load_step
                 else 0.0
             )
@@ -215,6 +222,16 @@ def run_episode(
                 plant_observation.actual_y,
                 observation.time + response_delay,
             )
+            if not plant_observation.target_present:
+                result = replace(result, success=False, reason="target absent at execution")
+            policy_feedbacks.append(asdict(command_feedback(
+                    command_id=f"{seed}:{observation.target_id}:{observation.step}",
+                    target_id=observation.target_id,
+                    issued_time=observation.time,
+                    execution_time=observation.time + response_delay,
+                    accepted=result.accepted,
+                    success=result.accepted and result.success,
+                )))
             attempted_targets.add(observation.target_id)
             if include_trace:
                 trace_by_target[observation.target_id]["command_count"] += 1
@@ -293,6 +310,7 @@ def run_episode(
         "git_sha": git_sha or "unknown",
         "compensation": "on" if compensation else "off",
         "compensation_records": records,
+        "policy_command_feedback": policy_feedbacks,
         "escalations": escalations,
         "outcomes": outcomes,
         "safe_stop": safe_stop,
