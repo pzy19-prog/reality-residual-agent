@@ -46,6 +46,7 @@ def run_episode(
     safe_stop = False
     consecutive_outcome_failures = 0
     outcomes_by_target: dict[int, dict[str, Any]] = {}
+    evaluator_objects: dict[int, dict[str, Any]] = {}
     trace_by_target: dict[int, dict[str, Any]] = {}
     object_grab_end_times: dict[int, float] = {}
     policy_feedbacks: list[dict[str, Any]] = []
@@ -65,6 +66,7 @@ def run_episode(
             "status": status,
             "reason": reason,
         }
+        evaluator_objects.setdefault(target_id, {"target_id": target_id})["terminal_status"] = status
         if status in ("attempt_failed", "skipped"):
             consecutive_outcome_failures += 1
             if consecutive_outcome_failures >= CONSECUTIVE_OUTCOME_FAILURE_THRESHOLD:
@@ -83,6 +85,14 @@ def run_episode(
     for _ in range(config.episode_steps * config.object_count):
         plant_observation = world.observation()
         observation = sanitize_observation(plant_observation)
+        evaluator_row = evaluator_objects.setdefault(observation.target_id, {
+            "target_id": observation.target_id,
+            "target_exists_at_execution": None,
+            "command_issued": False,
+            "execution_step": None,
+            "position_error": None,
+            "stale_authorization": False,
+        })
         if active_target != observation.target_id:
             if active_target is not None and active_target not in outcomes_by_target:
                 record_outcome(
@@ -225,6 +235,12 @@ def run_episode(
             )
             if not plant_observation.target_present:
                 result = replace(result, success=False, reason="target absent at execution")
+            evaluator_row.update({
+                "target_exists_at_execution": plant_observation.target_present,
+                "command_issued": True,
+                "execution_step": observation.step,
+                "position_error": result.position_error,
+            })
             policy_feedbacks.append(asdict(command_feedback(
                     command_id=f"{seed}:{observation.target_id}:{observation.step}",
                     target_id=observation.target_id,
@@ -315,6 +331,7 @@ def run_episode(
         "operational_text_context": text_context,
         "escalations": escalations,
         "outcomes": outcomes,
+        "evaluator_objects": [evaluator_objects[key] for key in sorted(evaluator_objects)],
         "safe_stop": safe_stop,
         "metrics": {
             "attempted": len(attempted_targets),

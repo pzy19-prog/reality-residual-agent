@@ -22,7 +22,7 @@ class V3World:
         self._y_starts = base._y_starts
         self.step_index = 0
         self.target_index = 0
-        self._stuck_value: dict[int, float] = {}
+        self._stuck_value: float | None = None
 
     def _sample_noise(self, target: int, step: int) -> float:
         rng = np.random.default_rng(np.random.SeedSequence([self.seed, 0x525241, target, step]))
@@ -30,7 +30,14 @@ class V3World:
 
     def _fault_active(self, target: int, t: float) -> bool:
         f = self.realization.fault
-        return target >= f.get("trigger_target", 10**9) and t >= f.get("trigger_time", float("inf"))
+        trigger_target = f.get("trigger_target", 10**9)
+        trigger_time = f.get("trigger_time", float("inf"))
+        family = self.realization.fault_family
+        if family in ("SENSOR_STUCK", "BELT_STOP"):
+            return target > trigger_target or (target == trigger_target and t >= trigger_time)
+        if family in ("SENSOR_SPIKE_BURST", "OBJECT_MISSING"):
+            return target == trigger_target and t >= trigger_time
+        return False
 
     def _speed_delta(self, t: float) -> float:
         r = self.realization.recoverable
@@ -54,7 +61,7 @@ class V3World:
                 points.add(r[key])
         if self.realization.fault_family == "SECOND_DYNAMICS_CHANGE":
             points.update(x for x in (f["first_time"], f["second_time"]) if 0 < x < t)
-        elif self.realization.fault_family == "BELT_STOP" and target >= f.get("trigger_target", 10**9):
+        elif self.realization.fault_family == "BELT_STOP" and target == f.get("trigger_target", 10**9):
             stop_time = f.get("trigger_time", float("inf"))
             if 0 < stop_time < t:
                 points.add(stop_time)
@@ -86,9 +93,9 @@ class V3World:
             if 0 <= since < f["duration_samples"]:
                 observed_x += f["magnitude"]
         if self.realization.fault_family == "SENSOR_STUCK" and active_fault:
-            if target not in self._stuck_value:
-                self._stuck_value[target] = observed_x
-            observed_x = self._stuck_value[target]
+            if self._stuck_value is None:
+                self._stuck_value = observed_x
+            observed_x = self._stuck_value
         response_delay = r.get("actuator_delay", 0.0)
         return Observation(
             step=self.step_index,
