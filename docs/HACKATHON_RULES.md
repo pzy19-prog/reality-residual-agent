@@ -1,3 +1,5 @@
+> Historical snapshot notice (2026-10-04): the capture below is retained as recorded on September 28. Current track numbering, Tinkerer requirements and scoring claims differ or remain unverified. See [the current rules review](HACKATHON_RULES_REVIEW_20261004.md) before using this snapshot for eligibility or submission decisions. The review is partial; it does not replace expanded current official rules.
+
 > Source: scraped by Grok from https://hackathon.genai.works/event/open-agent-hackathon-2026 at 2026-09-28T04:09:52Z (public view). Verbatim; not edited.
 
 # HACKATHON_RULES.md
