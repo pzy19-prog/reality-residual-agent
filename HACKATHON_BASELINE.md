@@ -4,7 +4,7 @@
 
 Tag `v0-baseline` remains the immutable original V0 snapshot, at commit `546e82aefd4e07bf304d79c63dcffe6dd4b7c4ee`. The V0 component description below is tied to that snapshot. Additional work was committed after `v0-baseline` and before the hackathon build window (2026-10-15T00:00:00Z), as listed in [Pre-window work committed after `v0-baseline`](#pre-window-work-committed-after-v0-baseline). That later work does not change what was present in the original V0 snapshot.
 
-Before the build window opens, this declaration will be finalized and the accepted pre-window state will be tagged `pre-window-freeze`. That tag does not yet exist. Everything reachable from the accepted `pre-window-freeze` tag will be declared pre-existing work completed before the build window and will not be submitted as hackathon-window work. Judged hackathon work consists of commits after `pre-window-freeze`. Therefore, commits after `v0-baseline` are not all hackathon-window work.
+At the time this text is committed, the tag `pre-window-freeze` does not exist. After this declaration is merged to `main`, and before 2026-10-15T00:00:00Z, the `main` commit containing the merged declaration will be tagged `pre-window-freeze`. This file cannot record that tag's commit hash; `git rev-parse "pre-window-freeze^{commit}"` resolves it once the tag exists. Everything reachable from `pre-window-freeze` is declared pre-existing work and will not be presented as hackathon-window work. The work this project presents as built during the window is the range `pre-window-freeze..<submission commit>`. Commits after `v0-baseline` are therefore not all hackathon-window work. This file is the repository-side record of the declaration; it does not by itself establish eligibility or how the organizers will judge the submission.
 
 ## Declared components
 
@@ -23,12 +23,14 @@ V0 contains **no LLM integration** and no sponsor (NVIDIA / Zetaris) technology.
 
 These separately identifiable commits land after `v0-baseline` but before the build window opens. They change repository CI and tool settings, are tooling/configuration only, change no agent behaviour or results, and are **not** submitted for judging:
 
+The three commits are `90821fc55d7581a156c68ec3cadc135738ff4ab6`, `a1287c3386044c4723a68378e870090eca87f032` (which also edited this file), and merge `38f8ce139bf90de659a192f4456821dcff0db4a8`.
+
 - CI workflow `.github/workflows/ci.yml`: pytest plus a dev-seed bench determinism check.
 - Repository tool settings `.claude/settings.json`.
 
 ## Pre-window work committed after `v0-baseline`
 
-The following 25 commits are after the original V0 tag and have committer timestamps before the 2026-10-15T00:00:00Z build-window boundary. Their inclusion here records pre-window work; it does not redefine the contents of `v0-baseline`.
+The 25 commits in `546e82aefd4e07bf304d79c63dcffe6dd4b7c4ee..b0288da5cf7a924ce9b47b0ea9f7d6248f5f6bd0` fall into three groups: 3 CI/settings commits (previous section), 4 P3 preregistration commits, and 18 H1 commits. All 25 have committer timestamps before the 2026-10-15T00:00:00Z build-window boundary. Their inclusion here records pre-window work; it does not redefine the contents of `v0-baseline`.
 
 ### P3 preregistration
 
@@ -52,16 +54,16 @@ The changed paths under `src/rra/` are:
 - `src/rra/eval/scenarios.py`
 - `src/rra/eval/scoring.py`
 - `src/rra/eval/text_context.py`
-- `src/rra/evidence/episode.py`
+- `src/rra/evidence/episode.py` (modified; present at `v0-baseline`)
 - `src/rra/evidence/policy.py`
 - `src/rra/sim/v3_world.py`
-- `src/rra/sim/world.py`
+- `src/rra/sim/world.py` (modified; present at `v0-baseline`)
 
 The H1 artifact directory contains `b1-corrected-dev.json`, `b1-framework-delta.json`, `b1-legacy-dev.json`, `b2-grid.json`, `dev-episode-determinism.json`, `final-eval-v3-prohibition.json`, `legacy-equivalence.json`, `omniscient-upper-bound.json`, and `structural-holdout.json`.
 
 H1 changes runtime/source implementation under `src/rra/`; it is not accurately described as tooling only. At the top level, `bench.json` and `bench.md` have the same Git blob contents at the peeled `v0-baseline` commit and at the end of H1 (`b0288da5cf7a924ce9b47b0ea9f7d6248f5f6bd0`). This file comparison does not establish whether runtime behavior changed. H1 predates the build window and is pre-existing work, not hackathon-window work.
 
-## Baseline result (blind eval v2, 100 seeds, compensation on)
+## Baseline result at `v0-baseline` (blind eval v2, 100 seeds, compensation on)
 
 | Scenario | Success | Coverage | Precision | Escalations |
 |---|---:|---:|---:|---:|
