@@ -1,6 +1,10 @@
-# Open Agent Hackathon 2026 — declared pre-existing components (V0)
+# Open Agent Hackathon 2026 — declared pre-existing components
 
-Per rules 4.2 and 5.2, everything reachable from tag `v0-baseline` is pre-existing work, committed before the build window (2026-10-15T00:00Z), and is **not** submitted for judging. Hackathon work consists only of commits after that tag, excluding the pre-window infrastructure listed below.
+## Judging boundary
+
+Tag `v0-baseline` remains the immutable original V0 snapshot, at commit `546e82aefd4e07bf304d79c63dcffe6dd4b7c4ee`. The V0 component description below is tied to that snapshot. Additional work was committed after `v0-baseline` and before the hackathon build window (2026-10-15T00:00:00Z), as listed in [Pre-window work committed after `v0-baseline`](#pre-window-work-committed-after-v0-baseline). That later work does not change what was present in the original V0 snapshot.
+
+Before the build window opens, this declaration will be finalized and the accepted pre-window state will be tagged `pre-window-freeze`. That tag does not yet exist. Everything reachable from the accepted `pre-window-freeze` tag will be declared pre-existing work completed before the build window and will not be submitted as hackathon-window work. Judged hackathon work consists of commits after `pre-window-freeze`. Therefore, commits after `v0-baseline` are not all hackathon-window work.
 
 ## Declared components
 
@@ -15,12 +19,47 @@ Per rules 4.2 and 5.2, everything reachable from tag `v0-baseline` is pre-existi
 
 V0 contains **no LLM integration** and no sponsor (NVIDIA / Zetaris) technology.
 
-## Pre-window infrastructure committed after the tag
+## Pre-window infrastructure committed after `v0-baseline`
 
-These commits land after `v0-baseline` but before the build window opens. They are tooling only, change no agent behaviour or results, and are **not** submitted for judging:
+These separately identifiable commits land after `v0-baseline` but before the build window opens. They change repository CI and tool settings, are tooling/configuration only, change no agent behaviour or results, and are **not** submitted for judging:
 
 - CI workflow `.github/workflows/ci.yml`: pytest plus a dev-seed bench determinism check.
 - Repository tool settings `.claude/settings.json`.
+
+## Pre-window work committed after `v0-baseline`
+
+The following 25 commits are after the original V0 tag and have committer timestamps before the 2026-10-15T00:00:00Z build-window boundary. Their inclusion here records pre-window work; it does not redefine the contents of `v0-baseline`.
+
+### P3 preregistration
+
+Four commits, `879dab82ab24344e0ece9a868f0a5466388203b9` through `024ea2e3e66b91f5a2157a66c073493e7107e109`, update `docs/P3_SYSTEM2_DESIGN.md`. The document records a System-2 design and evaluation preregistration, including intended architecture, benchmark families, metrics, and failure criteria. The changed paths in these four commits are documentation only; no `src/rra/` runtime or agent implementation paths change. These commits predate the build window and are pre-existing work, not hackathon-window work.
+
+### H1 evaluation foundation
+
+Eighteen commits, `095ea10b3ad3b1a2d7b81c841c7cd7bacfed3f79` through `b0288da5cf7a924ce9b47b0ea9f7d6248f5f6bd0`, add and repair the H1 evaluation foundation before the build window. The changed paths cover `src/rra/` evaluation, evidence, and simulation code; tests; `artifacts/h1/`; `config/v3_contracts.json`; and `docs/EVAL_PROTOCOL.md`, `docs/H1_EVAL_FOUNDATION.md`, and `docs/P3_PREREG_ADDENDUM_01.md`.
+
+The changed paths under `src/rra/` are:
+
+- `src/rra/eval/__init__.py`
+- `src/rra/eval/b2_grid.py`
+- `src/rra/eval/dev_diagnostics.py`
+- `src/rra/eval/framework.py`
+- `src/rra/eval/holdout.py`
+- `src/rra/eval/legacy_anchor.py`
+- `src/rra/eval/omniscient.py`
+- `src/rra/eval/pause.py`
+- `src/rra/eval/runner.py`
+- `src/rra/eval/scenarios.py`
+- `src/rra/eval/scoring.py`
+- `src/rra/eval/text_context.py`
+- `src/rra/evidence/episode.py`
+- `src/rra/evidence/policy.py`
+- `src/rra/sim/v3_world.py`
+- `src/rra/sim/world.py`
+
+The H1 artifact directory contains `b1-corrected-dev.json`, `b1-framework-delta.json`, `b1-legacy-dev.json`, `b2-grid.json`, `dev-episode-determinism.json`, `final-eval-v3-prohibition.json`, `legacy-equivalence.json`, `omniscient-upper-bound.json`, and `structural-holdout.json`.
+
+H1 changes runtime/source implementation under `src/rra/`; it is not accurately described as tooling only. At the top level, `bench.json` and `bench.md` have the same Git blob contents at the peeled `v0-baseline` commit and at the end of H1 (`b0288da5cf7a924ce9b47b0ea9f7d6248f5f6bd0`). This file comparison does not establish whether runtime behavior changed. H1 predates the build window and is pre-existing work, not hackathon-window work.
 
 ## Baseline result (blind eval v2, 100 seeds, compensation on)
 
