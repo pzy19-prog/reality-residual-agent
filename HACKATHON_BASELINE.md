@@ -2,9 +2,9 @@
 
 ## Judging boundary
 
-Tag `v0-baseline` remains the immutable original V0 snapshot, at commit `546e82aefd4e07bf304d79c63dcffe6dd4b7c4ee`. The V0 component description below is tied to that snapshot. Additional work was committed after `v0-baseline` and before the hackathon build window (2026-10-15T00:00:00Z), as listed in [Pre-window work committed after `v0-baseline`](#pre-window-work-committed-after-v0-baseline). That later work does not change what was present in the original V0 snapshot.
+Tag `v0-baseline` remains the immutable original V0 snapshot, at commit `546e82aefd4e07bf304d79c63dcffe6dd4b7c4ee`. The V0 component description below is tied to that snapshot. Additional work was committed after `v0-baseline` and before the hackathon build window (2026-10-22T00:00:00Z), as listed in [Pre-window work committed after `v0-baseline`](#pre-window-work-committed-after-v0-baseline). That later work does not change what was present in the original V0 snapshot.
 
-At the time this text is committed, the tag `pre-window-freeze` does not exist. After this declaration is merged to `main`, and before 2026-10-15T00:00:00Z, the `main` commit containing the merged declaration will be tagged `pre-window-freeze`. This file cannot record that tag's commit hash; `git rev-parse "pre-window-freeze^{commit}"` resolves it once the tag exists. Everything reachable from `pre-window-freeze` is declared pre-existing work and will not be presented as hackathon-window work. The work this project presents as built during the window is the range `pre-window-freeze..<submission commit>`. Commits after `v0-baseline` are therefore not all hackathon-window work. This file is the repository-side record of the declaration; it does not by itself establish eligibility or how the organizers will judge the submission.
+At the time this text is committed, the tag `pre-window-freeze` does not exist. After this declaration is merged to `main`, and before 2026-10-22T00:00:00Z, the `main` commit containing the merged declaration will be tagged `pre-window-freeze`. This file cannot record that tag's commit hash; `git rev-parse "pre-window-freeze^{commit}"` resolves it once the tag exists. Everything reachable from `pre-window-freeze` is declared pre-existing work and will not be presented as hackathon-window work. The work this project presents as built during the window is the range `pre-window-freeze..<submission commit>`. Commits after `v0-baseline` are therefore not all hackathon-window work. This file is the repository-side record of the declaration; it does not by itself establish eligibility or how the organizers will judge the submission.
 
 ## Declared components
 
@@ -17,7 +17,7 @@ At the time this text is committed, the tag `pre-window-freeze` does not exist. 
 - JSON receipts, same-seed on/off benchmark, dev/eval harness and blind-eval protocol (`docs/EVAL_PROTOCOL.md`).
 - CLI, Dockerfile, tests, documentation, and the rules snapshot `docs/HACKATHON_RULES.md`.
 
-V0 contains **no LLM integration** and no sponsor (NVIDIA / Zetaris) technology.
+V0 contains **no LLM integration** and uses none of these sponsor technologies: Zetaris, Meterless, or NVIDIA. V0 development did not use Cursor. The V0 snapshot and components are declared pre-existing under rules 4.2 and 5.4: “Work committed before the window opens is not eligible, except for clearly declared pre-existing components.” “Pre-existing open-source libraries are fine. Pre-existing product code must be declared in the submission form.”
 
 ## Pre-window infrastructure committed after `v0-baseline`
 
@@ -30,7 +30,7 @@ The three commits are `90821fc55d7581a156c68ec3cadc135738ff4ab6`, `a1287c3386044
 
 ## Pre-window work committed after `v0-baseline`
 
-The 25 commits in `546e82aefd4e07bf304d79c63dcffe6dd4b7c4ee..b0288da5cf7a924ce9b47b0ea9f7d6248f5f6bd0` fall into three groups: 3 CI/settings commits (previous section), 4 P3 preregistration commits, and 18 H1 commits. All 25 have committer timestamps before the 2026-10-15T00:00:00Z build-window boundary. Their inclusion here records pre-window work; it does not redefine the contents of `v0-baseline`.
+The 25 commits in `546e82aefd4e07bf304d79c63dcffe6dd4b7c4ee..b0288da5cf7a924ce9b47b0ea9f7d6248f5f6bd0` fall into three groups: 3 CI/settings commits (previous section), 4 P3 preregistration commits, and 18 H1 commits. All 25 have committer timestamps before the 2026-10-22T00:00:00Z build-window boundary. Their inclusion here records pre-window work; it does not redefine the contents of `v0-baseline`.
 
 ### P3 preregistration
 
