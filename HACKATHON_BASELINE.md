@@ -17,7 +17,7 @@ At the time this text is committed, the tag `pre-window-freeze` does not exist. 
 - JSON receipts, same-seed on/off benchmark, dev/eval harness and blind-eval protocol (`docs/EVAL_PROTOCOL.md`).
 - CLI, Dockerfile, tests, documentation, and the rules snapshot `docs/HACKATHON_RULES.md`.
 
-V0 contains **no LLM integration** and no sponsor (NVIDIA / Zetaris) technology.
+V0 contains **no LLM integration** and uses none of these sponsor technologies: Zetaris, Meterless, or NVIDIA. V0 development did not use Cursor. The V0 snapshot and components are declared pre-existing under rules 4.2 and 5.4: “Work committed before the window opens is not eligible, except for clearly declared pre-existing components.” “Pre-existing open-source libraries are fine. Pre-existing product code must be declared in the submission form.”
 
 ## Pre-window infrastructure committed after `v0-baseline`
 
