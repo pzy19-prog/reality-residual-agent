@@ -6,7 +6,7 @@ Preregistration revision: **2026-09-28 — evaluation-framework and identifiabil
 
 Baseline: `v0-baseline` -> `546e82aefd4e07bf304d79c63dcffe6dd4b7c4ee`
 
-Build window from `docs/HACKATHON_RULES.md`: 2026-10-22 00:00 UTC through 2026-10-27 23:45 UTC.
+Build window from `docs/HACKATHON_RULES.md`: 2026-10-15 00:00 UTC through 2026-10-20 23:45 UTC.
 
 This document defines the intended System-2 architecture, benchmark families, baselines, metrics, and failure criteria before the hackathon implementation window. It is deliberately separated from implementation. No System-2 implementation code is authorized by this document before the build window.
 
@@ -1037,7 +1037,7 @@ P3_DESIGN_DRAFT
 -> FRESH ARCHITECTURE REVIEW
 -> OWNER DISPOSITION
 -> P3_DESIGN_FROZEN / PREREGISTERED
--> WAIT FOR 2026-10-22 00:00 UTC
+-> WAIT FOR 2026-10-15 00:00 UTC
 -> HACKATHON IMPLEMENTATION
 ```
 
