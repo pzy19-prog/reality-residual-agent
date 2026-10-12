@@ -2,7 +2,7 @@
 
 ## Classification and authority
 
-H1 is pre-window work completed before the 2026-10-15 build window. It is pre-existing evaluation infrastructure and is not scored as hackathon build-window implementation. Its preregistration authority is `p3-prereg` at `024ea2e3e66b91f5a2157a66c073493e7107e109`; the materialized addendum is [P3_PREREG_ADDENDUM_01.md](P3_PREREG_ADDENDUM_01.md).
+H1 is pre-window work completed before the 2026-10-22 build window. It is pre-existing evaluation infrastructure and is not scored as hackathon build-window implementation. Its preregistration authority is `p3-prereg` at `024ea2e3e66b91f5a2157a66c073493e7107e109`; the materialized addendum is [P3_PREREG_ADDENDUM_01.md](P3_PREREG_ADDENDUM_01.md).
 
 H1 implements no System-2, LLM, NVIDIA NIM, Nemotron, B3/B4 runtime, authorization gate, or System-2 recovery logic.
 
