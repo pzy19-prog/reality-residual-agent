@@ -1,3 +1,5 @@
+# Pre-window sponsor spike notes
+
 Pre-window compatibility spike output under Addendum 02 §8. Access and compatibility only; declared pre-existing design input. Date: 2026-10-19.
 
 ## Zetaris — GO
@@ -23,8 +25,9 @@ Pre-window compatibility spike output under Addendum 02 §8. Access and compatib
 - [FACT] templates/agentathon-starter: the seed, ask and audit commands ran; state persisted across separate processes in .notebook/; the audit ledger is append-only and records create and read events.
 - [FACT] On a 5-memory sample, retrieval ranked the relevant memory first (relevance 0.14) but an unrelated memory scored 0.12. Mode was retrieval-only (no LLM).
 - [INFERENCE] Retrieval looks lexical/deterministic and is not suited as RRA's core retrieval.
-- [FACT] RRA is Python and Meterless is TypeScript, so any integration needs a host-side adapter (for example a subprocess or a small Node bridge).
-- [FACT] This partly resolves the UNKNOWN in Addendum 02 §5.5: the open specification and reference implementation are integrable from Linux/WSL.
+- [FACT] RRA is Python and Meterless is TypeScript.
+- [INFERENCE] Any integration therefore needs a host-side adapter (for example a subprocess or a small Node bridge).
+- [INFERENCE] The results above partly resolve the UNKNOWN in Addendum 02 §5.5: the open specification and reference implementation are integrable from Linux/WSL.
 - [FACT] npm audit reports 9 findings (3 moderate, 4 high, 2 critical) in the reference's dev dependencies; [INFERENCE] dev-only; not remediated.
 - [NOT VERIFIED] The H-MEM conformance suite (engines/hmem), the World Model and Markovian engines, the Gaia/Relay/Swarms Windows apps, Nightshift. Scout Intent is spec-only per its README.
 - [UNKNOWN] Which Meterless component the organizers mean and what minimum "integration" they expect; to be asked at the 2026-10-21 onboarding call.
