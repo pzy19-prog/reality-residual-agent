@@ -21,3 +21,4 @@
 ### RRA V0 freeze v2
 
 旧 eval（seeds `1000–1099`）保留为历史记录。v2 seeds `2000–2099` 在 `ff1ac91` 单独冻结；实现提交为 `c66b4bf5b35dedbbf102a77c36f4d0d8a1938246`，盲评只运行一次，artifact 提交为 `2418406`，`bench.json` 的 `git_sha` 与实现提交一致。盲评结束后没有修改 `src/`。本轮固定使用 Python 3.11 venv 运行 CLI，完整结果见 README 与 bench artifacts。
+| 2026-10-22 | System-2 确定性核心的拟合实现 | 采用确定性有界枚举：偏置/速度项使用 NumPy 最小二乘；速度阶跃时间以 0.05 s 网格枚举；执行器延迟以 0.01 s 网格拟合 accepted command feedback。缺少 6 条观测返回 no-fit，verifier 固定使用 n≥6、RMSE≤0.030 | 合成带噪参数恢复测试覆盖四个单原语和一个三原语组合；完整 pytest 71 项通过。B3 尚未接入 runner，详见 REPORT_D1.md 卡点。|
