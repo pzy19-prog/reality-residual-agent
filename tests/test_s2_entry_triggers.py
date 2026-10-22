@@ -1,3 +1,6 @@
+from types import SimpleNamespace
+
+from rra.controller import Controller, Execution
 from rra.evidence import episode as episode_module
 from rra.s2.dsl import Action
 from rra.sim import WorldConfig
@@ -41,3 +44,42 @@ def test_system2_disabled_receipt_matches_default_byte_for_byte():
     disabled = episode_module.run_episode(config, 7, True, system2_enabled=False)
 
     assert implicit == disabled
+
+
+def test_outcome_escalation_authorizes_then_revokes_after_failed_result(monkeypatch):
+    s2_calls = []
+
+    def authorized_b3(*args, **kwargs):
+        s2_calls.append(kwargs)
+        if len(s2_calls) > 1:
+            return _pause_result()
+        hypothesis = SimpleNamespace(
+            hypothesis_id="constructed-velocity-offset", fitted_parameters={"velocity_offset": 0.0},
+            rmse=0.0, structure=(), passed=True,
+        )
+        return {
+            "action": Action.UPDATE_MODEL_AND_REPLAN, "action_time": 0.0,
+            "faults": (), "passing": [hypothesis], "fits": [], "verifications": [hypothesis],
+            "gate_reason": "COMMON",
+        }
+
+    monkeypatch.setattr(episode_module, "run_b3", authorized_b3)
+    monkeypatch.setattr(
+        Controller, "execute_2d",
+        lambda self, command, actual_x, actual_y, actual_time: Execution(True, False, 1.0, "constructed miss"),
+    )
+    config = WorldConfig(
+        scenario="nominal", object_count=5, initial_position_min=-7.0,
+        initial_position_max=-7.0, episode_steps=90,
+    )
+
+    receipt = episode_module.run_episode(config, 3, True, system2_enabled=True)
+
+    authorizations = receipt["system2_episode_authorizations"]
+    assert s2_calls
+    assert len(s2_calls[0]["feedback"]) >= 3
+    assert receipt["evaluator_objects"][3]["command_issued"] is True
+    assert authorizations[0]["authorization"]["terminal_condition"] == "next_authorized_failure_or_model_contradiction"
+    assert authorizations[0]["revoked_at"] is not None
+    assert authorizations[0]["expires_reason"] == "next_authorized_failure_result"
+    assert receipt["safe_stop"] is True
