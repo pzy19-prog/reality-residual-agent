@@ -84,3 +84,10 @@ def test_actuator_delay_requires_command_feedback():
     obs=[Observation(i*.1,1+i*.1,1+i*.1) for i in range(8)]
     result=fit((Primitive.ACTUATOR_DELAY,),obs,nominal_speed=1.0)
     assert result.no_fit
+
+def test_episode_runner_has_no_dsl_prediction_implementation():
+    import inspect
+    from rra.evidence import episode
+    source = inspect.getsource(episode)
+    assert 'def prediction_error' not in source
+    assert 'speed_step_delta' not in source

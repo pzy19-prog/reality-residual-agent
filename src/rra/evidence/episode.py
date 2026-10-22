@@ -6,6 +6,7 @@ from hashlib import sha256
 import json
 from time import perf_counter
 from dataclasses import asdict, replace
+from functools import partial
 from typing import Any, Literal
 
 from rra.controller import Command, Controller, ControllerConfig
@@ -21,6 +22,7 @@ from rra.s2.b3 import run_b3
 from rra.s2.dsl import Action
 from rra.s2.fitter import Observation as S2Observation, CommandFeedback as S2Feedback
 from rra.s2.authorization import authorize
+from rra.s2.prediction import pick_error_at_command_time
 from rra.sim import World, WorldConfig
 from rra.eval.scenarios import EpisodeRealization
 from rra.sim.v3_world import V3World
@@ -41,6 +43,7 @@ def run_episode(
     fast_time_limit: float = 0.50,
     fast_residual_threshold: float = 1.25,
     system2_enabled: bool = False,
+    include_s2_diagnostics: bool = False,
 ) -> dict[str, Any]:
     """Run a fixed-step episode and return its complete reproducibility receipt."""
     world = V3World(config, seed, realization) if realization is not None else World(config, seed)
@@ -76,6 +79,9 @@ def run_episode(
     system2_next_retry: dict[int, float] = {}
     system2_receipts: list[dict[str, Any]] = []
     system2_wall_latency_seconds = 0.0
+    first_observed_at: dict[int, float] = {}
+    first_s2_sample_count: dict[int, int] = {}
+    s2_diagnostic_calls: list[dict[str, Any]] = []
 
     def record_outcome(
         target_id: int,
@@ -140,6 +146,26 @@ def run_episode(
                     presence_events=[e for e in policy_target_presence_events if e["target_id"]==plant_observation.target_id],
                 )
                 system2_wall_latency_seconds += perf_counter()-pause_started
+                if include_s2_diagnostics:
+                    n_pre = len(s2obs)
+                    first_s2_sample_count.setdefault(plant_observation.target_id, n_pre)
+                    s2_diagnostic_calls.append({
+                        "seed": int(seed), "target_id": plant_observation.target_id,
+                        "sim_time": plant_observation.time,
+                        "first_observed_at": first_observed_at.get(plant_observation.target_id),
+                        "window_remaining_time": None, "planned_window_end": None,
+                        "n_usable_before_upgrade": n_pre, "n_usable_after_upgrade": 0,
+                        "n_usable_total": n_pre,
+                        "fits": [{"structure": [p.value for p in f.structure], "fit": not f.no_fit,
+                                  "rmse": f.objective, "n_usable": f.n_usable,
+                                  "parameters": f.parameters} for f in b3["fits"]],
+                        "verified": [{"structure": list(v.structure), "rmse": v.rmse,
+                                      "n_usable": v.n_usable, "passed": v.passed}
+                                     for v in b3["verifications"]],
+                        "passing": [list(v.structure) for v in b3["passing"]],
+                        "gate": b3["gate_reason"], "action_time": b3["action_time"],
+                        "faults": [f.value for f in b3["faults"]], "action": b3["action"].value,
+                    })
                 system2_receipts.append({"time":plant_observation.time,"target_id":plant_observation.target_id,"action":b3["action"].value,"gate_reason":b3["gate_reason"],"faults":[f.value for f in b3["faults"]],"pause_seconds":0.0})
                 record_outcome(plant_observation.target_id,"escalated","target presence fault evidence",plant_observation.step,0.0)
                 safe_stop=True
@@ -170,6 +196,7 @@ def run_episode(
         system2_observations.setdefault(observation.target_id, []).append(
             S2Observation(observation.time, observation.observed_x, observation.nominal_x)
         )
+        first_observed_at.setdefault(observation.target_id, observation.time)
         residual = monitor.update(observation)
         disturbance = monitor.classify()
         if observation.target_id not in base_plans:
@@ -185,24 +212,12 @@ def run_episode(
                 and observation.target_id not in system2_authorized
                 and observation.time >= system2_next_retry.get(observation.target_id, -1.0)):
             s2obs = system2_observations[observation.target_id]
-            def prediction_error(hypothesis, command_time):
-                params = hypothesis.fitted_parameters
-                elapsed = command_time - observation.time
-                delay = params.get("actuator_delay", 0.0)
-                if command_time < observation.time + delay:
-                    return float("inf")
-                exec_elapsed = command_time - observation.time
-                delta = params.get("velocity_offset", 0.0) * exec_elapsed
-                tau = params.get("speed_step_time")
-                if tau is not None:
-                    delta += params.get("speed_step_delta", 0.0) * max(0.0, command_time - tau) - params.get("speed_step_delta", 0.0) * max(0.0, observation.time - tau)
-                tau0 = params.get("speed_step_time")
-                current_residual = params.get("velocity_offset", 0.0) * observation.time
-                if tau0 is not None:
-                    current_residual += params.get("speed_step_delta", 0.0) * max(0.0, observation.time - tau0)
-                physical_x = (observation.nominal_x + current_residual - params.get("sensor_bias", 0.0)
-                              + known_config.belt_speed * elapsed + delta)
-                return abs(physical_x - known_config.x_pick)
+            prediction_error = partial(
+                pick_error_at_command_time,
+                observation=observation,
+                nominal_speed=known_config.belt_speed,
+                x_pick=known_config.x_pick,
+            )
             pause_started=perf_counter()
             b3 = run_b3(
                 s2obs, nominal_speed=known_config.belt_speed,
@@ -214,6 +229,31 @@ def run_episode(
                 presence_events=[e for e in policy_target_presence_events if e["target_id"]==observation.target_id],
             )
             system2_wall_latency_seconds += perf_counter()-pause_started
+            if include_s2_diagnostics:
+                first_s2_sample_count.setdefault(observation.target_id, len(s2obs))
+                n_pre = first_s2_sample_count[observation.target_id]
+                s2_diagnostic_calls.append({
+                    "seed": int(seed), "target_id": observation.target_id,
+                    "sim_time": observation.time,
+                    "first_observed_at": first_observed_at[observation.target_id],
+                    "window_remaining_time": max(0.0, base_plans[observation.target_id].expected_arrival_time
+                                                 + known_config.dt / 2 - observation.time),
+                    "planned_window_end": base_plans[observation.target_id].expected_arrival_time
+                                         + known_config.dt / 2,
+                    "n_usable_before_upgrade": n_pre,
+                    "n_usable_after_upgrade": max(0, len(s2obs) - n_pre),
+                    "n_usable_total": len(s2obs),
+                    "fits": [{"structure": [p.value for p in f.structure], "fit": not f.no_fit,
+                              "rmse": f.objective, "n_usable": f.n_usable,
+                              "parameters": f.parameters} for f in b3["fits"]],
+                    "verified": [{"structure": list(v.structure), "rmse": v.rmse,
+                                  "n_usable": v.n_usable, "passed": v.passed}
+                                 for v in b3["verifications"]],
+                    "passing": [list(v.structure) for v in b3["passing"]],
+                    "gate": b3["gate_reason"], "action_time": b3["action_time"],
+                    "faults": [f.value for f in b3["faults"]],
+                    "action": b3["action"].value,
+                })
             chosen = next((h for h in b3["passing"] if prediction_error(h,b3["action_time"] or observation.time)<=known_config.tolerance),None)
             if b3["action"] is Action.UPDATE_MODEL_AND_REPLAN and chosen is not None and not b3["faults"]:
                 delay=chosen.fitted_parameters.get("actuator_delay",0.0)
@@ -480,6 +520,15 @@ def run_episode(
         receipt["system2_decisions"] = system2_receipts
         # Operational pause telemetry is intentionally excluded from the deterministic hash.
         receipt["system2_wall_latency_seconds"] = round(system2_wall_latency_seconds, 6)
+    if include_s2_diagnostics:
+        for row in s2_diagnostic_calls:
+            outcome = outcomes_by_target.get(row["target_id"])
+            row["terminal_status"] = outcome["status"] if outcome else None
+            row["terminal_reason"] = outcome["reason"] if outcome else None
+            truth_row = evaluator_objects.get(row["target_id"], {})
+            row["command_issued"] = bool(truth_row.get("command_issued"))
+            row["unsafe_witness"] = truth_row.get("position_error")
+        receipt["s2_diagnostic_trace"] = s2_diagnostic_calls
     if include_trace:
         failure_trace = []
         for target_id, trace in sorted(trace_by_target.items()):
@@ -503,7 +552,7 @@ def run_episode(
             trace["scenario"] = config.scenario
             failure_trace.append(trace)
         receipt["failure_trace"] = failure_trace
-    hash_input = {key: value for key, value in receipt.items() if key not in ("git_sha", "system2_wall_latency_seconds")}
+    hash_input = {key: value for key, value in receipt.items() if key not in ("git_sha", "system2_wall_latency_seconds", "s2_diagnostic_trace")}
     canonical = json.dumps(hash_input, sort_keys=True, separators=(",", ":")).encode("utf-8")
     receipt["receipt_sha256"] = sha256(canonical).hexdigest()
     return receipt
