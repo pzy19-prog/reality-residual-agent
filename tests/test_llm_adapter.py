@@ -108,3 +108,36 @@ def test_nvidia_provider_rejects_small_token_limit(monkeypatch):
     monkeypatch.setenv("NVIDIA_API_KEY", "test-secret")
     with pytest.raises(ValueError, match="at least 1500"):
         NvidiaNimProvider(max_tokens=1499)
+
+
+def test_nim_thinking_controls_are_in_canonical_payload_and_cache_key(tmp_path, monkeypatch):
+    from rra.llm import providers
+
+    monkeypatch.setenv("NVIDIA_API_KEY", "test-secret")
+    seen = []
+
+    class FakeHttpResponse:
+        status = 200
+        def __enter__(self): return self
+        def __exit__(self, *args): return False
+        def read(self):
+            return b'{"model":"returned-model","choices":[{"message":{"content":"{}"},"finish_reason":"stop"}]}'
+
+    def fake_urlopen(request, timeout):
+        seen.append(json.loads(request.data))
+        return FakeHttpResponse()
+    monkeypatch.setattr(providers, "urlopen", fake_urlopen)
+    base_request = {"messages": [{"role": "system", "content": "system prompt"}]}
+    variants = (
+        providers.NvidiaNimProvider(cache_dir=tmp_path, chat_template_kwargs={"enable_thinking": False}),
+        providers.NvidiaNimProvider(cache_dir=tmp_path, chat_template_kwargs=None, no_think=True),
+    )
+    for provider in variants:
+        provider.complete(base_request)
+    assert seen[0]["chat_template_kwargs"] == {"enable_thinking": False}
+    default_provider = providers.NvidiaNimProvider(cache_dir=tmp_path)
+    default_provider.complete(base_request)
+    assert seen[2]["chat_template_kwargs"] == {"enable_thinking": False}
+    assert seen[1]["messages"][0]["content"].startswith("/no_think\n")
+    assert providers.request_sha256(seen[0]) != providers.request_sha256(seen[1])
+    assert len(list(tmp_path.glob("*.json"))) == 2

@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
@@ -11,6 +12,7 @@ from urllib.request import Request, urlopen
 
 NIM_BASE_URL = "https://integrate.api.nvidia.com/v1"
 NIM_MODEL = "nvidia/nemotron-3.5-super-vl-120b-a12b"
+_UNSET = object()
 
 
 def canonical_json(value: Any) -> str:
@@ -45,7 +47,8 @@ class NvidiaNimProvider:
     """Small stdlib-only OpenAI-compatible NVIDIA NIM client with content-addressed cache."""
     def __init__(self, cache_dir: str | Path = "artifacts/llm_cache",
                  timeout: float = 90.0, base_url: str = NIM_BASE_URL, model: str = NIM_MODEL,
-                 max_tokens: int = 1800):
+                 max_tokens: int = 1800, chat_template_kwargs: dict | None | object = _UNSET,
+                 no_think: bool = False):
         self.api_key = os.environ.get("NVIDIA_API_KEY")
         if not self.api_key:
             raise RuntimeError("NVIDIA_API_KEY is required")
@@ -56,13 +59,28 @@ class NvidiaNimProvider:
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.max_tokens = int(max_tokens)
+        if chat_template_kwargs is _UNSET:
+            chat_template_kwargs = {"enable_thinking": False}
+        self.chat_template_kwargs = deepcopy(chat_template_kwargs)
+        self.no_think = bool(no_think)
         self.last_http_status: int | None = None
         self.last_latency_seconds: float | None = None
+        self.last_response_body: dict | None = None
+        self.last_request_body: dict | None = None
 
     def complete(self, request_body: dict) -> dict:
         # Caller supplies only evidence_packet and context_text; provider fixes the model settings.
         payload = dict(request_body)
         payload.update({"model": self.model, "temperature": 0, "max_tokens": self.max_tokens})
+        if self.chat_template_kwargs is not None:
+            payload["chat_template_kwargs"] = deepcopy(self.chat_template_kwargs)
+        if self.no_think:
+            payload["messages"] = deepcopy(payload["messages"])
+            system_message = next((message for message in payload["messages"] if message.get("role") == "system"), None)
+            if system_message is None:
+                raise ValueError("no system message available for /no_think prefix")
+            system_message["content"] = "/no_think\n" + system_message["content"]
+        self.last_request_body = payload
         data = canonical_json(payload).encode("utf-8")
         request = Request(
             f"{self.base_url}/chat/completions", data=data, method="POST",
@@ -83,6 +101,7 @@ class NvidiaNimProvider:
         finally:
             self.last_latency_seconds = time.monotonic() - started
         response_body = json.loads(raw.decode("utf-8"))
+        self.last_response_body = response_body
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         key = request_sha256(payload)
         cache_path = self.cache_dir / f"{key}.json"
