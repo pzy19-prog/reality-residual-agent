@@ -22,7 +22,7 @@ from rra.s2.b3 import run_b3
 from rra.s2.dsl import Action
 from rra.s2.fitter import Observation as S2Observation, CommandFeedback as S2Feedback
 from rra.s2.authorization import authorize
-from rra.s2.prediction import pick_error_at_command_time
+from rra.s2.prediction import pick_error_at_command_time, predicted_residual_at_time
 from rra.sim import World, WorldConfig
 from rra.eval.scenarios import EpisodeRealization
 from rra.sim.v3_world import V3World
@@ -342,13 +342,7 @@ def run_episode(
         if (system2_enabled and active_episode_authorization is not None
                 and observation.target_id in active_episode_authorization["target_ids"]):
             params = active_episode_authorization["parameters"]
-            tau = params.get("speed_step_time")
-            model_residual = (params.get("sensor_bias", 0.0)
-                              + params.get("velocity_offset", 0.0) * observation.time
-                              + params.get("speed_step_delta", 0.0)
-                              * max(0.0, observation.time - tau) if tau is not None
-                              else params.get("sensor_bias", 0.0)
-                              + params.get("velocity_offset", 0.0) * observation.time)
+            model_residual = predicted_residual_at_time(params, observation.time)
             # The registered observation-noise scale is σ = 0.015 (P3 §13.5).
             if abs(residual - model_residual) > 2 * 0.015:
                 active_episode_authorization["expired_at_global"] = current_global_time
