@@ -38,6 +38,8 @@ def fit(structure: Sequence[Primitive], observations: Sequence[Observation], *, 
     if len(set(s)) != len(s) or any(not isinstance(p,Primitive) for p in s): raise ValueError('invalid structure')
     if len(obs)<min_observations or nominal_speed<=0:
         return FitResult(s,{},float('inf'),(),len(obs),True)
+    if Primitive.ACTUATOR_DELAY in s and not any(q.accepted for q in feedback):
+        return FitResult(s,{},float('inf'),(),len(obs),True)
     t=np.array([o.time for o in obs]); y=np.array([o.observed_x-o.nominal_x for o in obs]); cols=[]; names=[]
     if Primitive.SENSOR_BIAS in s: cols.append(np.ones(len(t))); names.append('sensor_bias')
     if Primitive.VELOCITY_OFFSET in s: cols.append(t); names.append('velocity_offset')

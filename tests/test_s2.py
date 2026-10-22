@@ -78,3 +78,9 @@ def test_episode_s2_handoff_is_deterministic():
         assert item['action'] in {a.value for a in Action}
         if item['action']==Action.UPDATE_MODEL_AND_REPLAN.value:
             assert item['authorization']['controller_constraints_preserved'] is True
+
+
+def test_actuator_delay_requires_command_feedback():
+    obs=[Observation(i*.1,1+i*.1,1+i*.1) for i in range(8)]
+    result=fit((Primitive.ACTUATOR_DELAY,),obs,nominal_speed=1.0)
+    assert result.no_fit
