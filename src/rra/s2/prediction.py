@@ -38,7 +38,6 @@ def pick_error_at_command_time(
     physical_x = (
         observation.nominal_x
         + current_residual
-        - params.get("sensor_bias", 0.0)
         + nominal_speed * elapsed
         + execution_residual - current_residual
     )
