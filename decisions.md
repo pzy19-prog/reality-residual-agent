@@ -22,3 +22,4 @@
 
 旧 eval（seeds `1000–1099`）保留为历史记录。v2 seeds `2000–2099` 在 `ff1ac91` 单独冻结；实现提交为 `c66b4bf5b35dedbbf102a77c36f4d0d8a1938246`，盲评只运行一次，artifact 提交为 `2418406`，`bench.json` 的 `git_sha` 与实现提交一致。盲评结束后没有修改 `src/`。本轮固定使用 Python 3.11 venv 运行 CLI，完整结果见 README 与 bench artifacts。
 | 2026-10-22 | System-2 确定性核心的拟合实现 | 采用确定性有界枚举：偏置/速度项使用 NumPy 最小二乘；速度阶跃时间以 0.05 s 网格枚举；执行器延迟以 0.01 s 网格拟合 accepted command feedback。缺少 6 条观测返回 no-fit，verifier 固定使用 n≥6、RMSE≤0.030 | 合成带噪参数恢复测试覆盖四个单原语和一个三原语组合；完整 pytest 71 项通过。B3 尚未接入 runner，详见 REPORT_D1.md 卡点。|
+| 2026-10-22 | B3 runner 接入与 dev 对照 | `run_episode(system2_enabled=False)` 保持默认关闭；B3 只在 fast escalation / policy-visible presence fault 后运行，按目标重观测时步进复查，只有 verifier + common-action + scoped authorization 全通过才改计划；执行器将候选执行时刻与发令时刻分开处理 ACTUATOR_DELAY。CLI `s2-b3-dev` 配对跑 B1-corrected/B3，仅读 dev seeds | 全量 130 个 dev seeds 已生成 `artifacts/s2/b3-dev.{json,md}`。当前 dev unsafe_action 非零，结果不得作为安全成功结论；挑战集/保全集按 B1-corrected 固定。|
