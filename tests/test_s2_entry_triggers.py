@@ -4,7 +4,7 @@ from rra.controller import Controller, Execution
 from rra.evidence import episode as episode_module
 from rra.s2.dsl import Action
 from rra.sim import WorldConfig
-from rra.eval.b3_dev import _unsafe_source_counts
+from rra.eval.b3_dev import _preservation_regression_sources, _unsafe_source_counts
 
 
 def _pause_result():
@@ -59,6 +59,20 @@ def test_unsafe_source_split_sums_to_original_count():
 
     assert split == {"fast_layer_command": 2, "s2_authorized": 1}
     assert sum(split.values()) == 3
+
+
+def test_preservation_regressions_are_split_into_registered_causes():
+    split = _preservation_regression_sources(
+        [1, 2, 3],
+        [
+            {"target_id": 1, "authorization_source": "fast_layer_command"},
+            {"target_id": 2, "authorization_source": "s2_authorized"},
+            {"target_id": 3, "authorization_source": "fast_layer_command"},
+        ],
+        [{"target_id": 1}],
+    )
+
+    assert split == {"fault_veto": 1, "s2_authorized_action": 1, "other": 1}
 
 
 def test_outcome_escalation_authorizes_then_revokes_after_failed_result(monkeypatch):
