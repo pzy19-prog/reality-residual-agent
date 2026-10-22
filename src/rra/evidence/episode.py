@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from hashlib import sha256
 import json
+from time import perf_counter
 from dataclasses import asdict, replace
 from typing import Any, Literal
 
@@ -74,6 +75,7 @@ def run_episode(
     system2_paused: set[int] = set()
     system2_next_retry: dict[int, float] = {}
     system2_receipts: list[dict[str, Any]] = []
+    system2_wall_latency_seconds = 0.0
 
     def record_outcome(
         target_id: int,
@@ -129,6 +131,7 @@ def run_episode(
             # only target-presence events and already collected policy observations.
             if system2_enabled and plant_observation.target_id not in outcomes_by_target:
                 s2obs=system2_observations.get(plant_observation.target_id, [])
+                pause_started=perf_counter()
                 b3=run_b3(
                     s2obs,nominal_speed=known_config.belt_speed,
                     evidence_refs=[f"presence:{plant_observation.target_id}:{plant_observation.time:.3f}"],
@@ -136,6 +139,7 @@ def run_episode(
                     horizon=(config.episode_steps-1)*config.dt,tolerance=known_config.tolerance,
                     presence_events=[e for e in policy_target_presence_events if e["target_id"]==plant_observation.target_id],
                 )
+                system2_wall_latency_seconds += perf_counter()-pause_started
                 system2_receipts.append({"time":plant_observation.time,"target_id":plant_observation.target_id,"action":b3["action"].value,"gate_reason":b3["gate_reason"],"faults":[f.value for f in b3["faults"]],"pause_seconds":0.0})
                 record_outcome(plant_observation.target_id,"escalated","target presence fault evidence",plant_observation.step,0.0)
                 safe_stop=True
@@ -199,6 +203,7 @@ def run_episode(
                 physical_x = (observation.nominal_x + current_residual - params.get("sensor_bias", 0.0)
                               + known_config.belt_speed * elapsed + delta)
                 return abs(physical_x - known_config.x_pick)
+            pause_started=perf_counter()
             b3 = run_b3(
                 s2obs, nominal_speed=known_config.belt_speed,
                 feedback=[S2Feedback(x["issued_time"], x["execution_time"], x["accepted"], x["success"]) for x in policy_feedbacks],
@@ -208,6 +213,7 @@ def run_episode(
                 tolerance=known_config.tolerance, error=prediction_error,
                 presence_events=[e for e in policy_target_presence_events if e["target_id"]==observation.target_id],
             )
+            system2_wall_latency_seconds += perf_counter()-pause_started
             chosen = next((h for h in b3["passing"] if prediction_error(h,b3["action_time"] or observation.time)<=known_config.tolerance),None)
             if b3["action"] is Action.UPDATE_MODEL_AND_REPLAN and chosen is not None and not b3["faults"]:
                 delay=chosen.fitted_parameters.get("actuator_delay",0.0)
@@ -472,6 +478,8 @@ def run_episode(
     }
     if system2_enabled:
         receipt["system2_decisions"] = system2_receipts
+        # Operational pause telemetry is intentionally excluded from the deterministic hash.
+        receipt["system2_wall_latency_seconds"] = round(system2_wall_latency_seconds, 6)
     if include_trace:
         failure_trace = []
         for target_id, trace in sorted(trace_by_target.items()):
@@ -495,7 +503,7 @@ def run_episode(
             trace["scenario"] = config.scenario
             failure_trace.append(trace)
         receipt["failure_trace"] = failure_trace
-    hash_input = {key: value for key, value in receipt.items() if key != "git_sha"}
+    hash_input = {key: value for key, value in receipt.items() if key not in ("git_sha", "system2_wall_latency_seconds")}
     canonical = json.dumps(hash_input, sort_keys=True, separators=(",", ":")).encode("utf-8")
     receipt["receipt_sha256"] = sha256(canonical).hexdigest()
     return receipt

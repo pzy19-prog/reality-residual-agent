@@ -37,7 +37,7 @@ def run_b3_dev(output_dir: Path=ROOT/'artifacts'/'s2') -> dict[str,Any]:
             'preservation_ids':sorted(int(k) for k,v in score['dispositions'].items() if b1['outcomes'][int(k)]['status']=='picked' and v=='RECOVER'),
             'refuse_total':sum(v=='REFUSE' for v in labels.values()),
             'refuse_correct':sum(v=='REFUSE' and not any(int(o['target_id'])==k and o.get('command_issued') for o in b3['evaluator_objects']) for k,v in labels.items()),
-            'authorizations':len(auth),'pause_target_ids':sorted({d['target_id'] for d in b3.get('system2_decisions',[]) if d['action'] in ('PAUSE_AND_REOBSERVE','HUMAN_ESCALATION')}),'pause_seconds':sum(d.get('pause_seconds',0.0) for d in b3.get('system2_decisions',[])),
+            'authorizations':len(auth),'pause_target_ids':sorted({d['target_id'] for d in b3.get('system2_decisions',[]) if d['action'] in ('PAUSE_AND_REOBSERVE','HUMAN_ESCALATION')}),'pause_seconds':b3.get('system2_wall_latency_seconds',0.0),
             'miss_count':score['ordinary_miss_count'],
         })
     def summed(key): return sum(ep['score'][key] for ep in episodes)
