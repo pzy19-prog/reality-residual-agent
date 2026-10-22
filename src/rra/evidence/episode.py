@@ -231,6 +231,9 @@ def run_episode(
                 "fits": [{"structure": [p.value for p in f.structure], "fit": not f.no_fit,
                           "rmse": f.objective, "n_usable": f.n_usable, "parameters": f.parameters}
                          for f in b3["fits"]],
+                "decision_observation": {"time": observation.time, "observed_x": observation.observed_x,
+                                         "nominal_x": observation.nominal_x,
+                                         "nominal_speed": known_config.belt_speed},
                 "verified": [{"structure": list(v.structure), "rmse": v.rmse,
                               "n_usable": v.n_usable, "passed": v.passed} for v in b3["verifications"]],
                 "passing": [list(v.structure) for v in b3["passing"]], "gate": b3["gate_reason"],
@@ -407,6 +410,9 @@ def run_episode(
                     "fits": [{"structure": [p.value for p in f.structure], "fit": not f.no_fit,
                               "rmse": f.objective, "n_usable": f.n_usable,
                               "parameters": f.parameters} for f in b3["fits"]],
+                    "decision_observation": {"time": observation.time, "observed_x": observation.observed_x,
+                                             "nominal_x": observation.nominal_x,
+                                             "nominal_speed": known_config.belt_speed},
                     "verified": [{"structure": list(v.structure), "rmse": v.rmse,
                                   "n_usable": v.n_usable, "passed": v.passed}
                                  for v in b3["verifications"]],
@@ -573,6 +579,14 @@ def run_episode(
                 "execution_step": observation.step,
                 "position_error": result.position_error,
             })
+            if system2_enabled:
+                evaluator_row["authorization_source"] = (
+                    "s2_authorized" if observation.target_id in system2_authorized
+                    else "fast_layer_command"
+                )
+            if include_s2_diagnostics:
+                evaluator_row["actual_x_at_execution"] = delayed_x
+                evaluator_row["execution_time"] = observation.time + response_delay
             policy_feedbacks.append(asdict(command_feedback(
                     command_id=f"{seed}:{observation.target_id}:{observation.step}",
                     target_id=observation.target_id,

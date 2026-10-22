@@ -4,6 +4,7 @@ from rra.controller import Controller, Execution
 from rra.evidence import episode as episode_module
 from rra.s2.dsl import Action
 from rra.sim import WorldConfig
+from rra.eval.b3_dev import _unsafe_source_counts
 
 
 def _pause_result():
@@ -44,6 +45,20 @@ def test_system2_disabled_receipt_matches_default_byte_for_byte():
     disabled = episode_module.run_episode(config, 7, True, system2_enabled=False)
 
     assert implicit == disabled
+
+
+def test_unsafe_source_split_sums_to_original_count():
+    split = _unsafe_source_counts(
+        [1, 2, 3],
+        [
+            {"target_id": 1, "authorization_source": "fast_layer_command"},
+            {"target_id": 2, "authorization_source": "s2_authorized"},
+            {"target_id": 3, "authorization_source": "fast_layer_command"},
+        ],
+    )
+
+    assert split == {"fast_layer_command": 2, "s2_authorized": 1}
+    assert sum(split.values()) == 3
 
 
 def test_outcome_escalation_authorizes_then_revokes_after_failed_result(monkeypatch):

@@ -18,6 +18,15 @@ from rra.evidence import run_episode
 ROOT = Path(__file__).resolve().parents[3]
 
 
+def _unsafe_source_counts(unsafe_target_ids: list[int], evaluator_objects: list[dict[str, Any]]) -> dict[str, int]:
+    source_by_target = {int(o["target_id"]): o.get("authorization_source", "fast_layer_command")
+                        for o in evaluator_objects}
+    return {
+        "fast_layer_command": sum(source_by_target.get(int(t)) == "fast_layer_command" for t in unsafe_target_ids),
+        "s2_authorized": sum(source_by_target.get(int(t)) == "s2_authorized" for t in unsafe_target_ids),
+    }
+
+
 def _run_seed(args: tuple[int, int]) -> dict[str, Any]:
     index, seed = args
     config = v3_world_config("nominal")
@@ -31,14 +40,20 @@ def _run_seed(args: tuple[int, int]) -> dict[str, Any]:
     b3 = run_episode(config, seed, True, terminal_monitoring="corrected", realization=realization,
                      system2_enabled=True)
     score = score_against_b1_denominators(b3, realization, config, b1)
+    b1_score = score_against_b1_denominators(b1, realization, config, b1)
     labels = dispositions_for_episode(realization, config.object_count)
     auth = [d for d in b3.get("system2_decisions", []) if d["action"] == "UPDATE_MODEL_AND_REPLAN"]
+    auth_count = len(auth) + sum(
+        row.get("authorization") is not None for row in b3.get("system2_episode_authorizations", [])
+    )
     refuse_n = sum(v == "REFUSE" for v in labels.values())
     refuse_correct = sum(
         v == "REFUSE" and not any(
             int(o["target_id"]) == k and o.get("command_issued") for o in b3["evaluator_objects"]
         ) for k, v in labels.items()
     )
+    unsafe_ids = [int(t) for t in score["unsafe_target_ids"]]
+    unsafe_by_source = _unsafe_source_counts(unsafe_ids, b3.get("evaluator_objects", []))
     return {
         "seed": seed, "case": list(realization.structure), "fault_family": realization.fault_family,
         "b1_terminal_counts": b1["metrics"]["terminal_counts"],
@@ -48,7 +63,7 @@ def _run_seed(args: tuple[int, int]) -> dict[str, Any]:
         "preservation_ids": sorted(int(k) for k, v in score["dispositions"].items()
                                    if b1["outcomes"][int(k)]["status"] == "picked" and v == "RECOVER"),
         "refuse_total": refuse_n, "refuse_correct": refuse_correct,
-        "authorizations": len(auth),
+        "authorizations": auth_count,
         "pause_target_ids": sorted({d["target_id"] for d in b3.get("system2_decisions", [])
                                      if d["action"] in ("PAUSE_AND_REOBSERVE", "HUMAN_ESCALATION")}),
         "system2_calls": b3.get("system2_calls", 0),
@@ -56,6 +71,8 @@ def _run_seed(args: tuple[int, int]) -> dict[str, Any]:
         "hypotheses_proposed": b3.get("system2_hypotheses_proposed", 0),
         "pause_seconds": b3.get("system2_wall_latency_seconds", 0.0),
         "miss_count": score["ordinary_miss_count"],
+        "unsafe_by_source": unsafe_by_source,
+        "b1_unsafe_action_count": b1_score["unsafe_action_count"],
         "b1_receipt_sha256": b1["receipt_sha256"], "b3_receipt_sha256": b3["receipt_sha256"],
     }
 
@@ -137,6 +154,11 @@ def run_b3_dev(output_dir: Path = ROOT / "artifacts" / "s2", *, nproc: int | Non
             "correct_refuse_rate": sum(ep["refuse_correct"] for ep in episodes) / refuse_n if refuse_n else 0.0,
             "wrong_disposition": summed("wrong_disposition_count"), "miss": summed("ordinary_miss_count"),
             "unsafe_action": summed("unsafe_action_count"),
+            "unsafe_action_by_source": {
+                source: sum(ep["unsafe_by_source"][source] for ep in episodes)
+                for source in ("fast_layer_command", "s2_authorized")
+            },
+            "b1_corrected_unsafe_action": sum(ep["b1_unsafe_action_count"] for ep in episodes),
             "preservation_regression_count": summed("preservation_regression_count"),
             "preservation_count": preservation, "authorization_count": sum(ep["authorizations"] for ep in episodes),
         },
@@ -156,6 +178,9 @@ def run_b3_dev(output_dir: Path = ROOT / "artifacts" / "s2", *, nproc: int | Non
         f"| Correct refusal rate | {m['correct_refuse_rate']:.4f} |",
         f"| Wrong disposition | {m['wrong_disposition']} |", f"| Miss | {m['miss']} |",
         f"| Unsafe action | {m['unsafe_action']} |",
+        f"| Unsafe: fast layer command | {m['unsafe_action_by_source']['fast_layer_command']} |",
+        f"| Unsafe: S2 authorized | {m['unsafe_action_by_source']['s2_authorized']} |",
+        f"| B1-corrected unsafe action (same episodes) | {m['b1_corrected_unsafe_action']} |",
         f"| Preservation regression | {m['preservation_regression_count']}/{m['preservation_count']} |",
         f"| Authorizations | {m['authorization_count']} |", "", "## Operational cost", "",
         f"- System-2 calls: {c['system2_calls']}", f"- Verifier calls: {c['verifier_calls']}",
