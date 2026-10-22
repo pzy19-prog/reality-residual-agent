@@ -20,6 +20,7 @@ def run_labeled_episode(
     compensation: bool = True,
     fast_time_limit: float = 0.50,
     fast_residual_threshold: float = 1.25,
+    system2_enabled: bool = False,
 ) -> dict[str, Any]:
     """Create evaluator labels first, run sanitized policy, then score truth."""
     # This map is constructed before the policy run and kept outside its receipt.
@@ -39,6 +40,7 @@ def run_labeled_episode(
         text_context=text,
         fast_time_limit=fast_time_limit,
         fast_residual_threshold=fast_residual_threshold,
+        system2_enabled=system2_enabled,
     )
     scores = score_episode(
         policy_receipt,

@@ -16,6 +16,10 @@ from rra.evidence.policy import (
     sanitize_observation,
     target_presence_event,
 )
+from rra.s2.b3 import run_b3
+from rra.s2.dsl import Action
+from rra.s2.fitter import Observation as S2Observation, CommandFeedback as S2Feedback
+from rra.s2.authorization import authorize
 from rra.sim import World, WorldConfig
 from rra.eval.scenarios import EpisodeRealization
 from rra.sim.v3_world import V3World
@@ -35,6 +39,7 @@ def run_episode(
     text_context: str = "",
     fast_time_limit: float = 0.50,
     fast_residual_threshold: float = 1.25,
+    system2_enabled: bool = False,
 ) -> dict[str, Any]:
     """Run a fixed-step episode and return its complete reproducibility receipt."""
     world = V3World(config, seed, realization) if realization is not None else World(config, seed)
@@ -62,6 +67,12 @@ def run_episode(
     object_grab_end_times: dict[int, float] = {}
     policy_feedbacks: list[dict[str, Any]] = []
     policy_target_presence_events: list[dict[str, Any]] = []
+    system2_observations: dict[int, list[S2Observation]] = {}
+    system2_overrides: dict[int, float] = {}
+    system2_authorized: set[int] = set()
+    system2_paused: set[int] = set()
+    system2_next_retry: dict[int, float] = {}
+    system2_receipts: list[dict[str, Any]] = []
 
     def record_outcome(
         target_id: int,
@@ -113,6 +124,20 @@ def run_episode(
             target_observed=plant_observation.target_present,
         )))
         if not plant_observation.target_present:
+            # Absence is a registered evidence escalation; the fault detector sees
+            # only target-presence events and already collected policy observations.
+            if system2_enabled and plant_observation.target_id not in outcomes_by_target:
+                s2obs=system2_observations.get(plant_observation.target_id, [])
+                b3=run_b3(
+                    s2obs,nominal_speed=known_config.belt_speed,
+                    evidence_refs=[f"presence:{plant_observation.target_id}:{plant_observation.time:.3f}"],
+                    current_time=plant_observation.time,dt=known_config.dt,
+                    horizon=(config.episode_steps-1)*config.dt,tolerance=known_config.tolerance,
+                    presence_events=[e for e in policy_target_presence_events if e["target_id"]==plant_observation.target_id],
+                )
+                system2_receipts.append({"time":plant_observation.time,"target_id":plant_observation.target_id,"action":b3["action"].value,"gate_reason":b3["gate_reason"],"faults":[f.value for f in b3["faults"]],"pause_seconds":0.0})
+                record_outcome(plant_observation.target_id,"escalated","target presence fault evidence",plant_observation.step,0.0)
+                safe_stop=True
             # The detector event remains visible; positional data never reaches policy.
             world.advance()
             continue
@@ -137,6 +162,9 @@ def run_episode(
             # Terminal objects are inert for all policy diagnostics and updates.
             world.advance()
             continue
+        system2_observations.setdefault(observation.target_id, []).append(
+            S2Observation(observation.time, observation.observed_x, observation.nominal_x)
+        )
         residual = monitor.update(observation)
         disturbance = monitor.classify()
         if observation.target_id not in base_plans:
@@ -147,23 +175,88 @@ def run_episode(
         working_plan = base_plan.model_copy(update={"observation_time": observation.time})
         correction = corrector.correct(working_plan, residual, disturbance, known_config.belt_speed)
         nominal_plan = working_plan
-        if "ESCALATE:" in correction.reason:
+        recovered_by_s2 = False
+        if ("ESCALATE:" in correction.reason and system2_enabled
+                and observation.target_id not in system2_authorized
+                and observation.time >= system2_next_retry.get(observation.target_id, -1.0)):
+            s2obs = system2_observations[observation.target_id]
+            def prediction_error(hypothesis, command_time):
+                params = hypothesis.fitted_parameters
+                elapsed = command_time - observation.time
+                delta = params.get("velocity_offset", 0.0) * elapsed
+                tau = params.get("speed_step_time")
+                if tau is not None:
+                    delta += params.get("speed_step_delta", 0.0) * max(0.0, command_time - tau) - params.get("speed_step_delta", 0.0) * max(0.0, observation.time - tau)
+                tau0 = params.get("speed_step_time")
+                current_residual = params.get("velocity_offset", 0.0) * observation.time
+                if tau0 is not None:
+                    current_residual += params.get("speed_step_delta", 0.0) * max(0.0, observation.time - tau0)
+                physical_x = (observation.nominal_x + current_residual - params.get("sensor_bias", 0.0)
+                              + known_config.belt_speed * elapsed + delta)
+                delay = params.get("actuator_delay", 0.0)
+                physical_x += (known_config.belt_speed + params.get("velocity_offset", 0.0)) * delay
+                return abs(physical_x - known_config.x_pick)
+            b3 = run_b3(
+                s2obs, nominal_speed=known_config.belt_speed,
+                feedback=[S2Feedback(x["issued_time"], x["execution_time"], x["accepted"], x["success"]) for x in policy_feedbacks],
+                evidence_refs=[f"obs:{observation.target_id}:{o.time:.3f}" for o in s2obs],
+                current_time=observation.time, dt=known_config.dt,
+                horizon=(config.episode_steps-1)*config.dt,
+                tolerance=known_config.tolerance, error=prediction_error,
+                presence_events=[e for e in policy_target_presence_events if e["target_id"]==observation.target_id],
+            )
+            chosen = next((h for h in b3["passing"] if prediction_error(h,b3["action_time"] or observation.time)<=known_config.tolerance),None)
+            if b3["action"] is Action.UPDATE_MODEL_AND_REPLAN and chosen is not None and not b3["faults"]:
+                system2_overrides[observation.target_id]=float(b3["action_time"])
+                system2_authorized.add(observation.target_id)
+                system2_paused.discard(observation.target_id)
+                recovered_by_s2=True
+                authorization=authorize(
+                    episode_id=str(seed), hypothesis_id=chosen.hypothesis_id,
+                    evidence_ids=[f"obs:{observation.target_id}:{o.time:.3f}" for o in s2obs],
+                    parameters=chosen.fitted_parameters, score=chosen.rmse,
+                    action=Action.UPDATE_MODEL_AND_REPLAN,
+                    scope=f"target:{observation.target_id}",
+                    expires_at=(observation.target_id+1)*config.episode_steps*config.dt,
+                    exception={},
+                )
+                system2_receipts.append({
+                    "time":observation.time,"target_id":observation.target_id,
+                    "action":b3["action"].value,"gate_reason":b3["gate_reason"],
+                    "hypothesis_id":chosen.hypothesis_id,"structure":list(chosen.structure),
+                    "fitted_parameters":chosen.fitted_parameters,"n_usable":chosen.n_usable,
+                    "rmse":chosen.rmse,"residual_vector":list(chosen.residual_vector),
+                    "violated_invariants":list(chosen.violated_invariants),"passed":chosen.passed,
+                    "evidence_refs":list(chosen.evidence_refs),"common_action_time":b3["action_time"],
+                    "authorization":asdict(authorization),"pause_seconds":0.0,
+                })
+            else:
+                system2_receipts.append({
+                    "time":observation.time,"target_id":observation.target_id,
+                    "action":b3["action"].value,"gate_reason":b3["gate_reason"],
+                    "faults":[f.value for f in b3["faults"]],"pause_seconds":0.0,
+                    "verifications":[{
+                        "hypothesis_id":v.hypothesis_id,"structure":list(v.structure),
+                        "fitted_parameters":v.fitted_parameters,"n_usable":v.n_usable,
+                        "rmse":v.rmse,"residual_vector":list(v.residual_vector),
+                        "violated_invariants":list(v.violated_invariants),"passed":v.passed,
+                        "evidence_refs":list(v.evidence_refs),
+                    } for v in b3["verifications"]],
+                })
+                if b3["action"] is Action.PAUSE_AND_REOBSERVE:
+                    system2_paused.add(observation.target_id)
+                    system2_next_retry[observation.target_id]=observation.time+0.5
+        if "ESCALATE:" in correction.reason and observation.target_id not in system2_authorized and observation.target_id not in system2_paused:
             record_outcome(
-                observation.target_id,
-                "escalated",
-                correction.reason,
-                observation.step,
-                residual,
+                observation.target_id, "escalated", correction.reason,
+                observation.step, residual,
             )
             if not safe_stop:
-                escalations.append({
-                    "step": observation.step,
-                    "target_id": observation.target_id,
-                    "residual": residual,
-                    "reason": correction.reason,
-                })
+                escalations.append({"step": observation.step,"target_id": observation.target_id,"residual": residual,"reason": correction.reason})
             safe_stop = True
         applied_plan = correction.plan if compensation else nominal_plan
+        if observation.target_id in system2_overrides:
+            applied_plan = applied_plan.model_copy(update={"expected_arrival_time":system2_overrides[observation.target_id]})
         if include_trace:
             trace = trace_by_target.setdefault(observation.target_id, {
                 "target_id": observation.target_id,
@@ -237,7 +330,7 @@ def run_episode(
             )
         # Issue at the first sample at or beyond the window start. If sampling
         # jumps past the whole window, the controller evaluates the time error.
-        if (not safe_stop and observation.target_id not in attempted_targets
+        if (not safe_stop and observation.target_id not in system2_paused and observation.target_id not in attempted_targets
                 and observation.target_id not in outcomes_by_target
                 and observation.time >= applied_plan.expected_arrival_time - known_config.dt / 2):
             command = Command(
@@ -372,6 +465,8 @@ def run_episode(
             "terminal_counts": terminal_counts,
         },
     }
+    if system2_enabled:
+        receipt["system2_decisions"] = system2_receipts
     if include_trace:
         failure_trace = []
         for target_id, trace in sorted(trace_by_target.items()):

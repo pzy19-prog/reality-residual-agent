@@ -64,3 +64,17 @@ def test_deterministic_receipt_hash(tmp_path):
     env=dict(os.environ, PYTHONPATH='src')
     for _ in range(2): vals.append(subprocess.check_output([sys.executable,'-c',code],text=True,env=env).strip())
     assert vals[0]==vals[1]
+
+def test_episode_s2_handoff_is_deterministic():
+    from rra.sim.world import WorldConfig
+    from rra.eval.scenarios import v0_combo_realization
+    from rra.evidence.episode import run_episode
+    config=WorldConfig(scenario="nominal")
+    realization=v0_combo_realization(0)
+    runs=[run_episode(config,0,True,terminal_monitoring='corrected',realization=realization,system2_enabled=True) for _ in range(2)]
+    assert runs[0]['receipt_sha256']==runs[1]['receipt_sha256']
+    assert runs[0]['system2_decisions']
+    for item in runs[0]['system2_decisions']:
+        assert item['action'] in {a.value for a in Action}
+        if item['action']==Action.UPDATE_MODEL_AND_REPLAN.value:
+            assert item['authorization']['controller_constraints_preserved'] is True
