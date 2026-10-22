@@ -74,6 +74,8 @@ def test_episode_s2_handoff_is_deterministic():
     runs=[run_episode(config,0,True,terminal_monitoring='corrected',realization=realization,system2_enabled=True) for _ in range(2)]
     assert runs[0]['receipt_sha256']==runs[1]['receipt_sha256']
     assert runs[0]['system2_decisions']
+    assert runs[0]['system2_wall_latency_seconds'] > 0
+    assert runs[1]['system2_wall_latency_seconds'] > 0
     for item in runs[0]['system2_decisions']:
         assert item['action'] in {a.value for a in Action}
         if item['action']==Action.UPDATE_MODEL_AND_REPLAN.value:

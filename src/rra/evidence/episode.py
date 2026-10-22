@@ -79,6 +79,9 @@ def run_episode(
     system2_next_retry: dict[int, float] = {}
     system2_receipts: list[dict[str, Any]] = []
     system2_wall_latency_seconds = 0.0
+    system2_verifier_calls = 0
+    system2_hypotheses_proposed = 0
+    system2_calls = 0
     first_observed_at: dict[int, float] = {}
     first_s2_sample_count: dict[int, int] = {}
     s2_diagnostic_calls: list[dict[str, Any]] = []
@@ -146,6 +149,9 @@ def run_episode(
                     presence_events=[e for e in policy_target_presence_events if e["target_id"]==plant_observation.target_id],
                 )
                 system2_wall_latency_seconds += perf_counter()-pause_started
+                system2_calls += 1
+                system2_verifier_calls += len(b3["verifications"])
+                system2_hypotheses_proposed += len(b3["fits"])
                 if include_s2_diagnostics:
                     n_pre = len(s2obs)
                     first_s2_sample_count.setdefault(plant_observation.target_id, n_pre)
@@ -229,6 +235,9 @@ def run_episode(
                 presence_events=[e for e in policy_target_presence_events if e["target_id"]==observation.target_id],
             )
             system2_wall_latency_seconds += perf_counter()-pause_started
+            system2_calls += 1
+            system2_verifier_calls += len(b3["verifications"])
+            system2_hypotheses_proposed += len(b3["fits"])
             if include_s2_diagnostics:
                 first_s2_sample_count.setdefault(observation.target_id, len(s2obs))
                 n_pre = first_s2_sample_count[observation.target_id]
@@ -519,6 +528,9 @@ def run_episode(
         receipt["system2_decisions"] = system2_receipts
         # Operational pause telemetry is intentionally excluded from the deterministic hash.
         receipt["system2_wall_latency_seconds"] = round(system2_wall_latency_seconds, 6)
+        receipt["system2_verifier_calls"] = system2_verifier_calls
+        receipt["system2_hypotheses_proposed"] = system2_hypotheses_proposed
+        receipt["system2_calls"] = system2_calls
     if include_s2_diagnostics:
         for row in s2_diagnostic_calls:
             outcome = outcomes_by_target.get(row["target_id"])
@@ -551,7 +563,9 @@ def run_episode(
             trace["scenario"] = config.scenario
             failure_trace.append(trace)
         receipt["failure_trace"] = failure_trace
-    hash_input = {key: value for key, value in receipt.items() if key not in ("git_sha", "system2_wall_latency_seconds", "s2_diagnostic_trace")}
+    hash_input = {key: value for key, value in receipt.items() if key not in (
+        "git_sha", "system2_wall_latency_seconds", "system2_verifier_calls",
+        "system2_hypotheses_proposed", "system2_calls", "s2_diagnostic_trace")}
     canonical = json.dumps(hash_input, sort_keys=True, separators=(",", ":")).encode("utf-8")
     receipt["receipt_sha256"] = sha256(canonical).hexdigest()
     return receipt

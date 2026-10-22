@@ -37,7 +37,10 @@ def run_b3_dev(output_dir: Path=ROOT/'artifacts'/'s2') -> dict[str,Any]:
             'preservation_ids':sorted(int(k) for k,v in score['dispositions'].items() if b1['outcomes'][int(k)]['status']=='picked' and v=='RECOVER'),
             'refuse_total':sum(v=='REFUSE' for v in labels.values()),
             'refuse_correct':sum(v=='REFUSE' and not any(int(o['target_id'])==k and o.get('command_issued') for o in b3['evaluator_objects']) for k,v in labels.items()),
-            'authorizations':len(auth),'pause_target_ids':sorted({d['target_id'] for d in b3.get('system2_decisions',[]) if d['action'] in ('PAUSE_AND_REOBSERVE','HUMAN_ESCALATION')}),'pause_seconds':b3.get('system2_wall_latency_seconds',0.0),
+            'authorizations':len(auth),'pause_target_ids':sorted({d['target_id'] for d in b3.get('system2_decisions',[]) if d['action'] in ('PAUSE_AND_REOBSERVE','HUMAN_ESCALATION')}),
+            'system2_calls':b3.get('system2_calls',0),'verifier_calls':b3.get('system2_verifier_calls',0),
+            'hypotheses_proposed':b3.get('system2_hypotheses_proposed',0),
+            'pause_seconds':b3.get('system2_wall_latency_seconds',0.0),
             'miss_count':score['ordinary_miss_count'],
         })
     def summed(key): return sum(ep['score'][key] for ep in episodes)
@@ -56,14 +59,27 @@ def run_b3_dev(output_dir: Path=ROOT/'artifacts'/'s2') -> dict[str,Any]:
             'wrong_disposition':summed('wrong_disposition_count'),'miss':summed('ordinary_miss_count'),
             'unsafe_action':summed('unsafe_action_count'),'preservation_regression_count':summed('preservation_regression_count'),
             'preservation_count':preservation,'authorization_count':sum(ep['authorizations'] for ep in episodes),
-            'production_pause_seconds':sum(ep['pause_seconds'] for ep in episodes),
         },'episodes':episodes,
+        'operational_cost':{
+            'system2_calls':sum(ep['system2_calls'] for ep in episodes),
+            'verifier_calls':sum(ep['verifier_calls'] for ep in episodes),
+            'hypotheses_proposed':sum(ep['hypotheses_proposed'] for ep in episodes),
+            'llm_calls':0,
+            'production_pause_seconds':sum(ep['pause_seconds'] for ep in episodes),
+            'per_seed':[{'seed':ep['seed'],'system2_calls':ep['system2_calls'],
+                         'verifier_calls':ep['verifier_calls'],
+                         'hypotheses_proposed':ep['hypotheses_proposed'],
+                         'llm_calls':0,'production_pause_seconds':ep['pause_seconds']}
+                        for ep in episodes],
+        },
     }
-    raw=json.dumps(receipt,sort_keys=True,separators=(',',':')).encode()
+    hash_input={key:value for key,value in receipt.items() if key!='operational_cost'}
+    raw=json.dumps(hash_input,sort_keys=True,separators=(',',':')).encode()
     receipt['receipt_sha256']=sha256(raw).hexdigest()
     output_dir.mkdir(parents=True,exist_ok=True)
     (output_dir/'b3-dev.json').write_text(json.dumps(receipt,indent=2,ensure_ascii=False)+'\n')
     m=receipt['metrics']
-    md='\n'.join(['# B1-corrected vs B3 — dev seeds','',f"Seeds: {len(seeds)} from `config/dev_seeds.json`; B3 enumerates all 14 DSL structures at every fast-layer escalation.",'','| Metric | B3 dev |','|---|---:|',f"| Recoverable challenge success | {m['recoverable_success']:.4f} ({m['recoverable_challenge_success_count']}/{m['recoverable_challenge_count']}) |",f"| Correct refusal rate | {m['correct_refuse_rate']:.4f} |",f"| Wrong disposition | {m['wrong_disposition']} |",f"| Miss | {m['miss']} |",f"| Unsafe action | {m['unsafe_action']} |",f"| Preservation regression | {m['preservation_regression_count']}/{m['preservation_count']} |",f"| Authorizations | {m['authorization_count']} |",f"| Production pause seconds | {m['production_pause_seconds']:.3f} |",'',f"Receipt SHA-256: `{receipt['receipt_sha256']}`",''])
+    c=receipt['operational_cost']
+    md='\n'.join(['# B1-corrected vs B3 — dev seeds','',f"Seeds: {len(seeds)} from `config/dev_seeds.json`; B3 enumerates all 14 DSL structures at every fast-layer escalation.",'','| Metric | B3 dev |','|---|---:|',f"| Recoverable challenge success | {m['recoverable_success']:.4f} ({m['recoverable_challenge_success_count']}/{m['recoverable_challenge_count']}) |",f"| Correct refusal rate | {m['correct_refuse_rate']:.4f} |",f"| Wrong disposition | {m['wrong_disposition']} |",f"| Miss | {m['miss']} |",f"| Unsafe action | {m['unsafe_action']} |",f"| Preservation regression | {m['preservation_regression_count']}/{m['preservation_count']} |",f"| Authorizations | {m['authorization_count']} |",'','## Operational cost','',f"- System-2 calls: {c['system2_calls']}",f"- Verifier calls: {c['verifier_calls']}",f"- Hypotheses proposed: {c['hypotheses_proposed']}",f"- LLM calls: {c['llm_calls']}",f"- Production pause seconds: {c['production_pause_seconds']:.3f}",'',f"Receipt SHA-256: `{receipt['receipt_sha256']}`",''])
     (output_dir/'b3-dev.md').write_text(md)
     return receipt
