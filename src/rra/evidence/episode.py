@@ -69,6 +69,7 @@ def run_episode(
     policy_target_presence_events: list[dict[str, Any]] = []
     system2_observations: dict[int, list[S2Observation]] = {}
     system2_overrides: dict[int, float] = {}
+    system2_execution_etas: dict[int, float] = {}
     system2_authorized: set[int] = set()
     system2_paused: set[int] = set()
     system2_next_retry: dict[int, float] = {}
@@ -183,7 +184,11 @@ def run_episode(
             def prediction_error(hypothesis, command_time):
                 params = hypothesis.fitted_parameters
                 elapsed = command_time - observation.time
-                delta = params.get("velocity_offset", 0.0) * elapsed
+                delay = params.get("actuator_delay", 0.0)
+                if command_time < observation.time + delay:
+                    return float("inf")
+                exec_elapsed = command_time - observation.time
+                delta = params.get("velocity_offset", 0.0) * exec_elapsed
                 tau = params.get("speed_step_time")
                 if tau is not None:
                     delta += params.get("speed_step_delta", 0.0) * max(0.0, command_time - tau) - params.get("speed_step_delta", 0.0) * max(0.0, observation.time - tau)
@@ -193,8 +198,6 @@ def run_episode(
                     current_residual += params.get("speed_step_delta", 0.0) * max(0.0, observation.time - tau0)
                 physical_x = (observation.nominal_x + current_residual - params.get("sensor_bias", 0.0)
                               + known_config.belt_speed * elapsed + delta)
-                delay = params.get("actuator_delay", 0.0)
-                physical_x += (known_config.belt_speed + params.get("velocity_offset", 0.0)) * delay
                 return abs(physical_x - known_config.x_pick)
             b3 = run_b3(
                 s2obs, nominal_speed=known_config.belt_speed,
@@ -207,7 +210,9 @@ def run_episode(
             )
             chosen = next((h for h in b3["passing"] if prediction_error(h,b3["action_time"] or observation.time)<=known_config.tolerance),None)
             if b3["action"] is Action.UPDATE_MODEL_AND_REPLAN and chosen is not None and not b3["faults"]:
-                system2_overrides[observation.target_id]=float(b3["action_time"])
+                delay=chosen.fitted_parameters.get("actuator_delay",0.0)
+                system2_overrides[observation.target_id]=float(b3["action_time"])-delay
+                system2_execution_etas[observation.target_id]=float(b3["action_time"])
                 system2_authorized.add(observation.target_id)
                 system2_paused.discard(observation.target_id)
                 recovered_by_s2=True
@@ -337,7 +342,7 @@ def run_episode(
                 target_id=observation.target_id,
                 speed=known_config.belt_speed,
                 pick_position=applied_plan.pick_position,
-                expected_time=applied_plan.expected_arrival_time,
+                expected_time=system2_execution_etas.get(observation.target_id, applied_plan.expected_arrival_time),
                 pick_y=known_config.y_pick,
             )
             response_delay = (
