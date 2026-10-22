@@ -82,6 +82,7 @@ def run_episode(
     system2_verifier_calls = 0
     system2_hypotheses_proposed = 0
     system2_calls = 0
+    system2_infeasible_attempted: set[int] = set()
     first_observed_at: dict[int, float] = {}
     first_s2_sample_count: dict[int, int] = {}
     s2_diagnostic_calls: list[dict[str, Any]] = []
@@ -214,9 +215,12 @@ def run_episode(
         correction = corrector.correct(working_plan, residual, disturbance, known_config.belt_speed)
         nominal_plan = working_plan
         recovered_by_s2 = False
-        if ("ESCALATE:" in correction.reason and system2_enabled
+        if (system2_enabled and ("ESCALATE:" in correction.reason
+                or (correction.infeasible and observation.target_id not in system2_infeasible_attempted))
                 and observation.target_id not in system2_authorized
                 and observation.time >= system2_next_retry.get(observation.target_id, -1.0)):
+            if correction.infeasible:
+                system2_infeasible_attempted.add(observation.target_id)
             s2obs = system2_observations[observation.target_id]
             prediction_error = partial(
                 pick_error_at_command_time,
