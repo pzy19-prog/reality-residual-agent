@@ -91,3 +91,19 @@ def test_episode_runner_has_no_dsl_prediction_implementation():
     source = inspect.getsource(episode)
     assert 'def prediction_error' not in source
     assert 'speed_step_delta' not in source
+
+def test_common_command_time_is_independent_of_delay_hypothesis_order():
+    from rra.s2.prediction import pick_error_at_command_time
+    from rra.s2.fitter import Observation as EvidenceObservation
+    obs = EvidenceObservation(0.0, 0.0, 0.0)
+    fast = Verification('fast', (), {'actuator_delay': 0.0}, 6, .01, (), (), True, ())
+    slow = Verification('slow', (), {'actuator_delay': .2}, 6, .01, (), (), True, ())
+    error = lambda h, t: pick_error_at_command_time(
+        h, t, observation=obs, nominal_speed=1.0, x_pick=1.0)
+    first = common_action([fast, slow], current_time=0.0, dt=.1, horizon=2.0,
+                          tolerance=.2, error=error)
+    reversed_order = common_action([slow, fast], current_time=0.0, dt=.1, horizon=2.0,
+                                   tolerance=.2, error=error)
+    assert first == reversed_order
+    assert first[0] is Action.UPDATE_MODEL_AND_REPLAN
+    assert first[1] == .9

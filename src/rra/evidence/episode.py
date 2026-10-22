@@ -256,8 +256,7 @@ def run_episode(
                 })
             chosen = next((h for h in b3["passing"] if prediction_error(h,b3["action_time"] or observation.time)<=known_config.tolerance),None)
             if b3["action"] is Action.UPDATE_MODEL_AND_REPLAN and chosen is not None and not b3["faults"]:
-                delay=chosen.fitted_parameters.get("actuator_delay",0.0)
-                system2_overrides[observation.target_id]=float(b3["action_time"])-delay
+                system2_overrides[observation.target_id]=float(b3["action_time"])
                 system2_execution_etas[observation.target_id]=float(b3["action_time"])
                 system2_authorized.add(observation.target_id)
                 system2_paused.discard(observation.target_id)
