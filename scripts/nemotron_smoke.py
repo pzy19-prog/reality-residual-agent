@@ -2,10 +2,18 @@
 from __future__ import annotations
 
 import json
+import os
+import re
 import time
 
 from rra.llm.adapter import HypothesisProposer
 from rra.llm.providers import NvidiaNimProvider
+
+
+def _redact(value: str, api_key: str) -> str:
+    if api_key:
+        value = value.replace(api_key, "[REDACTED]")
+    return re.sub(r"(?i)(bearer\s+)[A-Za-z0-9._~+/=-]+", r"\1[REDACTED]", value)
 
 
 def main() -> int:
@@ -31,15 +39,19 @@ def main() -> int:
         status = provider.last_http_status
         if status is not None and 200 <= status < 300:
             break
-        errors.append(proposal.error or f"HTTP status {status}")
+        error = proposal.error or f"HTTP status {status}"
+        errors.append(error)
+        if status in (401, 403):
+            break
         if attempt < 2:
             time.sleep(2 ** attempt)
+    api_key = os.environ.get("NVIDIA_API_KEY", "")
     result = {
         "http_status": provider.last_http_status,
         "latency_seconds": provider.last_latency_seconds,
         "structure_ids": [item.hypothesis_id for item in proposal.items] if proposal else [],
-        "proposal_error": proposal.error if proposal else "no proposal",
-        "retry_errors": errors,
+        "proposal_error": _redact(proposal.error, api_key) if proposal and proposal.error else None,
+        "retry_errors": [_redact(error, api_key) for error in errors],
     }
     print(json.dumps(result, sort_keys=True))
     return 0 if provider.last_http_status is not None and 200 <= provider.last_http_status < 300 else 2

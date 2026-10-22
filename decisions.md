@@ -27,3 +27,4 @@
 - 2026-10-22: Added the six preregistered context families with deterministic wording variants, paired variant generation, content SHA-256 freezing, leakage validation, and fail-closed hash verification in `rra.eval.context_v3`.
 - 2026-10-22: Defined the canonical 14 structure IDs and six fault hypothesis IDs within `rra.llm`; the proposer accepts only observable evidence packet and context text, validates output with Pydantic, ignores numeric parameters, and records unknown IDs/numeric omissions.
 - 2026-10-22: Used stdlib urllib for NVIDIA NIM and a read-only content-addressed replay provider. Cache records contain request and response bodies only.
+- 2026-10-22 (Claude 裁决): `SECOND_DYNAMICS_CHANGE` helpful 按 seed 从 `TXT-MOTOR-SERVICE` / `TXT-PACKAGE-SLIP` 选取；misleading 按 seed 从 `TXT-SENSOR-CAL` / `TXT-ACTUATOR-SLOW` 选取，依据 P3 §13.3 的第二次速度变化语义及 §12.1 速度类相容先验。

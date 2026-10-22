@@ -114,6 +114,8 @@ def select_template_family(seed: int, variant: TextVariant,
             raise ValueError(f"UNKNOWN causal category: {causal_category}")
         return _pick(seed, options)
     causes = (causal_category,) if isinstance(causal_category, str) else tuple(causal_category)
+    if len(causes) == 1 and str(causes[0]).upper() == "SECOND_DYNAMICS_CHANGE":
+        return _pick(seed, ("TXT-SENSOR-CAL", "TXT-ACTUATOR-SLOW"))
     compatible = set(compatible_families(causes))
     if not compatible:
         raise ValueError(f"UNKNOWN causal category: {causal_category}")
@@ -131,7 +133,7 @@ def compatible_families(cause: str | Sequence[str]) -> tuple[str, ...]:
     families: set[str] = set()
     for item in causes:
         key = str(item).upper()
-        if key == "VELOCITY_OFFSET" or key == "SPEED_STEP":
+        if key in ("VELOCITY_OFFSET", "SPEED_STEP", "SECOND_DYNAMICS_CHANGE"):
             families.update(("TXT-MOTOR-SERVICE", "TXT-PACKAGE-SLIP"))
         else:
             family = _family_for_cause(key)

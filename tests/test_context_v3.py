@@ -11,7 +11,7 @@ from rra.eval.context_v3 import (
 MAPPABLE = (
     "SENSOR_BIAS", "VELOCITY_OFFSET", "SPEED_STEP", "ACTUATOR_DELAY",
     "SENSOR_STUCK", "SENSOR_SPIKE_BURST", "OBJECT_MISSING", "BELT_STOP",
-    ("SENSOR_BIAS", "SPEED_STEP"),
+    ("SENSOR_BIAS", "SPEED_STEP"), "SECOND_DYNAMICS_CHANGE",
 )
 
 
@@ -45,9 +45,13 @@ def test_registered_ids_are_exactly_fourteen_structures_and_six_faults():
     assert len(FAULT_HYPOTHESIS_IDS) == 6
 
 
-def test_unknown_category_is_not_given_a_new_family():
-    with pytest.raises(ValueError, match="UNKNOWN causal category"):
-        generate_context("e", 0, "HELPFUL_TEXT_CONTEXT", "SECOND_DYNAMICS_CHANGE")
+def test_second_dynamics_change_uses_speed_family_helpful_and_sensor_actuator_misleading():
+    assert select_template_family(0, "HELPFUL_TEXT_CONTEXT", "SECOND_DYNAMICS_CHANGE") == "TXT-MOTOR-SERVICE"
+    assert select_template_family(1, "HELPFUL_TEXT_CONTEXT", "SECOND_DYNAMICS_CHANGE") == "TXT-PACKAGE-SLIP"
+    assert select_template_family(0, "MISLEADING_TEXT_CONTEXT", "SECOND_DYNAMICS_CHANGE") == "TXT-SENSOR-CAL"
+    assert select_template_family(1, "MISLEADING_TEXT_CONTEXT", "SECOND_DYNAMICS_CHANGE") == "TXT-ACTUATOR-SLOW"
+    assert "MOTOR" in generate_context("e", 0, "HELPFUL_TEXT_CONTEXT", "SECOND_DYNAMICS_CHANGE") or \
+        "motor" in generate_context("e", 0, "HELPFUL_TEXT_CONTEXT", "SECOND_DYNAMICS_CHANGE")
 
 
 def test_episode_freezes_all_four_variants_with_content_hashes():
