@@ -21,3 +21,9 @@
 ### RRA V0 freeze v2
 
 旧 eval（seeds `1000–1099`）保留为历史记录。v2 seeds `2000–2099` 在 `ff1ac91` 单独冻结；实现提交为 `c66b4bf5b35dedbbf102a77c36f4d0d8a1938246`，盲评只运行一次，artifact 提交为 `2418406`，`bench.json` 的 `git_sha` 与实现提交一致。盲评结束后没有修改 `src/`。本轮固定使用 Python 3.11 venv 运行 CLI，完整结果见 README 与 bench artifacts。
+
+### RRA-D1-L2 — §12 context v3 and Nemotron proposer
+
+- 2026-10-22: Added the six preregistered context families with deterministic wording variants, paired variant generation, content SHA-256 freezing, leakage validation, and fail-closed hash verification in `rra.eval.context_v3`.
+- 2026-10-22: Defined the canonical 14 structure IDs and six fault hypothesis IDs within `rra.llm`; the proposer accepts only observable evidence packet and context text, validates output with Pydantic, ignores numeric parameters, and records unknown IDs/numeric omissions.
+- 2026-10-22: Used stdlib urllib for NVIDIA NIM and a read-only content-addressed replay provider. Cache records contain request and response bodies only.
