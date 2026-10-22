@@ -1,0 +1,84 @@
+---
+description: RRA P3 stop conditions, eval-v3 seed prohibition, C1 evidence bounds, and frozen-doc protection
+alwaysApply: true
+---
+
+# Reality Residual Agent — always-on constraints
+
+These rules are mandatory. If a request would violate them, stop and reassess instead of proceeding.
+
+## P3 §25 implementation stop conditions
+
+Stop and reassess if:
+
+- System-2 starts directly mutating controller hard constraints
+- ground truth leaks into policy evidence packets
+- a new framework/subsystem does not reduce distance to the hackathon submission
+- the evaluator is repeatedly changed to preserve a desired result
+- LLM output becomes unrestricted executable code
+- classical and LLM baselines no longer share comparable fitter/verifier/action machinery
+- B3 is given an artificial search/verifier budget that prevents exhaustive evaluation of the registered 14-structure space
+- benchmark fault cases, parameter ranges, noise level, verifier threshold, or text templates are redesigned only after seeing which cases make B4 look good
+- a comparator's own escalation path changes the denominator instead of using the fixed B1-corrected challenge/preservation sets
+- post-terminal residual monitoring is enabled for one baseline but not another
+- observation-noise realization differs across baselines or context variants for the same physical episode
+
+## Addendum 02 §11 added stop conditions
+
+Stop and reassess if:
+
+- sponsor integration changes the content of any Evidence Packet relative to the reference loader
+- any hidden-truth field becomes reachable through a Zetaris-registered source
+- the policy reads Meterless records from another episode in a registered run
+- registered evaluation results depend on sponsor-service availability, other than the preregistered B4 LLM call path
+- sponsor integration is redesigned after seeing eval-v3 outcomes
+
+## Eval-v3 seed prohibition
+
+Do not read, inspect, generate, tune against, or run:
+
+- `config/eval_seeds*.json`
+- any eval v3 seeds, including final eval-v3 seed realization
+
+Development uses only declared development seeds/scenarios. Final eval-v3 seeds are generated only during H5, after implementation-candidate freeze, in an isolated process/context (P3 §18.1; Addendum 01 items 8–9).
+
+## System-2 evidence bounds
+
+System-2 may use only evidence allowed by P3 §5:
+
+- residual history
+- observed positions/timestamps
+- prior command and terminal outcomes
+- fast-layer classifier history
+- episode-local confirmed hypothesis state
+- maintenance logs
+- MES/event records
+- shift notes
+- explicit configuration that would be known to an operator
+
+Forbidden as policy evidence (P3 §5):
+
+- scenario name when that name encodes ground truth
+- true disturbance parameters
+- simulator internal disturbance object
+- future trajectory
+- hidden fault state
+- eval labels
+- any direct pointer from the context text to the benchmark answer
+
+Policy-visible structured fields are restricted to Addendum 01 C1. Fields outside this whitelist must not enter policy evidence:
+
+- observation samples: `target_id`, `step`, `time`, `observed_x`, `observed_y`, `nominal_x`, `nominal_y`, `nominal_speed`
+- target presence events: `target_id`, `step`, `time`, `target_observed`
+- known config: `dt`, `tolerance`, `x_pick`, `y_pick`, `belt_speed`
+- command feedback: `command_id`, `target_id`, `issued_time`, `execution_time`, `accepted`, `success`, `reason_code`
+
+Simulator, controller, and evaluator use of true state remains legal and must stay separated from policy-visible inputs.
+
+## Frozen documents
+
+Do not modify `docs/P3_*.md` or `HACKATHON_BASELINE.md`.
+
+## Git
+
+Commits must not include AI co-author or AI-generated attribution trailers (no `Co-Authored-By` for Cursor, Claude, Codex, or similar).

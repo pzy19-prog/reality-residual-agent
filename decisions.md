@@ -21,5 +21,13 @@
 ### RRA V0 freeze v2
 
 旧 eval（seeds `1000–1099`）保留为历史记录。v2 seeds `2000–2099` 在 `ff1ac91` 单独冻结；实现提交为 `c66b4bf5b35dedbbf102a77c36f4d0d8a1938246`，盲评只运行一次，artifact 提交为 `2418406`，`bench.json` 的 `git_sha` 与实现提交一致。盲评结束后没有修改 `src/`。本轮固定使用 Python 3.11 venv 运行 CLI，完整结果见 README 与 bench artifacts。
+
+### RRA-D1-L2 — §12 context v3 and Nemotron proposer
+
+- 2026-10-22: Added the six preregistered context families with deterministic wording variants, paired variant generation, content SHA-256 freezing, leakage validation, and fail-closed hash verification in `rra.eval.context_v3`.
+- 2026-10-22: Defined the canonical 14 structure IDs and six fault hypothesis IDs within `rra.llm`; the proposer accepts only observable evidence packet and context text, validates output with Pydantic, ignores numeric parameters, and records unknown IDs/numeric omissions.
+- 2026-10-22: Used stdlib urllib for NVIDIA NIM and a read-only content-addressed replay provider. Cache records contain request and response bodies only.
+- 2026-10-22 (Claude 裁决): `SECOND_DYNAMICS_CHANGE` helpful 按 seed 从 `TXT-MOTOR-SERVICE` / `TXT-PACKAGE-SLIP` 选取；misleading 按 seed 从 `TXT-SENSOR-CAL` / `TXT-ACTUATOR-SLOW` 选取，依据 P3 §13.3 的第二次速度变化语义及 §12.1 速度类相容先验。
+- 2026-10-22: 采用 `chat_template_kwargs={"enable_thinking": false}`（模式 a）作为 `NvidiaNimProvider` 默认，并纳入规范化请求及缓存键；单次同 packet 实测 HTTP 200、`finish_reason=stop`、`reasoning_tokens=0`、content 为合法 JSON，解析结构 ID `SENSOR_BIAS` / `VELOCITY_OFFSET` / `SPEED_STEP` / `ACTUATOR_DELAY`，延迟 14.2458 秒；服务端返回模型名 `private/nvidia/nemotron-3.5-super-120b-a12b`。此设置在 eval v3 生成前冻结。
 | 2026-10-22 | System-2 确定性核心的拟合实现 | 采用确定性有界枚举：偏置/速度项使用 NumPy 最小二乘；速度阶跃时间以 0.05 s 网格枚举；执行器延迟以 0.01 s 网格拟合 accepted command feedback。缺少 6 条观测返回 no-fit，verifier 固定使用 n≥6、RMSE≤0.030 | 合成带噪参数恢复测试覆盖四个单原语和一个三原语组合；完整 pytest 71 项通过。B3 尚未接入 runner，详见 REPORT_D1.md 卡点。|
 | 2026-10-22 | B3 runner 接入与 dev 对照 | `run_episode(system2_enabled=False)` 保持默认关闭；B3 只在 fast escalation / policy-visible presence fault 后运行，按目标重观测时步进复查，只有 verifier + common-action + scoped authorization 全通过才改计划；执行器将候选执行时刻与发令时刻分开处理 ACTUATOR_DELAY。CLI `s2-b3-dev` 配对跑 B1-corrected/B3，仅读 dev seeds | 全量 130 个 dev seeds 已生成 `artifacts/s2/b3-dev.{json,md}`。当前 dev unsafe_action 非零，结果不得作为安全成功结论；挑战集/保全集按 B1-corrected 固定。|
