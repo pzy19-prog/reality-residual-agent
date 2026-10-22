@@ -123,6 +123,8 @@ def run_b3_dev(output_dir: Path = ROOT / "artifacts" / "s2", *, nproc: int | Non
             "llm_calls": 0, "production_pause_seconds": ep["pause_seconds"],
         } for ep in episodes],
     }
+    for ep in episodes:
+        ep.pop("pause_seconds", None)
     receipt = {
         "schema_version": "rra.s2.b3-dev.v1",
         "seed_identity": {"path": "config/dev_seeds.json", "values": seeds},
