@@ -129,6 +129,8 @@ def main(argv: list[str] | None = None) -> int:
     run_parser.add_argument("--output-dir", type=Path, default=Path("outputs"))
     bench_parser = commands.add_parser("bench", help="run the configured benchmark suite")
     bench_parser.add_argument("--output-dir", type=Path, default=Path("."))
+    s2_parser = commands.add_parser("s2-b3-dev", help="run paired corrected B1 and exhaustive B3 on dev seeds")
+    s2_parser.add_argument("--output-dir", type=Path, default=ROOT / "artifacts" / "s2")
     args = parser.parse_args(argv)
     if args.command == "run":
         args.output_dir.mkdir(parents=True, exist_ok=True)
@@ -141,6 +143,11 @@ def main(argv: list[str] | None = None) -> int:
         path = args.output_dir / f"{args.scenario}-seed{args.seed}-{args.compensation}.json"
         path.write_text(json.dumps(receipt, indent=2, ensure_ascii=False) + "\n")
         print(path)
+        return 0
+    if args.command == "s2-b3-dev":
+        from rra.eval.b3_dev import run_b3_dev
+        receipt = run_b3_dev(args.output_dir)
+        print(json.dumps(receipt["metrics"], indent=2))
         return 0
     result = run_bench(args.output_dir)
     print(result["markdown"])
