@@ -74,6 +74,8 @@ def test_episode_s2_handoff_is_deterministic():
     runs=[run_episode(config,0,True,terminal_monitoring='corrected',realization=realization,system2_enabled=True) for _ in range(2)]
     assert runs[0]['receipt_sha256']==runs[1]['receipt_sha256']
     assert runs[0]['system2_decisions']
+    assert runs[0]['system2_wall_latency_seconds'] > 0
+    assert runs[1]['system2_wall_latency_seconds'] > 0
     for item in runs[0]['system2_decisions']:
         assert item['action'] in {a.value for a in Action}
         if item['action']==Action.UPDATE_MODEL_AND_REPLAN.value:
@@ -84,3 +86,26 @@ def test_actuator_delay_requires_command_feedback():
     obs=[Observation(i*.1,1+i*.1,1+i*.1) for i in range(8)]
     result=fit((Primitive.ACTUATOR_DELAY,),obs,nominal_speed=1.0)
     assert result.no_fit
+
+def test_episode_runner_has_no_dsl_prediction_implementation():
+    import inspect
+    from rra.evidence import episode
+    source = inspect.getsource(episode)
+    assert 'def prediction_error' not in source
+    assert 'speed_step_delta' not in source
+
+def test_common_command_time_is_independent_of_delay_hypothesis_order():
+    from rra.s2.prediction import pick_error_at_command_time
+    from rra.s2.fitter import Observation as EvidenceObservation
+    obs = EvidenceObservation(0.0, 0.0, 0.0)
+    fast = Verification('fast', (), {'actuator_delay': 0.0}, 6, .01, (), (), True, ())
+    slow = Verification('slow', (), {'actuator_delay': .2}, 6, .01, (), (), True, ())
+    error = lambda h, t: pick_error_at_command_time(
+        h, t, observation=obs, nominal_speed=1.0, x_pick=1.0)
+    first = common_action([fast, slow], current_time=0.0, dt=.1, horizon=2.0,
+                          tolerance=.2, error=error)
+    reversed_order = common_action([slow, fast], current_time=0.0, dt=.1, horizon=2.0,
+                                   tolerance=.2, error=error)
+    assert first == reversed_order
+    assert first[0] is Action.UPDATE_MODEL_AND_REPLAN
+    assert first[1] == .9
