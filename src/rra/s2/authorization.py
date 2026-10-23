@@ -14,7 +14,12 @@ class RecoveryAuthorization:
     controller_constraints_preserved: bool
     scope: str
     expires_at: float
+    terminal_condition: str | None = None
 
-def authorize(*, episode_id, hypothesis_id, evidence_ids, parameters, score, action, scope, expires_at, exception=None):
+def authorize(*, episode_id, hypothesis_id, evidence_ids, parameters, score, action, scope, expires_at, exception=None, terminal_condition=None):
     if action is not Action.UPDATE_MODEL_AND_REPLAN: raise ValueError('only verified replan can be authorized')
-    return RecoveryAuthorization(f'{episode_id}:{hypothesis_id}:{expires_at:.6f}',episode_id,hypothesis_id,tuple(evidence_ids),dict(parameters),float(score),action,dict(exception or {}),True,scope,float(expires_at))
+    if not exception:
+        raise ValueError('authorization requires a non-empty temporary policy exception')
+    evidence_revision = evidence_ids[-1] if evidence_ids else 'no-evidence'
+    authorization_id = f'{episode_id}:{hypothesis_id}:{scope}:{expires_at:.6f}:{evidence_revision}'
+    return RecoveryAuthorization(authorization_id,episode_id,hypothesis_id,tuple(evidence_ids),dict(parameters),float(score),action,dict(exception or {}),True,scope,float(expires_at),terminal_condition)

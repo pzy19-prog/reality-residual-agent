@@ -1,0 +1,2949 @@
+{
+  "seed_source": "config/dev_seeds.json",
+  "unsafe_objects": [
+    {
+      "seed": 24,
+      "target_id": 1,
+      "authorization_source": "s2_authorized",
+      "outcome": {
+        "target_id": 1,
+        "status": "attempt_failed",
+        "reason": "missed pick window"
+      },
+      "evaluator": {
+        "target_id": 1,
+        "target_exists_at_execution": true,
+        "command_issued": true,
+        "execution_step": 63,
+        "position_error": 0.43090659268148546,
+        "stale_authorization": false,
+        "authorization_source": "s2_authorized",
+        "actual_x_at_execution": 0.4243209499546081,
+        "execution_time": 6.300000000000001,
+        "terminal_status": "attempt_failed"
+      },
+      "failure_trace": {
+        "target_id": 1,
+        "x0": -6.379291,
+        "command_issued": true,
+        "command_count": 1,
+        "command_success": false,
+        "decision_sample_count": 64,
+        "decision_time": 6.3,
+        "decision_time_sample_count": 64,
+        "applied_eta": 6.3,
+        "clamped": true,
+        "uncapped_time_delta": -0.684142,
+        "excess": 0.184142,
+        "v_hat": 0.932579,
+        "infeasible": false,
+        "window_remaining_time": 0.05,
+        "compensated_predicted_window": {
+          "start": 6.25,
+          "center": 6.3,
+          "end": 6.35
+        },
+        "previous_object_grab_end_time": null,
+        "command_time": 6.3,
+        "execution_time": 6.3,
+        "true_eta": 5.925995,
+        "position_error": 0.430907,
+        "time_error": 0.0,
+        "command_result": "missed pick window",
+        "skip_reason": "command_issued_but_pick_failed",
+        "terminal_status": "attempt_failed",
+        "seed": 24,
+        "compensation": "on",
+        "scenario": "nominal"
+      },
+      "s2_calls": [
+        {
+          "sim_time": 0.5,
+          "trigger": null,
+          "gate": "COMMON_ACTION",
+          "action": "UPDATE_MODEL_AND_REPLAN",
+          "passing": [
+            [
+              "SENSOR_BIAS"
+            ],
+            [
+              "SENSOR_BIAS",
+              "VELOCITY_OFFSET"
+            ],
+            [
+              "SENSOR_BIAS",
+              "SPEED_STEP"
+            ],
+            [
+              "SENSOR_BIAS",
+              "VELOCITY_OFFSET",
+              "SPEED_STEP"
+            ]
+          ],
+          "fitted_parameters": [
+            {
+              "structure": [
+                "SENSOR_BIAS"
+              ],
+              "parameters": {
+                "sensor_bias": -0.1891015000878408
+              },
+              "rmse": 0.008352039421892919
+            },
+            {
+              "structure": [
+                "SENSOR_BIAS",
+                "VELOCITY_OFFSET"
+              ],
+              "parameters": {
+                "sensor_bias": -0.18023158613769039,
+                "velocity_offset": -0.03547965580060195
+              },
+              "rmse": 0.005748163899259639
+            },
+            {
+              "structure": [
+                "SENSOR_BIAS",
+                "SPEED_STEP"
+              ],
+              "parameters": {
+                "sensor_bias": -0.1891015000878408,
+                "speed_step_delta": 0.0,
+                "speed_step_time": 0.5
+              },
+              "rmse": 0.008352039421892919
+            },
+            {
+              "structure": [
+                "SENSOR_BIAS",
+                "VELOCITY_OFFSET",
+                "SPEED_STEP"
+              ],
+              "parameters": {
+                "sensor_bias": -0.18023158613769039,
+                "velocity_offset": -0.03547965580060195,
+                "speed_step_delta": 0.0,
+                "speed_step_time": 0.5
+              },
+              "rmse": 0.005748163899259639
+            }
+          ],
+          "action_time": 6.3
+        }
+      ],
+      "authorization_decisions": [
+        {
+          "time": 0.5,
+          "target_id": 1,
+          "action": "UPDATE_MODEL_AND_REPLAN",
+          "gate_reason": "COMMON_ACTION",
+          "hypothesis_id": "h00",
+          "structure": [
+            "SENSOR_BIAS"
+          ],
+          "fitted_parameters": {
+            "sensor_bias": -0.1891015000878408
+          },
+          "n_usable": 6,
+          "rmse": 0.008352039421892919,
+          "residual_vector": [
+            0.01121384948126139,
+            0.004413320182575481,
+            0.00419253146539092,
+            -0.00442118268991773,
+            -0.015368359501891499,
+            -3.0158937418173215e-05
+          ],
+          "violated_invariants": [],
+          "passed": true,
+          "evidence_refs": [
+            "obs:1:0.000",
+            "obs:1:0.100",
+            "obs:1:0.200",
+            "obs:1:0.300",
+            "obs:1:0.400",
+            "obs:1:0.500"
+          ],
+          "common_action_time": 6.3,
+          "authorization": {
+            "authorization_id": "24:h00:target:1:20.000000",
+            "episode_id": "24",
+            "hypothesis_id": "h00",
+            "evidence_ids": [
+              "obs:1:0.000",
+              "obs:1:0.100",
+              "obs:1:0.200",
+              "obs:1:0.300",
+              "obs:1:0.400",
+              "obs:1:0.500"
+            ],
+            "fitted_parameters": {
+              "sensor_bias": -0.1891015000878408
+            },
+            "verifier_score": 0.008352039421892919,
+            "permitted_action": "UPDATE_MODEL_AND_REPLAN",
+            "temporary_policy_exception": {},
+            "controller_constraints_preserved": true,
+            "scope": "target:1",
+            "expires_at": 20.0,
+            "terminal_condition": null
+          },
+          "pause_seconds": 0.0
+        }
+      ]
+    },
+    {
+      "seed": 26,
+      "target_id": 2,
+      "authorization_source": "s2_authorized",
+      "outcome": {
+        "target_id": 2,
+        "status": "attempt_failed",
+        "reason": "missed pick window"
+      },
+      "evaluator": {
+        "target_id": 2,
+        "target_exists_at_execution": true,
+        "command_issued": true,
+        "execution_step": 77,
+        "position_error": 0.7534483619789446,
+        "stale_authorization": false,
+        "authorization_source": "s2_authorized",
+        "actual_x_at_execution": 0.7519418588955329,
+        "execution_time": 7.7,
+        "terminal_status": "attempt_failed"
+      },
+      "failure_trace": {
+        "target_id": 2,
+        "x0": -7.729569,
+        "command_issued": true,
+        "command_count": 1,
+        "command_success": false,
+        "decision_sample_count": 78,
+        "decision_time": 7.7,
+        "decision_time_sample_count": 78,
+        "applied_eta": 7.7,
+        "clamped": true,
+        "uncapped_time_delta": -0.52584,
+        "excess": 0.02584,
+        "v_hat": 1.505655,
+        "infeasible": false,
+        "window_remaining_time": 0.05,
+        "compensated_predicted_window": {
+          "start": 7.65,
+          "center": 7.7,
+          "end": 7.75
+        },
+        "previous_object_grab_end_time": null,
+        "command_time": 7.7,
+        "execution_time": 7.7,
+        "true_eta": 7.060545,
+        "position_error": 0.753448,
+        "time_error": 0.0,
+        "command_result": "missed pick window",
+        "skip_reason": "command_issued_but_pick_failed",
+        "terminal_status": "attempt_failed",
+        "seed": 26,
+        "compensation": "on",
+        "scenario": "nominal"
+      },
+      "s2_calls": [
+        {
+          "sim_time": 0.5,
+          "trigger": null,
+          "gate": "COMMON_ACTION",
+          "action": "UPDATE_MODEL_AND_REPLAN",
+          "passing": [
+            [
+              "SENSOR_BIAS"
+            ],
+            [
+              "VELOCITY_OFFSET"
+            ],
+            [
+              "SPEED_STEP"
+            ],
+            [
+              "SENSOR_BIAS",
+              "VELOCITY_OFFSET"
+            ],
+            [
+              "SENSOR_BIAS",
+              "SPEED_STEP"
+            ],
+            [
+              "VELOCITY_OFFSET",
+              "SPEED_STEP"
+            ],
+            [
+              "SENSOR_BIAS",
+              "VELOCITY_OFFSET",
+              "SPEED_STEP"
+            ]
+          ],
+          "fitted_parameters": [
+            {
+              "structure": [
+                "SENSOR_BIAS"
+              ],
+              "parameters": {
+                "sensor_bias": -0.001375456840985686
+              },
+              "rmse": 0.013138682672224017
+            },
+            {
+              "structure": [
+                "VELOCITY_OFFSET"
+              ],
+              "parameters": {
+                "velocity_offset": -0.0034722444567897195
+              },
+              "rmse": 0.013168587107422502
+            },
+            {
+              "structure": [
+                "SPEED_STEP"
+              ],
+              "parameters": {
+                "speed_step_delta": 0.0,
+                "speed_step_time": 0.5
+              },
+              "rmse": 0.013210483105579976
+            },
+            {
+              "structure": [
+                "SENSOR_BIAS",
+                "VELOCITY_OFFSET"
+              ],
+              "parameters": {
+                "sensor_bias": -0.0015946722841916625,
+                "velocity_offset": 0.0008768617728239059
+              },
+              "rmse": 0.013137829215785522
+            },
+            {
+              "structure": [
+                "SENSOR_BIAS",
+                "SPEED_STEP"
+              ],
+              "parameters": {
+                "sensor_bias": -0.001375456840985686,
+                "speed_step_delta": 0.0,
+                "speed_step_time": 0.5
+              },
+              "rmse": 0.013138682672224017
+            },
+            {
+              "structure": [
+                "VELOCITY_OFFSET",
+                "SPEED_STEP"
+              ],
+              "parameters": {
+                "velocity_offset": -0.0034722444567897195,
+                "speed_step_delta": 0.0,
+                "speed_step_time": 0.5
+              },
+              "rmse": 0.013168587107422502
+            },
+            {
+              "structure": [
+                "SENSOR_BIAS",
+                "VELOCITY_OFFSET",
+                "SPEED_STEP"
+              ],
+              "parameters": {
+                "sensor_bias": -0.0015946722841916625,
+                "velocity_offset": 0.0008768617728239059,
+                "speed_step_delta": 0.0,
+                "speed_step_time": 0.5
+              },
+              "rmse": 0.013137829215785522
+            }
+          ],
+          "action_time": 7.7
+        }
+      ],
+      "authorization_decisions": [
+        {
+          "time": 0.5,
+          "target_id": 2,
+          "action": "UPDATE_MODEL_AND_REPLAN",
+          "gate_reason": "COMMON_ACTION",
+          "hypothesis_id": "h00",
+          "structure": [
+            "SENSOR_BIAS"
+          ],
+          "fitted_parameters": {
+            "sensor_bias": -0.001375456840985686
+          },
+          "n_usable": 6,
+          "rmse": 0.013138682672224017,
+          "residual_vector": [
+            0.01742894266547686,
+            -0.016552945442965743,
+            -0.011499224233226505,
+            -0.0026732992070278936,
+            0.01737683145577214,
+            -0.004080305238028862
+          ],
+          "violated_invariants": [],
+          "passed": true,
+          "evidence_refs": [
+            "obs:2:0.000",
+            "obs:2:0.100",
+            "obs:2:0.200",
+            "obs:2:0.300",
+            "obs:2:0.400",
+            "obs:2:0.500"
+          ],
+          "common_action_time": 7.7,
+          "authorization": {
+            "authorization_id": "26:h00:target:2:30.000000",
+            "episode_id": "26",
+            "hypothesis_id": "h00",
+            "evidence_ids": [
+              "obs:2:0.000",
+              "obs:2:0.100",
+              "obs:2:0.200",
+              "obs:2:0.300",
+              "obs:2:0.400",
+              "obs:2:0.500"
+            ],
+            "fitted_parameters": {
+              "sensor_bias": -0.001375456840985686
+            },
+            "verifier_score": 0.013138682672224017,
+            "permitted_action": "UPDATE_MODEL_AND_REPLAN",
+            "temporary_policy_exception": {},
+            "controller_constraints_preserved": true,
+            "scope": "target:2",
+            "expires_at": 30.0,
+            "terminal_condition": null
+          },
+          "pause_seconds": 0.0
+        }
+      ]
+    },
+    {
+      "seed": 30,
+      "target_id": 2,
+      "authorization_source": "s2_authorized",
+      "outcome": {
+        "target_id": 2,
+        "status": "attempt_failed",
+        "reason": "missed pick window"
+      },
+      "evaluator": {
+        "target_id": 2,
+        "target_exists_at_execution": true,
+        "command_issued": true,
+        "execution_step": 78,
+        "position_error": 0.7992435865726419,
+        "stale_authorization": false,
+        "authorization_source": "s2_authorized",
+        "actual_x_at_execution": 0.7992365371361801,
+        "execution_time": 8.100711232063524,
+        "terminal_status": "attempt_failed"
+      },
+      "failure_trace": {
+        "target_id": 2,
+        "x0": -7.630908,
+        "command_issued": true,
+        "command_count": 1,
+        "command_success": false,
+        "decision_sample_count": 79,
+        "decision_time": 7.8,
+        "decision_time_sample_count": 79,
+        "applied_eta": 7.8,
+        "clamped": false,
+        "uncapped_time_delta": -0.055361,
+        "excess": 0.0,
+        "v_hat": 1.186462,
+        "infeasible": false,
+        "window_remaining_time": 0.05,
+        "compensated_predicted_window": {
+          "start": 7.75,
+          "center": 7.8,
+          "end": 7.85
+        },
+        "previous_object_grab_end_time": null,
+        "command_time": 7.8,
+        "execution_time": 8.100711,
+        "true_eta": 7.332707,
+        "position_error": 0.799244,
+        "time_error": 0.300711,
+        "command_result": "missed pick window",
+        "skip_reason": "command_issued_but_pick_failed",
+        "terminal_status": "attempt_failed",
+        "seed": 30,
+        "compensation": "on",
+        "scenario": "nominal"
+      },
+      "s2_calls": [
+        {
+          "sim_time": 0.5,
+          "trigger": null,
+          "gate": "COMMON_ACTION",
+          "action": "UPDATE_MODEL_AND_REPLAN",
+          "passing": [
+            [
+              "SENSOR_BIAS"
+            ],
+            [
+              "SENSOR_BIAS",
+              "VELOCITY_OFFSET"
+            ],
+            [
+              "SENSOR_BIAS",
+              "SPEED_STEP"
+            ],
+            [
+              "SENSOR_BIAS",
+              "VELOCITY_OFFSET",
+              "SPEED_STEP"
+            ]
+          ],
+          "fitted_parameters": [
+            {
+              "structure": [
+                "SENSOR_BIAS"
+              ],
+              "parameters": {
+                "sensor_bias": 0.25370445976012107
+              },
+              "rmse": 0.014160292405833837
+            },
+            {
+              "structure": [
+                "SENSOR_BIAS",
+                "VELOCITY_OFFSET"
+              ],
+              "parameters": {
+                "sensor_bias": 0.2471518697516119,
+                "velocity_offset": 0.026210360034036997
+              },
+              "rmse": 0.013434168289709211
+            },
+            {
+              "structure": [
+                "SENSOR_BIAS",
+                "SPEED_STEP"
+              ],
+              "parameters": {
+                "sensor_bias": 0.25370445976012107,
+                "speed_step_delta": 0.0,
+                "speed_step_time": 0.5
+              },
+              "rmse": 0.014160292405833837
+            },
+            {
+              "structure": [
+                "SENSOR_BIAS",
+                "VELOCITY_OFFSET",
+                "SPEED_STEP"
+              ],
+              "parameters": {
+                "sensor_bias": 0.2471518697516119,
+                "velocity_offset": 0.026210360034036997,
+                "speed_step_delta": 0.0,
+                "speed_step_time": 0.5
+              },
+              "rmse": 0.013434168289709211
+            }
+          ],
+          "action_time": 7.8
+        }
+      ],
+      "authorization_decisions": [
+        {
+          "time": 0.5,
+          "target_id": 2,
+          "action": "UPDATE_MODEL_AND_REPLAN",
+          "gate_reason": "COMMON_ACTION",
+          "hypothesis_id": "h00",
+          "structure": [
+            "SENSOR_BIAS"
+          ],
+          "fitted_parameters": {
+            "sensor_bias": 0.25370445976012107
+          },
+          "n_usable": 6,
+          "rmse": 0.014160292405833837,
+          "residual_vector": [
+            -0.015421284021054193,
+            0.0069665895044485615,
+            0.015403981188048588,
+            -0.018469135685050875,
+            -0.00590174016613304,
+            0.017421589179740626
+          ],
+          "violated_invariants": [],
+          "passed": true,
+          "evidence_refs": [
+            "obs:2:0.000",
+            "obs:2:0.100",
+            "obs:2:0.200",
+            "obs:2:0.300",
+            "obs:2:0.400",
+            "obs:2:0.500"
+          ],
+          "common_action_time": 7.8,
+          "authorization": {
+            "authorization_id": "30:h00:target:2:30.000000",
+            "episode_id": "30",
+            "hypothesis_id": "h00",
+            "evidence_ids": [
+              "obs:2:0.000",
+              "obs:2:0.100",
+              "obs:2:0.200",
+              "obs:2:0.300",
+              "obs:2:0.400",
+              "obs:2:0.500"
+            ],
+            "fitted_parameters": {
+              "sensor_bias": 0.25370445976012107
+            },
+            "verifier_score": 0.014160292405833837,
+            "permitted_action": "UPDATE_MODEL_AND_REPLAN",
+            "temporary_policy_exception": {},
+            "controller_constraints_preserved": true,
+            "scope": "target:2",
+            "expires_at": 30.0,
+            "terminal_condition": null
+          },
+          "pause_seconds": 0.0
+        }
+      ]
+    },
+    {
+      "seed": 48,
+      "target_id": 0,
+      "authorization_source": "s2_authorized",
+      "outcome": {
+        "target_id": 0,
+        "status": "attempt_failed",
+        "reason": "missed pick window"
+      },
+      "evaluator": {
+        "target_id": 0,
+        "target_exists_at_execution": true,
+        "command_issued": true,
+        "execution_step": 58,
+        "position_error": 0.4012387413097124,
+        "stale_authorization": false,
+        "authorization_source": "s2_authorized",
+        "actual_x_at_execution": 0.4012193296743414,
+        "execution_time": 5.800000000000001,
+        "terminal_status": "attempt_failed"
+      },
+      "failure_trace": {
+        "target_id": 0,
+        "x0": -6.449201,
+        "command_issued": true,
+        "command_count": 1,
+        "command_success": false,
+        "decision_sample_count": 59,
+        "decision_time": 5.8,
+        "decision_time_sample_count": 59,
+        "applied_eta": 5.8,
+        "clamped": false,
+        "uncapped_time_delta": 0.0,
+        "excess": 0.0,
+        "v_hat": 1.0,
+        "infeasible": false,
+        "window_remaining_time": 0.05,
+        "compensated_predicted_window": {
+          "start": 5.75,
+          "center": 5.8,
+          "end": 5.85
+        },
+        "previous_object_grab_end_time": null,
+        "command_time": 5.8,
+        "execution_time": 5.8,
+        "true_eta": 5.488919,
+        "position_error": 0.401239,
+        "time_error": 0.0,
+        "command_result": "missed pick window",
+        "skip_reason": "command_issued_but_pick_failed",
+        "terminal_status": "attempt_failed",
+        "seed": 48,
+        "compensation": "on",
+        "scenario": "nominal"
+      },
+      "s2_calls": [
+        {
+          "sim_time": 0.30000000000000004,
+          "trigger": null,
+          "gate": "NO_VERIFIED_HYPOTHESIS",
+          "action": "PAUSE_AND_REOBSERVE",
+          "passing": [],
+          "fitted_parameters": [],
+          "action_time": null
+        },
+        {
+          "sim_time": 5.1000000000000005,
+          "trigger": null,
+          "gate": "COMMON_ACTION",
+          "action": "UPDATE_MODEL_AND_REPLAN",
+          "passing": [
+            [
+              "SENSOR_BIAS",
+              "SPEED_STEP"
+            ],
+            [
+              "SENSOR_BIAS",
+              "VELOCITY_OFFSET",
+              "SPEED_STEP"
+            ]
+          ],
+          "fitted_parameters": [
+            {
+              "structure": [
+                "SENSOR_BIAS",
+                "SPEED_STEP"
+              ],
+              "parameters": {
+                "sensor_bias": 0.4500669426737321,
+                "speed_step_delta": 0.2945638256758836,
+                "speed_step_time": 2.3500000000000014
+              },
+              "rmse": 0.022063420290300728
+            },
+            {
+              "structure": [
+                "SENSOR_BIAS",
+                "VELOCITY_OFFSET",
+                "SPEED_STEP"
+              ],
+              "parameters": {
+                "sensor_bias": 0.40599849774743724,
+                "velocity_offset": 0.038150601662911926,
+                "speed_step_delta": 0.2597541811289886,
+                "speed_step_time": 2.5500000000000016
+              },
+              "rmse": 0.012377822056467423
+            }
+          ],
+          "action_time": 5.8
+        }
+      ],
+      "authorization_decisions": [
+        {
+          "time": 0.30000000000000004,
+          "target_id": 0,
+          "action": "PAUSE_AND_REOBSERVE",
+          "gate_reason": "NO_VERIFIED_HYPOTHESIS",
+          "faults": [],
+          "pause_seconds": 0.0,
+          "verifications": [
+            {
+              "hypothesis_id": "h00",
+              "structure": [
+                "SENSOR_BIAS"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 4,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:0:0.000",
+                "obs:0:0.100",
+                "obs:0:0.200",
+                "obs:0:0.300"
+              ]
+            },
+            {
+              "hypothesis_id": "h01",
+              "structure": [
+                "VELOCITY_OFFSET"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 4,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:0:0.000",
+                "obs:0:0.100",
+                "obs:0:0.200",
+                "obs:0:0.300"
+              ]
+            },
+            {
+              "hypothesis_id": "h02",
+              "structure": [
+                "SPEED_STEP"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 4,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:0:0.000",
+                "obs:0:0.100",
+                "obs:0:0.200",
+                "obs:0:0.300"
+              ]
+            },
+            {
+              "hypothesis_id": "h03",
+              "structure": [
+                "ACTUATOR_DELAY"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 4,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:0:0.000",
+                "obs:0:0.100",
+                "obs:0:0.200",
+                "obs:0:0.300"
+              ]
+            },
+            {
+              "hypothesis_id": "h04",
+              "structure": [
+                "SENSOR_BIAS",
+                "VELOCITY_OFFSET"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 4,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:0:0.000",
+                "obs:0:0.100",
+                "obs:0:0.200",
+                "obs:0:0.300"
+              ]
+            },
+            {
+              "hypothesis_id": "h05",
+              "structure": [
+                "SENSOR_BIAS",
+                "SPEED_STEP"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 4,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:0:0.000",
+                "obs:0:0.100",
+                "obs:0:0.200",
+                "obs:0:0.300"
+              ]
+            },
+            {
+              "hypothesis_id": "h06",
+              "structure": [
+                "SENSOR_BIAS",
+                "ACTUATOR_DELAY"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 4,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:0:0.000",
+                "obs:0:0.100",
+                "obs:0:0.200",
+                "obs:0:0.300"
+              ]
+            },
+            {
+              "hypothesis_id": "h07",
+              "structure": [
+                "VELOCITY_OFFSET",
+                "SPEED_STEP"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 4,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:0:0.000",
+                "obs:0:0.100",
+                "obs:0:0.200",
+                "obs:0:0.300"
+              ]
+            },
+            {
+              "hypothesis_id": "h08",
+              "structure": [
+                "VELOCITY_OFFSET",
+                "ACTUATOR_DELAY"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 4,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:0:0.000",
+                "obs:0:0.100",
+                "obs:0:0.200",
+                "obs:0:0.300"
+              ]
+            },
+            {
+              "hypothesis_id": "h09",
+              "structure": [
+                "SPEED_STEP",
+                "ACTUATOR_DELAY"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 4,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:0:0.000",
+                "obs:0:0.100",
+                "obs:0:0.200",
+                "obs:0:0.300"
+              ]
+            },
+            {
+              "hypothesis_id": "h10",
+              "structure": [
+                "SENSOR_BIAS",
+                "VELOCITY_OFFSET",
+                "SPEED_STEP"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 4,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:0:0.000",
+                "obs:0:0.100",
+                "obs:0:0.200",
+                "obs:0:0.300"
+              ]
+            },
+            {
+              "hypothesis_id": "h11",
+              "structure": [
+                "SENSOR_BIAS",
+                "VELOCITY_OFFSET",
+                "ACTUATOR_DELAY"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 4,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:0:0.000",
+                "obs:0:0.100",
+                "obs:0:0.200",
+                "obs:0:0.300"
+              ]
+            },
+            {
+              "hypothesis_id": "h12",
+              "structure": [
+                "SENSOR_BIAS",
+                "SPEED_STEP",
+                "ACTUATOR_DELAY"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 4,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:0:0.000",
+                "obs:0:0.100",
+                "obs:0:0.200",
+                "obs:0:0.300"
+              ]
+            },
+            {
+              "hypothesis_id": "h13",
+              "structure": [
+                "VELOCITY_OFFSET",
+                "SPEED_STEP",
+                "ACTUATOR_DELAY"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 4,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:0:0.000",
+                "obs:0:0.100",
+                "obs:0:0.200",
+                "obs:0:0.300"
+              ]
+            }
+          ]
+        },
+        {
+          "time": 5.1000000000000005,
+          "target_id": 0,
+          "action": "UPDATE_MODEL_AND_REPLAN",
+          "gate_reason": "COMMON_ACTION",
+          "hypothesis_id": "h05",
+          "structure": [
+            "SENSOR_BIAS",
+            "SPEED_STEP"
+          ],
+          "fitted_parameters": {
+            "sensor_bias": 0.4500669426737321,
+            "speed_step_delta": 0.2945638256758836,
+            "speed_step_time": 2.3500000000000014
+          },
+          "n_usable": 52,
+          "rmse": 0.022063420290300728,
+          "residual_vector": [
+            -0.036396103267805346,
+            -0.03023931693914733,
+            -0.03359370049767524,
+            -0.0461906036777458,
+            -0.03559071524070717,
+            -0.022836195223801925,
+            -0.022788502398353006,
+            -0.020298729523620163,
+            -0.04333099982296634,
+            -0.0025887008197691963,
+            -0.032621020637818854,
+            0.018962542313479103,
+            0.01845635764701331,
+            -0.0011459435425141273,
+            0.01867603085764319,
+            0.02129441429031015,
+            0.03768286828579853,
+            0.026003088109175676,
+            0.02509723869917163,
+            0.03115204079479511,
+            0.03007728387353298,
+            0.030140957945940128,
+            0.03645714661998273,
+            0.025177947538659706,
+            0.02141908175924062,
+            0.03148542815201405,
+            0.0014123496823772452,
+            -0.016146616038331563,
+            0.00971377387585537,
+            -0.005085876521193633,
+            0.005437750923348195,
+            -0.00952541072794122,
+            -0.017286108849720927,
+            -0.0009093899426260155,
+            0.020735683363529267,
+            -0.029761754641416616,
+            -0.0035575176365592043,
+            -0.016102109739439485,
+            0.007344786592647035,
+            -0.006228476783809889,
+            -0.01535626187665795,
+            0.003755698397036822,
+            -0.0019326478190118124,
+            -0.011659682267666449,
+            -0.005076911841751519,
+            0.010076598535809778,
+            0.0018827665943352834,
+            0.019334743670698318,
+            -0.007024943277012197,
+            0.015576660538345388,
+            -0.0009474463907617192,
+            0.0068684468850757074
+          ],
+          "violated_invariants": [],
+          "passed": true,
+          "evidence_refs": [
+            "obs:0:0.000",
+            "obs:0:0.100",
+            "obs:0:0.200",
+            "obs:0:0.300",
+            "obs:0:0.400",
+            "obs:0:0.500",
+            "obs:0:0.600",
+            "obs:0:0.700",
+            "obs:0:0.800",
+            "obs:0:0.900",
+            "obs:0:1.000",
+            "obs:0:1.100",
+            "obs:0:1.200",
+            "obs:0:1.300",
+            "obs:0:1.400",
+            "obs:0:1.500",
+            "obs:0:1.600",
+            "obs:0:1.700",
+            "obs:0:1.800",
+            "obs:0:1.900",
+            "obs:0:2.000",
+            "obs:0:2.100",
+            "obs:0:2.200",
+            "obs:0:2.300",
+            "obs:0:2.400",
+            "obs:0:2.500",
+            "obs:0:2.600",
+            "obs:0:2.700",
+            "obs:0:2.800",
+            "obs:0:2.900",
+            "obs:0:3.000",
+            "obs:0:3.100",
+            "obs:0:3.200",
+            "obs:0:3.300",
+            "obs:0:3.400",
+            "obs:0:3.500",
+            "obs:0:3.600",
+            "obs:0:3.700",
+            "obs:0:3.800",
+            "obs:0:3.900",
+            "obs:0:4.000",
+            "obs:0:4.100",
+            "obs:0:4.200",
+            "obs:0:4.300",
+            "obs:0:4.400",
+            "obs:0:4.500",
+            "obs:0:4.600",
+            "obs:0:4.700",
+            "obs:0:4.800",
+            "obs:0:4.900",
+            "obs:0:5.000",
+            "obs:0:5.100"
+          ],
+          "common_action_time": 5.8,
+          "authorization": {
+            "authorization_id": "48:h05:target:0:10.000000",
+            "episode_id": "48",
+            "hypothesis_id": "h05",
+            "evidence_ids": [
+              "obs:0:0.000",
+              "obs:0:0.100",
+              "obs:0:0.200",
+              "obs:0:0.300",
+              "obs:0:0.400",
+              "obs:0:0.500",
+              "obs:0:0.600",
+              "obs:0:0.700",
+              "obs:0:0.800",
+              "obs:0:0.900",
+              "obs:0:1.000",
+              "obs:0:1.100",
+              "obs:0:1.200",
+              "obs:0:1.300",
+              "obs:0:1.400",
+              "obs:0:1.500",
+              "obs:0:1.600",
+              "obs:0:1.700",
+              "obs:0:1.800",
+              "obs:0:1.900",
+              "obs:0:2.000",
+              "obs:0:2.100",
+              "obs:0:2.200",
+              "obs:0:2.300",
+              "obs:0:2.400",
+              "obs:0:2.500",
+              "obs:0:2.600",
+              "obs:0:2.700",
+              "obs:0:2.800",
+              "obs:0:2.900",
+              "obs:0:3.000",
+              "obs:0:3.100",
+              "obs:0:3.200",
+              "obs:0:3.300",
+              "obs:0:3.400",
+              "obs:0:3.500",
+              "obs:0:3.600",
+              "obs:0:3.700",
+              "obs:0:3.800",
+              "obs:0:3.900",
+              "obs:0:4.000",
+              "obs:0:4.100",
+              "obs:0:4.200",
+              "obs:0:4.300",
+              "obs:0:4.400",
+              "obs:0:4.500",
+              "obs:0:4.600",
+              "obs:0:4.700",
+              "obs:0:4.800",
+              "obs:0:4.900",
+              "obs:0:5.000",
+              "obs:0:5.100"
+            ],
+            "fitted_parameters": {
+              "sensor_bias": 0.4500669426737321,
+              "speed_step_delta": 0.2945638256758836,
+              "speed_step_time": 2.3500000000000014
+            },
+            "verifier_score": 0.022063420290300728,
+            "permitted_action": "UPDATE_MODEL_AND_REPLAN",
+            "temporary_policy_exception": {},
+            "controller_constraints_preserved": true,
+            "scope": "target:0",
+            "expires_at": 10.0,
+            "terminal_condition": null
+          },
+          "pause_seconds": 0.0
+        }
+      ]
+    },
+    {
+      "seed": 48,
+      "target_id": 1,
+      "authorization_source": "s2_authorized",
+      "outcome": {
+        "target_id": 1,
+        "status": "attempt_failed",
+        "reason": "missed pick window"
+      },
+      "evaluator": {
+        "target_id": 1,
+        "target_exists_at_execution": true,
+        "command_issued": true,
+        "execution_step": 52,
+        "position_error": 0.4600812777172196,
+        "stale_authorization": false,
+        "authorization_source": "s2_authorized",
+        "actual_x_at_execution": 0.4596586791851962,
+        "execution_time": 5.2,
+        "terminal_status": "attempt_failed"
+      },
+      "failure_trace": {
+        "target_id": 1,
+        "x0": -5.616906,
+        "command_issued": true,
+        "command_count": 1,
+        "command_success": false,
+        "decision_sample_count": 53,
+        "decision_time": 5.2,
+        "decision_time_sample_count": 53,
+        "applied_eta": 5.2,
+        "clamped": false,
+        "uncapped_time_delta": 0.0,
+        "excess": 0.0,
+        "v_hat": 1.0,
+        "infeasible": false,
+        "window_remaining_time": 0.05,
+        "compensated_predicted_window": {
+          "start": 5.15,
+          "center": 5.2,
+          "end": 5.25
+        },
+        "previous_object_grab_end_time": null,
+        "command_time": 5.2,
+        "execution_time": 5.2,
+        "true_eta": 4.843609,
+        "position_error": 0.460081,
+        "time_error": 0.0,
+        "command_result": "missed pick window",
+        "skip_reason": "command_issued_but_pick_failed",
+        "terminal_status": "attempt_failed",
+        "seed": 48,
+        "compensation": "on",
+        "scenario": "nominal"
+      },
+      "s2_calls": [
+        {
+          "sim_time": 0.30000000000000004,
+          "trigger": null,
+          "gate": "NO_VERIFIED_HYPOTHESIS",
+          "action": "PAUSE_AND_REOBSERVE",
+          "passing": [],
+          "fitted_parameters": [],
+          "action_time": null
+        },
+        {
+          "sim_time": 5.2,
+          "trigger": null,
+          "gate": "COMMON_ACTION",
+          "action": "UPDATE_MODEL_AND_REPLAN",
+          "passing": [
+            [
+              "SENSOR_BIAS",
+              "SPEED_STEP"
+            ],
+            [
+              "SENSOR_BIAS",
+              "VELOCITY_OFFSET",
+              "SPEED_STEP"
+            ],
+            [
+              "SENSOR_BIAS",
+              "SPEED_STEP",
+              "ACTUATOR_DELAY"
+            ]
+          ],
+          "fitted_parameters": [
+            {
+              "structure": [
+                "SENSOR_BIAS",
+                "SPEED_STEP"
+              ],
+              "parameters": {
+                "sensor_bias": 0.4492456661653291,
+                "speed_step_delta": 0.2802898504386915,
+                "speed_step_time": 2.2500000000000018
+              },
+              "rmse": 0.023019912096114075
+            },
+            {
+              "structure": [
+                "SENSOR_BIAS",
+                "VELOCITY_OFFSET",
+                "SPEED_STEP"
+              ],
+              "parameters": {
+                "sensor_bias": 0.40568856718875856,
+                "velocity_offset": 0.04073656978882563,
+                "speed_step_delta": 0.24624524334918374,
+                "speed_step_time": 2.5000000000000018
+              },
+              "rmse": 0.012089503722019248
+            },
+            {
+              "structure": [
+                "SENSOR_BIAS",
+                "SPEED_STEP",
+                "ACTUATOR_DELAY"
+              ],
+              "parameters": {
+                "sensor_bias": 0.4492456661653291,
+                "speed_step_delta": 0.2802898504386915,
+                "speed_step_time": 2.2500000000000018,
+                "actuator_delay": 0.0
+              },
+              "rmse": 0.023019912096114075
+            }
+          ],
+          "action_time": 5.2
+        }
+      ],
+      "authorization_decisions": [
+        {
+          "time": 0.30000000000000004,
+          "target_id": 1,
+          "action": "PAUSE_AND_REOBSERVE",
+          "gate_reason": "NO_VERIFIED_HYPOTHESIS",
+          "faults": [],
+          "pause_seconds": 0.0,
+          "verifications": [
+            {
+              "hypothesis_id": "h00",
+              "structure": [
+                "SENSOR_BIAS"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 4,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:1:0.000",
+                "obs:1:0.100",
+                "obs:1:0.200",
+                "obs:1:0.300"
+              ]
+            },
+            {
+              "hypothesis_id": "h01",
+              "structure": [
+                "VELOCITY_OFFSET"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 4,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:1:0.000",
+                "obs:1:0.100",
+                "obs:1:0.200",
+                "obs:1:0.300"
+              ]
+            },
+            {
+              "hypothesis_id": "h02",
+              "structure": [
+                "SPEED_STEP"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 4,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:1:0.000",
+                "obs:1:0.100",
+                "obs:1:0.200",
+                "obs:1:0.300"
+              ]
+            },
+            {
+              "hypothesis_id": "h03",
+              "structure": [
+                "ACTUATOR_DELAY"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 4,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:1:0.000",
+                "obs:1:0.100",
+                "obs:1:0.200",
+                "obs:1:0.300"
+              ]
+            },
+            {
+              "hypothesis_id": "h04",
+              "structure": [
+                "SENSOR_BIAS",
+                "VELOCITY_OFFSET"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 4,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:1:0.000",
+                "obs:1:0.100",
+                "obs:1:0.200",
+                "obs:1:0.300"
+              ]
+            },
+            {
+              "hypothesis_id": "h05",
+              "structure": [
+                "SENSOR_BIAS",
+                "SPEED_STEP"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 4,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:1:0.000",
+                "obs:1:0.100",
+                "obs:1:0.200",
+                "obs:1:0.300"
+              ]
+            },
+            {
+              "hypothesis_id": "h06",
+              "structure": [
+                "SENSOR_BIAS",
+                "ACTUATOR_DELAY"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 4,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:1:0.000",
+                "obs:1:0.100",
+                "obs:1:0.200",
+                "obs:1:0.300"
+              ]
+            },
+            {
+              "hypothesis_id": "h07",
+              "structure": [
+                "VELOCITY_OFFSET",
+                "SPEED_STEP"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 4,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:1:0.000",
+                "obs:1:0.100",
+                "obs:1:0.200",
+                "obs:1:0.300"
+              ]
+            },
+            {
+              "hypothesis_id": "h08",
+              "structure": [
+                "VELOCITY_OFFSET",
+                "ACTUATOR_DELAY"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 4,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:1:0.000",
+                "obs:1:0.100",
+                "obs:1:0.200",
+                "obs:1:0.300"
+              ]
+            },
+            {
+              "hypothesis_id": "h09",
+              "structure": [
+                "SPEED_STEP",
+                "ACTUATOR_DELAY"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 4,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:1:0.000",
+                "obs:1:0.100",
+                "obs:1:0.200",
+                "obs:1:0.300"
+              ]
+            },
+            {
+              "hypothesis_id": "h10",
+              "structure": [
+                "SENSOR_BIAS",
+                "VELOCITY_OFFSET",
+                "SPEED_STEP"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 4,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:1:0.000",
+                "obs:1:0.100",
+                "obs:1:0.200",
+                "obs:1:0.300"
+              ]
+            },
+            {
+              "hypothesis_id": "h11",
+              "structure": [
+                "SENSOR_BIAS",
+                "VELOCITY_OFFSET",
+                "ACTUATOR_DELAY"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 4,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:1:0.000",
+                "obs:1:0.100",
+                "obs:1:0.200",
+                "obs:1:0.300"
+              ]
+            },
+            {
+              "hypothesis_id": "h12",
+              "structure": [
+                "SENSOR_BIAS",
+                "SPEED_STEP",
+                "ACTUATOR_DELAY"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 4,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:1:0.000",
+                "obs:1:0.100",
+                "obs:1:0.200",
+                "obs:1:0.300"
+              ]
+            },
+            {
+              "hypothesis_id": "h13",
+              "structure": [
+                "VELOCITY_OFFSET",
+                "SPEED_STEP",
+                "ACTUATOR_DELAY"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 4,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:1:0.000",
+                "obs:1:0.100",
+                "obs:1:0.200",
+                "obs:1:0.300"
+              ]
+            }
+          ]
+        },
+        {
+          "time": 5.2,
+          "target_id": 1,
+          "action": "UPDATE_MODEL_AND_REPLAN",
+          "gate_reason": "COMMON_ACTION",
+          "hypothesis_id": "h05",
+          "structure": [
+            "SENSOR_BIAS",
+            "SPEED_STEP"
+          ],
+          "fitted_parameters": {
+            "sensor_bias": 0.4492456661653291,
+            "speed_step_delta": 0.2802898504386915,
+            "speed_step_time": 2.2500000000000018
+          },
+          "n_usable": 53,
+          "rmse": 0.023019912096114075,
+          "residual_vector": [
+            -0.03324089108619044,
+            -0.036554720977660105,
+            -0.032668372114936006,
+            -0.042198772086705305,
+            -0.01968308331913937,
+            -0.016303872944213205,
+            -0.03278152780208787,
+            -0.04240056347476939,
+            -0.017888240898395247,
+            -0.018572211177226294,
+            -0.008271731351117695,
+            0.03196439647036742,
+            6.314209293767359e-05,
+            0.02401074588304153,
+            0.015137713912846684,
+            0.021437804609916955,
+            0.029502563102492885,
+            0.030366966744799107,
+            0.017409618139630267,
+            0.041608419397433205,
+            0.057453110134452756,
+            0.027056350715439215,
+            0.03692681233647732,
+            0.03358583236478557,
+            0.033508515969847996,
+            -0.03653458622244754,
+            -0.017006569238392832,
+            0.008465168238839249,
+            -0.017083818130273487,
+            -0.007556711327845078,
+            -0.010416113343270195,
+            0.0014014262557451307,
+            -0.019628365512473822,
+            0.01490362107653298,
+            -0.006025270093019897,
+            -0.013346054275971575,
+            -0.0068633917162089775,
+            -0.008543711995621761,
+            -0.005493081300120384,
+            -0.010220371614189094,
+            0.011459766471523247,
+            0.001895184368990055,
+            -0.019113008732223213,
+            -0.003930831013076341,
+            -0.012847479593584898,
+            0.01208005722140415,
+            0.007709445806914683,
+            0.0028599097892305636,
+            0.005561863321262628,
+            0.01712120461043587,
+            -0.00664001812129289,
+            -0.008784753720024518,
+            0.027108484147121192
+          ],
+          "violated_invariants": [],
+          "passed": true,
+          "evidence_refs": [
+            "obs:1:0.000",
+            "obs:1:0.100",
+            "obs:1:0.200",
+            "obs:1:0.300",
+            "obs:1:0.400",
+            "obs:1:0.500",
+            "obs:1:0.600",
+            "obs:1:0.700",
+            "obs:1:0.800",
+            "obs:1:0.900",
+            "obs:1:1.000",
+            "obs:1:1.100",
+            "obs:1:1.200",
+            "obs:1:1.300",
+            "obs:1:1.400",
+            "obs:1:1.500",
+            "obs:1:1.600",
+            "obs:1:1.700",
+            "obs:1:1.800",
+            "obs:1:1.900",
+            "obs:1:2.000",
+            "obs:1:2.100",
+            "obs:1:2.200",
+            "obs:1:2.300",
+            "obs:1:2.400",
+            "obs:1:2.500",
+            "obs:1:2.600",
+            "obs:1:2.700",
+            "obs:1:2.800",
+            "obs:1:2.900",
+            "obs:1:3.000",
+            "obs:1:3.100",
+            "obs:1:3.200",
+            "obs:1:3.300",
+            "obs:1:3.400",
+            "obs:1:3.500",
+            "obs:1:3.600",
+            "obs:1:3.700",
+            "obs:1:3.800",
+            "obs:1:3.900",
+            "obs:1:4.000",
+            "obs:1:4.100",
+            "obs:1:4.200",
+            "obs:1:4.300",
+            "obs:1:4.400",
+            "obs:1:4.500",
+            "obs:1:4.600",
+            "obs:1:4.700",
+            "obs:1:4.800",
+            "obs:1:4.900",
+            "obs:1:5.000",
+            "obs:1:5.100",
+            "obs:1:5.200"
+          ],
+          "common_action_time": 5.2,
+          "authorization": {
+            "authorization_id": "48:h05:target:1:20.000000",
+            "episode_id": "48",
+            "hypothesis_id": "h05",
+            "evidence_ids": [
+              "obs:1:0.000",
+              "obs:1:0.100",
+              "obs:1:0.200",
+              "obs:1:0.300",
+              "obs:1:0.400",
+              "obs:1:0.500",
+              "obs:1:0.600",
+              "obs:1:0.700",
+              "obs:1:0.800",
+              "obs:1:0.900",
+              "obs:1:1.000",
+              "obs:1:1.100",
+              "obs:1:1.200",
+              "obs:1:1.300",
+              "obs:1:1.400",
+              "obs:1:1.500",
+              "obs:1:1.600",
+              "obs:1:1.700",
+              "obs:1:1.800",
+              "obs:1:1.900",
+              "obs:1:2.000",
+              "obs:1:2.100",
+              "obs:1:2.200",
+              "obs:1:2.300",
+              "obs:1:2.400",
+              "obs:1:2.500",
+              "obs:1:2.600",
+              "obs:1:2.700",
+              "obs:1:2.800",
+              "obs:1:2.900",
+              "obs:1:3.000",
+              "obs:1:3.100",
+              "obs:1:3.200",
+              "obs:1:3.300",
+              "obs:1:3.400",
+              "obs:1:3.500",
+              "obs:1:3.600",
+              "obs:1:3.700",
+              "obs:1:3.800",
+              "obs:1:3.900",
+              "obs:1:4.000",
+              "obs:1:4.100",
+              "obs:1:4.200",
+              "obs:1:4.300",
+              "obs:1:4.400",
+              "obs:1:4.500",
+              "obs:1:4.600",
+              "obs:1:4.700",
+              "obs:1:4.800",
+              "obs:1:4.900",
+              "obs:1:5.000",
+              "obs:1:5.100",
+              "obs:1:5.200"
+            ],
+            "fitted_parameters": {
+              "sensor_bias": 0.4492456661653291,
+              "speed_step_delta": 0.2802898504386915,
+              "speed_step_time": 2.2500000000000018
+            },
+            "verifier_score": 0.023019912096114075,
+            "permitted_action": "UPDATE_MODEL_AND_REPLAN",
+            "temporary_policy_exception": {},
+            "controller_constraints_preserved": true,
+            "scope": "target:1",
+            "expires_at": 20.0,
+            "terminal_condition": null
+          },
+          "pause_seconds": 0.0
+        }
+      ]
+    },
+    {
+      "seed": 88,
+      "target_id": 0,
+      "authorization_source": "s2_authorized",
+      "outcome": {
+        "target_id": 0,
+        "status": "attempt_failed",
+        "reason": "missed pick window"
+      },
+      "evaluator": {
+        "target_id": 0,
+        "target_exists_at_execution": true,
+        "command_issued": true,
+        "execution_step": 63,
+        "position_error": 0.7130012688006006,
+        "stale_authorization": false,
+        "authorization_source": "s2_authorized",
+        "actual_x_at_execution": 0.7127792887954973,
+        "execution_time": 6.565590783171272,
+        "terminal_status": "attempt_failed"
+      },
+      "failure_trace": {
+        "target_id": 0,
+        "x0": -7.175019,
+        "command_issued": true,
+        "command_count": 1,
+        "command_success": false,
+        "decision_sample_count": 64,
+        "decision_time": 6.3,
+        "decision_time_sample_count": 64,
+        "applied_eta": 6.3,
+        "clamped": false,
+        "uncapped_time_delta": 0.0,
+        "excess": 0.0,
+        "v_hat": 1.0,
+        "infeasible": false,
+        "window_remaining_time": 0.05,
+        "compensated_predicted_window": {
+          "start": 6.25,
+          "center": 6.3,
+          "end": 6.35
+        },
+        "previous_object_grab_end_time": null,
+        "command_time": 6.3,
+        "execution_time": 6.565591,
+        "true_eta": 5.996307,
+        "position_error": 0.713001,
+        "time_error": 0.265591,
+        "command_result": "missed pick window",
+        "skip_reason": "command_issued_but_pick_failed",
+        "terminal_status": "attempt_failed",
+        "seed": 88,
+        "compensation": "on",
+        "scenario": "nominal"
+      },
+      "s2_calls": [
+        {
+          "sim_time": 0.2,
+          "trigger": null,
+          "gate": "NO_VERIFIED_HYPOTHESIS",
+          "action": "PAUSE_AND_REOBSERVE",
+          "passing": [],
+          "fitted_parameters": [],
+          "action_time": null
+        },
+        {
+          "sim_time": 5.0,
+          "trigger": null,
+          "gate": "COMMON_ACTION",
+          "action": "UPDATE_MODEL_AND_REPLAN",
+          "passing": [
+            [
+              "SENSOR_BIAS",
+              "SPEED_STEP"
+            ],
+            [
+              "SENSOR_BIAS",
+              "VELOCITY_OFFSET",
+              "SPEED_STEP"
+            ]
+          ],
+          "fitted_parameters": [
+            {
+              "structure": [
+                "SENSOR_BIAS",
+                "SPEED_STEP"
+              ],
+              "parameters": {
+                "sensor_bias": 0.343199000530119,
+                "speed_step_delta": 0.25348843051250264,
+                "speed_step_time": 1.3000000000000007
+              },
+              "rmse": 0.014160662016964448
+            },
+            {
+              "structure": [
+                "SENSOR_BIAS",
+                "VELOCITY_OFFSET",
+                "SPEED_STEP"
+              ],
+              "parameters": {
+                "sensor_bias": 0.3446442402612241,
+                "velocity_offset": -0.0016017770319552982,
+                "speed_step_delta": 0.2553450357086326,
+                "speed_step_time": 1.3000000000000007
+              },
+              "rmse": 0.014152540709760733
+            }
+          ],
+          "action_time": 6.3
+        }
+      ],
+      "authorization_decisions": [
+        {
+          "time": 0.2,
+          "target_id": 0,
+          "action": "PAUSE_AND_REOBSERVE",
+          "gate_reason": "NO_VERIFIED_HYPOTHESIS",
+          "faults": [],
+          "pause_seconds": 0.0,
+          "verifications": [
+            {
+              "hypothesis_id": "h00",
+              "structure": [
+                "SENSOR_BIAS"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 3,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:0:0.000",
+                "obs:0:0.100",
+                "obs:0:0.200"
+              ]
+            },
+            {
+              "hypothesis_id": "h01",
+              "structure": [
+                "VELOCITY_OFFSET"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 3,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:0:0.000",
+                "obs:0:0.100",
+                "obs:0:0.200"
+              ]
+            },
+            {
+              "hypothesis_id": "h02",
+              "structure": [
+                "SPEED_STEP"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 3,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:0:0.000",
+                "obs:0:0.100",
+                "obs:0:0.200"
+              ]
+            },
+            {
+              "hypothesis_id": "h03",
+              "structure": [
+                "ACTUATOR_DELAY"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 3,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:0:0.000",
+                "obs:0:0.100",
+                "obs:0:0.200"
+              ]
+            },
+            {
+              "hypothesis_id": "h04",
+              "structure": [
+                "SENSOR_BIAS",
+                "VELOCITY_OFFSET"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 3,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:0:0.000",
+                "obs:0:0.100",
+                "obs:0:0.200"
+              ]
+            },
+            {
+              "hypothesis_id": "h05",
+              "structure": [
+                "SENSOR_BIAS",
+                "SPEED_STEP"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 3,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:0:0.000",
+                "obs:0:0.100",
+                "obs:0:0.200"
+              ]
+            },
+            {
+              "hypothesis_id": "h06",
+              "structure": [
+                "SENSOR_BIAS",
+                "ACTUATOR_DELAY"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 3,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:0:0.000",
+                "obs:0:0.100",
+                "obs:0:0.200"
+              ]
+            },
+            {
+              "hypothesis_id": "h07",
+              "structure": [
+                "VELOCITY_OFFSET",
+                "SPEED_STEP"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 3,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:0:0.000",
+                "obs:0:0.100",
+                "obs:0:0.200"
+              ]
+            },
+            {
+              "hypothesis_id": "h08",
+              "structure": [
+                "VELOCITY_OFFSET",
+                "ACTUATOR_DELAY"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 3,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:0:0.000",
+                "obs:0:0.100",
+                "obs:0:0.200"
+              ]
+            },
+            {
+              "hypothesis_id": "h09",
+              "structure": [
+                "SPEED_STEP",
+                "ACTUATOR_DELAY"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 3,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:0:0.000",
+                "obs:0:0.100",
+                "obs:0:0.200"
+              ]
+            },
+            {
+              "hypothesis_id": "h10",
+              "structure": [
+                "SENSOR_BIAS",
+                "VELOCITY_OFFSET",
+                "SPEED_STEP"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 3,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:0:0.000",
+                "obs:0:0.100",
+                "obs:0:0.200"
+              ]
+            },
+            {
+              "hypothesis_id": "h11",
+              "structure": [
+                "SENSOR_BIAS",
+                "VELOCITY_OFFSET",
+                "ACTUATOR_DELAY"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 3,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:0:0.000",
+                "obs:0:0.100",
+                "obs:0:0.200"
+              ]
+            },
+            {
+              "hypothesis_id": "h12",
+              "structure": [
+                "SENSOR_BIAS",
+                "SPEED_STEP",
+                "ACTUATOR_DELAY"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 3,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:0:0.000",
+                "obs:0:0.100",
+                "obs:0:0.200"
+              ]
+            },
+            {
+              "hypothesis_id": "h13",
+              "structure": [
+                "VELOCITY_OFFSET",
+                "SPEED_STEP",
+                "ACTUATOR_DELAY"
+              ],
+              "fitted_parameters": {},
+              "n_usable": 3,
+              "rmse": Infinity,
+              "residual_vector": [],
+              "violated_invariants": [
+                "n_usable < 6",
+                "RMSE > 0.030"
+              ],
+              "passed": false,
+              "evidence_refs": [
+                "obs:0:0.000",
+                "obs:0:0.100",
+                "obs:0:0.200"
+              ]
+            }
+          ]
+        },
+        {
+          "time": 5.0,
+          "target_id": 0,
+          "action": "UPDATE_MODEL_AND_REPLAN",
+          "gate_reason": "COMMON_ACTION",
+          "hypothesis_id": "h05",
+          "structure": [
+            "SENSOR_BIAS",
+            "SPEED_STEP"
+          ],
+          "fitted_parameters": {
+            "sensor_bias": 0.343199000530119,
+            "speed_step_delta": 0.25348843051250264,
+            "speed_step_time": 1.3000000000000007
+          },
+          "n_usable": 51,
+          "rmse": 0.014160662016964448,
+          "residual_vector": [
+            -0.030482433739981496,
+            0.0046540965455127425,
+            0.025807394121695082,
+            0.010916289080684094,
+            0.011879389761164538,
+            0.0070625503312568005,
+            0.0034221942068318745,
+            -0.022806131862155632,
+            0.004531898288482217,
+            -0.00816179250993232,
+            -0.0008363264144423121,
+            -0.005170118074949159,
+            -0.007106199289344972,
+            -0.0069483284736590045,
+            0.018820937132213056,
+            0.02429916820855349,
+            0.005309133455897119,
+            -0.011807417481942806,
+            0.01836871759036085,
+            -0.022734042753326245,
+            -0.008951530574863087,
+            -0.03527887863922552,
+            0.01077661877822389,
+            0.003367294144480004,
+            0.0032008034465922375,
+            0.013824570316868012,
+            0.005657878304641262,
+            -0.020191274411761384,
+            0.018328686818632534,
+            -0.012375147100136985,
+            -0.01630999860710769,
+            0.0016588687302864225,
+            0.014742348914495662,
+            -0.01268645599198892,
+            -0.0035239314123035603,
+            0.023887355823681178,
+            -0.01178025422707818,
+            -0.0031036977616143435,
+            0.008587591561253882,
+            0.001231953712471201,
+            -0.0038013180231466492,
+            0.0034973442722054937,
+            -0.02064652245034959,
+            0.004754957096042789,
+            0.019125892602309902,
+            0.012572849669245434,
+            -0.02086279782807665,
+            0.007660196910467043,
+            0.0015705768249989482,
+            -0.006887713213399316,
+            0.002934754191250999
+          ],
+          "violated_invariants": [],
+          "passed": true,
+          "evidence_refs": [
+            "obs:0:0.000",
+            "obs:0:0.100",
+            "obs:0:0.200",
+            "obs:0:0.300",
+            "obs:0:0.400",
+            "obs:0:0.500",
+            "obs:0:0.600",
+            "obs:0:0.700",
+            "obs:0:0.800",
+            "obs:0:0.900",
+            "obs:0:1.000",
+            "obs:0:1.100",
+            "obs:0:1.200",
+            "obs:0:1.300",
+            "obs:0:1.400",
+            "obs:0:1.500",
+            "obs:0:1.600",
+            "obs:0:1.700",
+            "obs:0:1.800",
+            "obs:0:1.900",
+            "obs:0:2.000",
+            "obs:0:2.100",
+            "obs:0:2.200",
+            "obs:0:2.300",
+            "obs:0:2.400",
+            "obs:0:2.500",
+            "obs:0:2.600",
+            "obs:0:2.700",
+            "obs:0:2.800",
+            "obs:0:2.900",
+            "obs:0:3.000",
+            "obs:0:3.100",
+            "obs:0:3.200",
+            "obs:0:3.300",
+            "obs:0:3.400",
+            "obs:0:3.500",
+            "obs:0:3.600",
+            "obs:0:3.700",
+            "obs:0:3.800",
+            "obs:0:3.900",
+            "obs:0:4.000",
+            "obs:0:4.100",
+            "obs:0:4.200",
+            "obs:0:4.300",
+            "obs:0:4.400",
+            "obs:0:4.500",
+            "obs:0:4.600",
+            "obs:0:4.700",
+            "obs:0:4.800",
+            "obs:0:4.900",
+            "obs:0:5.000"
+          ],
+          "common_action_time": 6.3,
+          "authorization": {
+            "authorization_id": "88:h05:target:0:10.000000",
+            "episode_id": "88",
+            "hypothesis_id": "h05",
+            "evidence_ids": [
+              "obs:0:0.000",
+              "obs:0:0.100",
+              "obs:0:0.200",
+              "obs:0:0.300",
+              "obs:0:0.400",
+              "obs:0:0.500",
+              "obs:0:0.600",
+              "obs:0:0.700",
+              "obs:0:0.800",
+              "obs:0:0.900",
+              "obs:0:1.000",
+              "obs:0:1.100",
+              "obs:0:1.200",
+              "obs:0:1.300",
+              "obs:0:1.400",
+              "obs:0:1.500",
+              "obs:0:1.600",
+              "obs:0:1.700",
+              "obs:0:1.800",
+              "obs:0:1.900",
+              "obs:0:2.000",
+              "obs:0:2.100",
+              "obs:0:2.200",
+              "obs:0:2.300",
+              "obs:0:2.400",
+              "obs:0:2.500",
+              "obs:0:2.600",
+              "obs:0:2.700",
+              "obs:0:2.800",
+              "obs:0:2.900",
+              "obs:0:3.000",
+              "obs:0:3.100",
+              "obs:0:3.200",
+              "obs:0:3.300",
+              "obs:0:3.400",
+              "obs:0:3.500",
+              "obs:0:3.600",
+              "obs:0:3.700",
+              "obs:0:3.800",
+              "obs:0:3.900",
+              "obs:0:4.000",
+              "obs:0:4.100",
+              "obs:0:4.200",
+              "obs:0:4.300",
+              "obs:0:4.400",
+              "obs:0:4.500",
+              "obs:0:4.600",
+              "obs:0:4.700",
+              "obs:0:4.800",
+              "obs:0:4.900",
+              "obs:0:5.000"
+            ],
+            "fitted_parameters": {
+              "sensor_bias": 0.343199000530119,
+              "speed_step_delta": 0.25348843051250264,
+              "speed_step_time": 1.3000000000000007
+            },
+            "verifier_score": 0.014160662016964448,
+            "permitted_action": "UPDATE_MODEL_AND_REPLAN",
+            "temporary_policy_exception": {},
+            "controller_constraints_preserved": true,
+            "scope": "target:0",
+            "expires_at": 10.0,
+            "terminal_condition": null
+          },
+          "pause_seconds": 0.0
+        }
+      ]
+    },
+    {
+      "seed": 116,
+      "target_id": 1,
+      "authorization_source": "s2_authorized",
+      "outcome": {
+        "target_id": 1,
+        "status": "attempt_failed",
+        "reason": "missed pick window"
+      },
+      "evaluator": {
+        "target_id": 1,
+        "target_exists_at_execution": true,
+        "command_issued": true,
+        "execution_step": 45,
+        "position_error": 0.4459043681763251,
+        "stale_authorization": false,
+        "authorization_source": "s2_authorized",
+        "actual_x_at_execution": 0.44030869189758537,
+        "execution_time": 4.5,
+        "terminal_status": "attempt_failed"
+      },
+      "failure_trace": {
+        "target_id": 1,
+        "x0": -4.492312,
+        "command_issued": true,
+        "command_count": 1,
+        "command_success": false,
+        "decision_sample_count": 46,
+        "decision_time": 4.5,
+        "decision_time_sample_count": 46,
+        "applied_eta": 4.5,
+        "clamped": false,
+        "uncapped_time_delta": -0.338868,
+        "excess": 0.0,
+        "v_hat": 1.289146,
+        "infeasible": false,
+        "window_remaining_time": 0.05,
+        "compensated_predicted_window": {
+          "start": 4.45,
+          "center": 4.5,
+          "end": 4.55
+        },
+        "previous_object_grab_end_time": null,
+        "command_time": 4.5,
+        "execution_time": 4.5,
+        "true_eta": 4.122801,
+        "position_error": 0.445904,
+        "time_error": 0.0,
+        "command_result": "missed pick window",
+        "skip_reason": "command_issued_but_pick_failed",
+        "terminal_status": "attempt_failed",
+        "seed": 116,
+        "compensation": "on",
+        "scenario": "nominal"
+      },
+      "s2_calls": [
+        {
+          "sim_time": 0.5,
+          "trigger": null,
+          "gate": "COMMON_ACTION",
+          "action": "UPDATE_MODEL_AND_REPLAN",
+          "passing": [
+            [
+              "SENSOR_BIAS"
+            ],
+            [
+              "VELOCITY_OFFSET"
+            ],
+            [
+              "SPEED_STEP"
+            ],
+            [
+              "SENSOR_BIAS",
+              "VELOCITY_OFFSET"
+            ],
+            [
+              "SENSOR_BIAS",
+              "SPEED_STEP"
+            ],
+            [
+              "VELOCITY_OFFSET",
+              "SPEED_STEP"
+            ],
+            [
+              "SENSOR_BIAS",
+              "VELOCITY_OFFSET",
+              "SPEED_STEP"
+            ]
+          ],
+          "fitted_parameters": [
+            {
+              "structure": [
+                "SENSOR_BIAS"
+              ],
+              "parameters": {
+                "sensor_bias": -0.005382063851495201
+              },
+              "rmse": 0.011064757345217347
+            },
+            {
+              "structure": [
+                "VELOCITY_OFFSET"
+              ],
+              "parameters": {
+                "velocity_offset": -0.02207925511531527
+              },
+              "rmse": 0.010329983623048725
+            },
+            {
+              "structure": [
+                "SPEED_STEP"
+              ],
+              "parameters": {
+                "speed_step_delta": 0.0,
+                "speed_step_time": 0.5
+              },
+              "rmse": 0.012304286505527763
+            },
+            {
+              "structure": [
+                "SENSOR_BIAS",
+                "VELOCITY_OFFSET"
+              ],
+              "parameters": {
+                "sensor_bias": 0.00043292834304851495,
+                "velocity_offset": -0.023259968778174864
+              },
+              "rmse": 0.010327096678382518
+            },
+            {
+              "structure": [
+                "SENSOR_BIAS",
+                "SPEED_STEP"
+              ],
+              "parameters": {
+                "sensor_bias": -0.005382063851495201,
+                "speed_step_delta": 0.0,
+                "speed_step_time": 0.5
+              },
+              "rmse": 0.011064757345217347
+            },
+            {
+              "structure": [
+                "VELOCITY_OFFSET",
+                "SPEED_STEP"
+              ],
+              "parameters": {
+                "velocity_offset": -0.02207925511531527,
+                "speed_step_delta": 0.0,
+                "speed_step_time": 0.5
+              },
+              "rmse": 0.010329983623048725
+            },
+            {
+              "structure": [
+                "SENSOR_BIAS",
+                "VELOCITY_OFFSET",
+                "SPEED_STEP"
+              ],
+              "parameters": {
+                "sensor_bias": 0.00043292834304851495,
+                "velocity_offset": -0.023259968778174864,
+                "speed_step_delta": 0.0,
+                "speed_step_time": 0.5
+              },
+              "rmse": 0.010327096678382518
+            }
+          ],
+          "action_time": 4.5
+        }
+      ],
+      "authorization_decisions": [
+        {
+          "time": 0.5,
+          "target_id": 1,
+          "action": "UPDATE_MODEL_AND_REPLAN",
+          "gate_reason": "COMMON_ACTION",
+          "hypothesis_id": "h00",
+          "structure": [
+            "SENSOR_BIAS"
+          ],
+          "fitted_parameters": {
+            "sensor_bias": -0.005382063851495201
+          },
+          "n_usable": 6,
+          "rmse": 0.011064757345217347,
+          "residual_vector": [
+            0.01096311180907028,
+            -0.009906850643591536,
+            -0.0026038052185506358,
+            0.015625758442327164,
+            0.0020766876618183447,
+            -0.016154902051073616
+          ],
+          "violated_invariants": [],
+          "passed": true,
+          "evidence_refs": [
+            "obs:1:0.000",
+            "obs:1:0.100",
+            "obs:1:0.200",
+            "obs:1:0.300",
+            "obs:1:0.400",
+            "obs:1:0.500"
+          ],
+          "common_action_time": 4.5,
+          "authorization": {
+            "authorization_id": "116:h00:target:1:20.000000",
+            "episode_id": "116",
+            "hypothesis_id": "h00",
+            "evidence_ids": [
+              "obs:1:0.000",
+              "obs:1:0.100",
+              "obs:1:0.200",
+              "obs:1:0.300",
+              "obs:1:0.400",
+              "obs:1:0.500"
+            ],
+            "fitted_parameters": {
+              "sensor_bias": -0.005382063851495201
+            },
+            "verifier_score": 0.011064757345217347,
+            "permitted_action": "UPDATE_MODEL_AND_REPLAN",
+            "temporary_policy_exception": {},
+            "controller_constraints_preserved": true,
+            "scope": "target:1",
+            "expires_at": 20.0,
+            "terminal_condition": null
+          },
+          "pause_seconds": 0.0
+        }
+      ]
+    },
+    {
+      "seed": 119,
+      "target_id": 1,
+      "authorization_source": "s2_authorized",
+      "outcome": {
+        "target_id": 1,
+        "status": "attempt_failed",
+        "reason": "missed pick window"
+      },
+      "evaluator": {
+        "target_id": 1,
+        "target_exists_at_execution": true,
+        "command_issued": true,
+        "execution_step": 55,
+        "position_error": 1.127123952210525,
+        "stale_authorization": false,
+        "authorization_source": "s2_authorized",
+        "actual_x_at_execution": 1.1267912704070557,
+        "execution_time": 5.5,
+        "terminal_status": "attempt_failed"
+      },
+      "failure_trace": {
+        "target_id": 1,
+        "x0": -5.071551,
+        "command_issued": true,
+        "command_count": 1,
+        "command_success": false,
+        "decision_sample_count": 56,
+        "decision_time": 5.5,
+        "decision_time_sample_count": 56,
+        "applied_eta": 5.5,
+        "clamped": false,
+        "uncapped_time_delta": -0.177826,
+        "excess": 0.0,
+        "v_hat": 1.283644,
+        "infeasible": false,
+        "window_remaining_time": 0.05,
+        "compensated_predicted_window": {
+          "start": 5.45,
+          "center": 5.5,
+          "end": 5.55
+        },
+        "previous_object_grab_end_time": null,
+        "command_time": 5.5,
+        "execution_time": 5.5,
+        "true_eta": 4.574809,
+        "position_error": 1.127124,
+        "time_error": 0.0,
+        "command_result": "missed pick window",
+        "skip_reason": "command_issued_but_pick_failed",
+        "terminal_status": "attempt_failed",
+        "seed": 119,
+        "compensation": "on",
+        "scenario": "nominal"
+      },
+      "s2_calls": [
+        {
+          "sim_time": 0.5,
+          "trigger": null,
+          "gate": "COMMON_ACTION",
+          "action": "UPDATE_MODEL_AND_REPLAN",
+          "passing": [
+            [
+              "SENSOR_BIAS"
+            ],
+            [
+              "SENSOR_BIAS",
+              "VELOCITY_OFFSET"
+            ],
+            [
+              "SENSOR_BIAS",
+              "SPEED_STEP"
+            ],
+            [
+              "SENSOR_BIAS",
+              "VELOCITY_OFFSET",
+              "SPEED_STEP"
+            ]
+          ],
+          "fitted_parameters": [
+            {
+              "structure": [
+                "SENSOR_BIAS"
+              ],
+              "parameters": {
+                "sensor_bias": 0.3544035569069651
+              },
+              "rmse": 0.006844558103862747
+            },
+            {
+              "structure": [
+                "SENSOR_BIAS",
+                "VELOCITY_OFFSET"
+              ],
+              "parameters": {
+                "sensor_bias": 0.3606411557507033,
+                "velocity_offset": -0.024950395374952493
+              },
+              "rmse": 0.0053564052573187556
+            },
+            {
+              "structure": [
+                "SENSOR_BIAS",
+                "SPEED_STEP"
+              ],
+              "parameters": {
+                "sensor_bias": 0.3544035569069651,
+                "speed_step_delta": 0.0,
+                "speed_step_time": 0.5
+              },
+              "rmse": 0.006844558103862747
+            },
+            {
+              "structure": [
+                "SENSOR_BIAS",
+                "VELOCITY_OFFSET",
+                "SPEED_STEP"
+              ],
+              "parameters": {
+                "sensor_bias": 0.3606411557507033,
+                "velocity_offset": -0.024950395374952493,
+                "speed_step_delta": 0.0,
+                "speed_step_time": 0.5
+              },
+              "rmse": 0.0053564052573187556
+            }
+          ],
+          "action_time": 5.5
+        }
+      ],
+      "authorization_decisions": [
+        {
+          "time": 0.5,
+          "target_id": 1,
+          "action": "UPDATE_MODEL_AND_REPLAN",
+          "gate_reason": "COMMON_ACTION",
+          "hypothesis_id": "h00",
+          "structure": [
+            "SENSOR_BIAS"
+          ],
+          "fitted_parameters": {
+            "sensor_bias": 0.3544035569069651
+          },
+          "n_usable": 6,
+          "rmse": 0.006844558103862747,
+          "residual_vector": [
+            0.013737424617876193,
+            -0.004226183014539253,
+            -0.0005448303206817551,
+            -0.004466263159181083,
+            0.002447818155348336,
+            -0.006947966278823103
+          ],
+          "violated_invariants": [],
+          "passed": true,
+          "evidence_refs": [
+            "obs:1:0.000",
+            "obs:1:0.100",
+            "obs:1:0.200",
+            "obs:1:0.300",
+            "obs:1:0.400",
+            "obs:1:0.500"
+          ],
+          "common_action_time": 5.5,
+          "authorization": {
+            "authorization_id": "119:h00:target:1:20.000000",
+            "episode_id": "119",
+            "hypothesis_id": "h00",
+            "evidence_ids": [
+              "obs:1:0.000",
+              "obs:1:0.100",
+              "obs:1:0.200",
+              "obs:1:0.300",
+              "obs:1:0.400",
+              "obs:1:0.500"
+            ],
+            "fitted_parameters": {
+              "sensor_bias": 0.3544035569069651
+            },
+            "verifier_score": 0.006844558103862747,
+            "permitted_action": "UPDATE_MODEL_AND_REPLAN",
+            "temporary_policy_exception": {},
+            "controller_constraints_preserved": true,
+            "scope": "target:1",
+            "expires_at": 20.0,
+            "terminal_condition": null
+          },
+          "pause_seconds": 0.0
+        }
+      ]
+    }
+  ]
+}

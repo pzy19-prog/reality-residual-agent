@@ -4,22 +4,26 @@ Seeds: 130 from `config/dev_seeds.json`; B3 enumerates all 14 DSL structures at 
 
 | Metric | B3 dev |
 |---|---:|
-| Recoverable challenge success | 0.0774 (60/775) |
+| Recoverable challenge success | 0.1084 (84/775) |
 | Correct refusal rate | 1.0000 |
-| Wrong disposition | 603 |
-| Miss | 104 |
-| Unsafe action | 9 |
+| Wrong disposition | 589 |
+| Miss | 96 |
+| Unsafe action | 7 |
+| Unsafe: fast layer command | 7 |
+| Unsafe: S2 authorized | 0 |
+| B1-corrected unsafe action (same episodes) | 43 |
 | Preservation regression | 0/582 |
-| Authorizations | 126 |
+| Preservation regression by cause | fault veto 0; S2 authorized action 0; other 0 |
+| Authorizations | 209 |
 
 ## Operational cost
 
-- System-2 calls: 5998
-- Verifier calls: 83972
-- Hypotheses proposed: 83972
+- System-2 calls: 1961
+- Verifier calls: 27454
+- Hypotheses proposed: 27454
 - LLM calls: 0
-- Production pause seconds: 4855.404
-- Serial / parallel three-seed wall time: 0.494 / 0.213 s
-- Full parallel run wall time: 956.541 s with nproc=8
+- Production pause seconds: 386.475
+- Serial / parallel three-seed wall time: 2.722 / 1.359 s
+- Full parallel run wall time: 64.394 s with nproc=8
 
-Receipt SHA-256: `f90aaf46e54766030247c4541dd327102520976a3e769b8ff801ca1ad515236e`
+Receipt SHA-256: `2bcf3aa81be5d7a7b77d14c29c14c3d0016c072346bffc495d52be5a3c2f5092`

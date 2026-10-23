@@ -4,6 +4,15 @@ from __future__ import annotations
 from rra.s2.verifier import Verification
 
 
+def predicted_residual_at_time(parameters: dict[str, float], time: float) -> float:
+    """Predict the registered sensor residual for a verified dynamics model."""
+    residual = parameters.get("sensor_bias", 0.0) + parameters.get("velocity_offset", 0.0) * time
+    tau = parameters.get("speed_step_time")
+    if tau is not None:
+        residual += parameters.get("speed_step_delta", 0.0) * max(0.0, time - tau)
+    return residual
+
+
 def pick_error_at_command_time(
     hypothesis: Verification,
     command_time: float,
@@ -29,7 +38,6 @@ def pick_error_at_command_time(
     physical_x = (
         observation.nominal_x
         + current_residual
-        - params.get("sensor_bias", 0.0)
         + nominal_speed * elapsed
         + execution_residual - current_residual
     )

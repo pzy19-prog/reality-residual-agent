@@ -18,6 +18,81 @@ from rra.evidence import run_episode
 ROOT = Path(__file__).resolve().parents[3]
 
 
+def _unsafe_source_counts(unsafe_target_ids: list[int], evaluator_objects: list[dict[str, Any]]) -> dict[str, int]:
+    source_by_target = {int(o["target_id"]): o.get("authorization_source", "fast_layer_command")
+                        for o in evaluator_objects}
+    return {
+        "fast_layer_command": sum(source_by_target.get(int(t)) == "fast_layer_command" for t in unsafe_target_ids),
+        "s2_authorized": sum(source_by_target.get(int(t)) == "s2_authorized" for t in unsafe_target_ids),
+    }
+
+
+def _preservation_regression_sources(
+    target_ids: list[int], evaluator_objects: list[dict[str, Any]], fault_vetoes: list[dict[str, Any]],
+) -> dict[str, int]:
+    rows = {int(row["target_id"]): row for row in evaluator_objects}
+    vetoed = {int(row["target_id"]) for row in fault_vetoes}
+    counts = {"fault_veto": 0, "s2_authorized_action": 0, "other": 0}
+    for target in target_ids:
+        row = rows.get(int(target), {})
+        if int(target) in vetoed:
+            counts["fault_veto"] += 1
+        elif row.get("authorization_source") == "s2_authorized":
+            counts["s2_authorized_action"] += 1
+        else:
+            counts["other"] += 1
+    return counts
+
+
+def _assert_authorization_contract(receipt: dict[str, Any]) -> None:
+    authorizations = [row["authorization"] for row in receipt.get("system2_decisions", [])
+                     if row.get("authorization") is not None]
+    authorizations.extend(row["authorization"] for row in receipt.get("system2_episode_authorizations", [])
+                          if row.get("authorization") is not None)
+    if any(not authorization.get("temporary_policy_exception") for authorization in authorizations):
+        raise AssertionError("T6: authorization has an empty temporary_policy_exception")
+    explicit_revocations = [row for row in receipt.get("system2_authorization_events", [])
+                            if row.get("event") == "REVOKE_AUTHORIZATION"]
+    malformed_revocations = [row for row in explicit_revocations
+                              if not row.get("authorization_id") or not row.get("reason")
+                             or row.get("revoked_at") is None or row.get("global_time") is None
+                             or not row.get("evidence_ids")]
+    if malformed_revocations:
+        raise AssertionError(
+            f"T7 seed={receipt.get('seed')}: revocation lacks reason, time, or evidence "
+            f"{malformed_revocations}"
+        )
+    revoked_at = {(int(row["target_id"]), row.get("authorization_id")): row["global_time"]
+                  for row in explicit_revocations}
+    revoked_at.update({
+        (int(item["target_id"]), item.get("authorization_id")): item.get("global_time")
+        for row in receipt.get("system2_episode_authorizations", [])
+        for item in row.get("target_revocations", [])
+    })
+    source_by_target = {int(row["target_id"]): row for row in receipt.get("evaluator_objects", [])}
+    invalid = [(target, auth_id, source_by_target.get(target, {}))
+               for (target, auth_id), revoked_time in revoked_at.items()
+               if source_by_target.get(target, {}).get("authorization_source") == "s2_authorized"
+               and source_by_target.get(target, {}).get("authorization_id") == auth_id
+               and source_by_target.get(target, {}).get("authorization_global_time", float("inf")) >= revoked_time]
+    if invalid:
+        raise AssertionError(f"T7 seed={receipt.get('seed')}: command used a revoked authorization {invalid}")
+    latch = receipt.get("system2_hard_fault_latch", {})
+    if latch.get("latched"):
+        latch_time = latch.get("latched_at_global")
+        invalid_after_latch = [
+            int(row["target_id"]) for row in receipt.get("evaluator_objects", [])
+            if row.get("command_issued")
+            and row.get("authorization_source") == "s2_authorized"
+            and row.get("authorization_global_time", float("inf")) >= latch_time
+        ]
+        if invalid_after_latch:
+            raise AssertionError(
+                f"T8 seed={receipt.get('seed')}: S2-authorized commands after hard fault latch "
+                f"for targets {sorted(invalid_after_latch)}"
+            )
+
+
 def _run_seed(args: tuple[int, int]) -> dict[str, Any]:
     index, seed = args
     config = v3_world_config("nominal")
@@ -30,14 +105,38 @@ def _run_seed(args: tuple[int, int]) -> dict[str, Any]:
     b1 = run_episode(config, seed, True, terminal_monitoring="corrected", realization=realization)
     b3 = run_episode(config, seed, True, terminal_monitoring="corrected", realization=realization,
                      system2_enabled=True)
+    _assert_authorization_contract(b3)
     score = score_against_b1_denominators(b3, realization, config, b1)
+    b1_score = score_against_b1_denominators(b1, realization, config, b1)
     labels = dispositions_for_episode(realization, config.object_count)
     auth = [d for d in b3.get("system2_decisions", []) if d["action"] == "UPDATE_MODEL_AND_REPLAN"]
+    auth_count = len(auth) + sum(
+        row.get("authorization") is not None for row in b3.get("system2_episode_authorizations", [])
+    )
     refuse_n = sum(v == "REFUSE" for v in labels.values())
     refuse_correct = sum(
         v == "REFUSE" and not any(
             int(o["target_id"]) == k and o.get("command_issued") for o in b3["evaluator_objects"]
         ) for k, v in labels.items()
+    )
+    unsafe_ids = [int(t) for t in score["unsafe_target_ids"]]
+    unsafe_by_source = _unsafe_source_counts(unsafe_ids, b3.get("evaluator_objects", []))
+    preserve_ids = sorted(int(k) for k, v in score["dispositions"].items()
+                          if b1["outcomes"][int(k)]["status"] == "picked" and v == "RECOVER")
+    evaluator_by_target = {int(row["target_id"]): row for row in b3.get("evaluator_objects", [])}
+    outcome_by_target = {int(row["target_id"]): row for row in b3.get("outcomes", [])}
+    preservation_regression_ids = []
+    for target in preserve_ids:
+        row, outcome = evaluator_by_target.get(target, {}), outcome_by_target.get(target, {})
+        success = (row.get("command_issued") and row.get("target_exists_at_execution") is not False
+                   and outcome.get("status") == "picked"
+                   and row.get("position_error") is not None
+                   and row["position_error"] <= config.tolerance)
+        if not success:
+            preservation_regression_ids.append(target)
+    preservation_by_source = _preservation_regression_sources(
+        preservation_regression_ids, b3.get("evaluator_objects", []),
+        b3.get("system2_fault_vetoes", []),
     )
     return {
         "seed": seed, "case": list(realization.structure), "fault_family": realization.fault_family,
@@ -45,10 +144,9 @@ def _run_seed(args: tuple[int, int]) -> dict[str, Any]:
         "b3_terminal_counts": b3["metrics"]["terminal_counts"], "score": score,
         "challenge_ids": sorted(int(k) for k, v in score["dispositions"].items()
                                  if b1["outcomes"][int(k)]["status"] != "picked"),
-        "preservation_ids": sorted(int(k) for k, v in score["dispositions"].items()
-                                   if b1["outcomes"][int(k)]["status"] == "picked" and v == "RECOVER"),
+        "preservation_ids": preserve_ids,
         "refuse_total": refuse_n, "refuse_correct": refuse_correct,
-        "authorizations": len(auth),
+        "authorizations": auth_count,
         "pause_target_ids": sorted({d["target_id"] for d in b3.get("system2_decisions", [])
                                      if d["action"] in ("PAUSE_AND_REOBSERVE", "HUMAN_ESCALATION")}),
         "system2_calls": b3.get("system2_calls", 0),
@@ -56,6 +154,10 @@ def _run_seed(args: tuple[int, int]) -> dict[str, Any]:
         "hypotheses_proposed": b3.get("system2_hypotheses_proposed", 0),
         "pause_seconds": b3.get("system2_wall_latency_seconds", 0.0),
         "miss_count": score["ordinary_miss_count"],
+        "unsafe_by_source": unsafe_by_source,
+        "preservation_regression_ids": preservation_regression_ids,
+        "preservation_regression_by_source": preservation_by_source,
+        "b1_unsafe_action_count": b1_score["unsafe_action_count"],
         "b1_receipt_sha256": b1["receipt_sha256"], "b3_receipt_sha256": b3["receipt_sha256"],
     }
 
@@ -137,7 +239,16 @@ def run_b3_dev(output_dir: Path = ROOT / "artifacts" / "s2", *, nproc: int | Non
             "correct_refuse_rate": sum(ep["refuse_correct"] for ep in episodes) / refuse_n if refuse_n else 0.0,
             "wrong_disposition": summed("wrong_disposition_count"), "miss": summed("ordinary_miss_count"),
             "unsafe_action": summed("unsafe_action_count"),
+            "unsafe_action_by_source": {
+                source: sum(ep["unsafe_by_source"][source] for ep in episodes)
+                for source in ("fast_layer_command", "s2_authorized")
+            },
+            "b1_corrected_unsafe_action": sum(ep["b1_unsafe_action_count"] for ep in episodes),
             "preservation_regression_count": summed("preservation_regression_count"),
+            "preservation_regression_by_source": {
+                source: sum(ep["preservation_regression_by_source"][source] for ep in episodes)
+                for source in ("fault_veto", "s2_authorized_action", "other")
+            },
             "preservation_count": preservation, "authorization_count": sum(ep["authorizations"] for ep in episodes),
         },
         "operational_cost": operational_cost,
@@ -156,7 +267,11 @@ def run_b3_dev(output_dir: Path = ROOT / "artifacts" / "s2", *, nproc: int | Non
         f"| Correct refusal rate | {m['correct_refuse_rate']:.4f} |",
         f"| Wrong disposition | {m['wrong_disposition']} |", f"| Miss | {m['miss']} |",
         f"| Unsafe action | {m['unsafe_action']} |",
+        f"| Unsafe: fast layer command | {m['unsafe_action_by_source']['fast_layer_command']} |",
+        f"| Unsafe: S2 authorized | {m['unsafe_action_by_source']['s2_authorized']} |",
+        f"| B1-corrected unsafe action (same episodes) | {m['b1_corrected_unsafe_action']} |",
         f"| Preservation regression | {m['preservation_regression_count']}/{m['preservation_count']} |",
+        f"| Preservation regression by cause | fault veto {m['preservation_regression_by_source']['fault_veto']}; S2 authorized action {m['preservation_regression_by_source']['s2_authorized_action']}; other {m['preservation_regression_by_source']['other']} |",
         f"| Authorizations | {m['authorization_count']} |", "", "## Operational cost", "",
         f"- System-2 calls: {c['system2_calls']}", f"- Verifier calls: {c['verifier_calls']}",
         f"- Hypotheses proposed: {c['hypotheses_proposed']}", f"- LLM calls: {c['llm_calls']}",
