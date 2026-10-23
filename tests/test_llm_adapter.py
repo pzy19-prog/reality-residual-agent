@@ -61,6 +61,17 @@ def test_replay_provider_hit_is_deterministic_and_miss_raises(tmp_path):
         replay.complete({"messages": []})
 
 
+def test_adapter_propagates_replay_cache_miss():
+    from pytest import raises
+
+    class MissingReplay:
+        def complete(self, request_body):
+            raise ReplayCacheMiss("cache miss for request abc123")
+
+    with raises(ReplayCacheMiss, match="abc123"):
+        HypothesisProposer(MissingReplay()).propose({}, "")
+
+
 def test_adapter_makes_no_network_calls(monkeypatch):
     from urllib import request as urllib_request
 
