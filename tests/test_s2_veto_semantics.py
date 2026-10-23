@@ -111,6 +111,22 @@ def test_object_missing_latches_before_absence_escalation_and_vetoes_all_later_t
     assert absent_branch_b3_calls == []
 
 
+def test_empty_fault_window_still_latches_with_available_target_evidence(monkeypatch):
+    def empty_window(*args, **kwargs):
+        return ((FaultHypothesis.SENSOR_STUCK,),
+                {FaultHypothesis.SENSOR_STUCK: []})
+
+    monkeypatch.setattr(episode_module, "check_faults", empty_window)
+    config = WorldConfig(scenario="nominal", object_count=1,
+                         initial_position_min=-3.0, initial_position_max=-3.0,
+                         episode_steps=40)
+
+    receipt = episode_module.run_episode(config, 94, True, system2_enabled=True)
+
+    assert receipt["system2_hard_fault_latch"]["latched"] is True
+    assert receipt["system2_hard_fault_latch"]["events"][0]["evidence_ids"] == ["obs:0:0.000"]
+
+
 def test_sensor_stuck_hard_latch_revokes_prior_authorization(monkeypatch):
     original_correct = Corrector.correct
     forced = False

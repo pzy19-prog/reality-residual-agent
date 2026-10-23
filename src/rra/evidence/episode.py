@@ -272,7 +272,7 @@ def run_episode(
                     FaultHypothesis.SENSOR_STUCK,
                     FaultHypothesis.BELT_STOP_OR_MOTION_LOSS,
                 }:
-                    continue
+                    supporting_ids = evidence_ids
                 latch_hard_fault(fault.value, target_id, when, supporting_ids)
 
     def record_outcome(
