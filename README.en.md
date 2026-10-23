@@ -4,10 +4,10 @@ A deterministic 2D conveyor pick simulation and residual-compensation baseline. 
 
 ## Install and run
 
-Requires Python 3.11.
+Requires Python 3.12.
 
 ```bash
-python3.11 -m venv .venv
+python3.12 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 .venv/bin/python ./rra run --scenario bias --seed 7 --compensation on
 .venv/bin/python ./rra bench

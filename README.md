@@ -18,10 +18,10 @@ seeded 2D World → nominal ScriptedPlanner → ResidualMonitor → bounded Corr
 
 ## 安装与运行
 
-需要 Python 3.11。
+需要 Python 3.12。
 
 ```bash
-python3.11 -m venv .venv
+python3.12 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 .venv/bin/python ./rra run --scenario bias --seed 7 --compensation on
 .venv/bin/python ./rra run --scenario bias --seed 7 --compensation off

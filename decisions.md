@@ -13,6 +13,7 @@
 | 2026-09-27 | Python 兼容层 | 删除/不保留任何 Pydantic shim，直接用 requirements 安装 Pydantic 2 | 真实环境执行测试及确定性校验，避免离线替代层掩盖校验行为 |
 | 2026-09-27 | setuptools build-system | 不显式恢复 setuptools build-system | 仓库通过 `rra` source-tree launcher 运行，不构建 Python wheel；Docker 直接复制源码，增加构建依赖没有必要。setuptools 不是运行依赖 |
 | 2026-09-27 | CLI / 模块签名 | 保持公开 `rra run`、`rra bench` 命令和 `run_bench(output_dir)` 签名；用 `RRA_SEED_FILE` 选择 dev 冒烟 seed 文件 | 支持本地与 Docker dev 冒烟，正式默认仍由冻结 eval 文件驱动 |
+| 2026-10-23 | 运行时 Python 版本 | 统一为 Python 3.12（本机 3.12.3），CI/启动脚本/Dockerfile/README 同步；3.11 时期的历史结果保留为历史记录 | requirements 钉 numpy==2.5.4（L5 D10），该版本要求 Python>=3.12；PR #19 合并后 CI 因此失败 |
 
 ## 评估纪律
 
