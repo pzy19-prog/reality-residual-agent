@@ -18,8 +18,8 @@ from rra.sim.v3_world import V3World
 C1 = {
     "observation_samples": {"episode_id", "seq", "target_id", "step", "time", "observed_x", "observed_y", "nominal_x", "nominal_y", "nominal_speed"},
     "presence_events": {"episode_id", "seq", "target_id", "step", "time", "target_observed"},
-    "command_feedback": {"episode_id", "seq", "command_id", "target_id", "issued_time", "execution_time", "accepted", "success", "reason_code"},
-    "known_config": {"episode_id", "dt", "tolerance", "x_pick", "y_pick", "belt_speed"},
+    "command_feedback": {"episode_id", "seq", "step", "command_id", "target_id", "issued_time", "execution_time", "accepted", "success", "reason_code"},
+    "known_config": {"episode_id", "dt", "tolerance", "x_pick", "y_pick", "belt_speed", "episode_steps", "object_count"},
     "ops_context": {"episode_id", "text", "content_sha256"},
 }
 
@@ -83,9 +83,15 @@ def export_sources(out: Path, episodes: int = 20) -> dict[str, Any]:
         feedback = []
         for row in receipt["policy_command_feedback"]:
             target = int(row["target_id"])
-            step = round(float(row["issued_time"]) / config.dt)
-            feedback.append({"episode_id": episode_id, "seq": target * config.episode_steps + step, **row})
-        known = {"episode_id": episode_id, **config.model_dump(include={"dt", "tolerance", "x_pick", "y_pick", "belt_speed"})}
+            try:
+                step = int(str(row["command_id"]).rsplit(":", 1)[1])
+            except (IndexError, ValueError):
+                if "step" not in row:
+                    raise ValueError("command feedback requires an explicit step when command_id omits it")
+                step = int(row["step"])
+            feedback.append({"episode_id": episode_id, "seq": target * config.episode_steps + step,
+                             "step": step, **row})
+        known = {"episode_id": episode_id, **config.model_dump(include={"dt", "tolerance", "x_pick", "y_pick", "belt_speed", "episode_steps", "object_count"})}
         ctx = {"episode_id": episode_id, "text": frozen.text, "content_sha256": frozen.content_sha256}
         tables["observation_samples"].extend(observations)
         tables["presence_events"].extend(presence)
@@ -93,10 +99,10 @@ def export_sources(out: Path, episodes: int = 20) -> dict[str, Any]:
         tables["known_config"].append(known)
         tables["ops_context"].append(ctx)
         ref_rollup = hashlib.sha256()
-        for d in range(config.object_count * config.episode_steps):
-            target, step = divmod(d, config.episode_steps)
+        for presence_row in sorted(presence, key=lambda row: row["seq"]):
+            target, step = presence_row["target_id"], presence_row["step"]
             packet = build_packet(episode_id=episode_id, target_id=target, step=step,
-                                  time=step * config.dt, observations=observations,
+                                  time=presence_row["time"], observations=observations,
                                   presence_events=presence, command_feedback=feedback,
                                   known_config={k:v for k,v in known.items() if k != "episode_id"},
                                   context={"text": frozen.text, "content_sha256": frozen.content_sha256},
@@ -118,9 +124,9 @@ def load_packets(tables: dict[str, list[dict[str, Any]]], episode_id: str) -> li
     scoped = {k:[r for r in tables[k] if r["episode_id"] == episode_id] for k in C1}
     known = {k:v for k,v in scoped["known_config"][0].items() if k != "episode_id"}
     ctx = {k:v for k,v in scoped["ops_context"][0].items() if k != "episode_id"}
-    n = max(r["seq"] for r in scoped["presence_events"])+1
-    steps = 100
-    return [build_packet(episode_id=episode_id,target_id=d//steps,step=d%steps,time=(d%steps)*0.1,
-                         observations=scoped["observation_samples"],presence_events=scoped["presence_events"],
-                         command_feedback=scoped["command_feedback"],known_config=known,context=ctx,episode_steps=steps)
-            for d in range(n)]
+    steps = int(known["episode_steps"])
+    return [build_packet(episode_id=episode_id, target_id=row["target_id"], step=row["step"], time=row["time"],
+                         observations=scoped["observation_samples"], presence_events=scoped["presence_events"],
+                         command_feedback=scoped["command_feedback"], known_config=known, context=ctx,
+                         episode_steps=steps)
+            for row in sorted(scoped["presence_events"], key=lambda item: item["seq"])]

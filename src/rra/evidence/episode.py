@@ -4,10 +4,13 @@ from __future__ import annotations
 
 from hashlib import sha256
 import json
+import platform
 from time import perf_counter
 from dataclasses import asdict, replace
 from functools import partial
 from typing import Any, Literal
+
+import numpy as np
 
 from rra.controller import Command, Controller, ControllerConfig
 from rra.fast import Corrector, ResidualMonitor
@@ -19,7 +22,7 @@ from rra.evidence.policy import (
     target_presence_event,
 )
 from rra.s2.b3 import run_b3
-from rra.s2.dsl import Action, FaultHypothesis
+from rra.s2.dsl import Action, FaultHypothesis, structure_id as registered_structure_id
 from rra.s2.fitter import Observation as S2Observation, CommandFeedback as S2Feedback, fit as fit_hypothesis
 from rra.s2.verifier import verify as verify_hypothesis
 from rra.s2.dsl import structures as registered_structures
@@ -32,6 +35,13 @@ from rra.sim.v3_world import V3World
 
 TERMINAL_STATES = ("picked", "attempt_failed", "rejected", "escalated", "skipped")
 CONSECUTIVE_OUTCOME_FAILURE_THRESHOLD = 3
+
+
+def _verification_structure_id(value: Any) -> str | None:
+    try:
+        return getattr(value, "structure_id", None) or registered_structure_id(value.structure)
+    except (AttributeError, ValueError):
+        return None
 
 
 def run_episode(
@@ -176,7 +186,8 @@ def run_episode(
                     if event["target_id"] == target_id and not event.get("target_observed", True)
                 ]
             else:
-                evidence_ids = [f"obs:{target_id}:{item.time:.3f}" for item in observations[-4:]]
+                window = b3.get("fault_evidence_windows", {}).get(fault, observations)
+                evidence_ids = [f"obs:{target_id}:{item.time:.3f}" for item in window]
             checks.append({"check_item": fault.value, "evidence_ids": evidence_ids})
         record = {"target_id": target_id, "check_items": checks}
         system2_fault_vetoes[target_id] = record
@@ -236,7 +247,7 @@ def run_episode(
         record_latched_human_escalation(target_id, when)
 
     def latch_from_faults(faults: Any, target_id: int, when: float,
-                          evidence_ids: list[str]) -> None:
+                          evidence_ids: list[str], fault_windows: dict | None = None) -> None:
         latchable = {
             FaultHypothesis.SENSOR_STUCK,
             FaultHypothesis.BELT_STOP_OR_MOTION_LOSS,
@@ -244,10 +255,15 @@ def run_episode(
         }
         for fault in faults:
             if fault in latchable:
-                supporting_ids = evidence_ids[-4:] if fault in {
+                window = (fault_windows or {}).get(fault)
+                supporting_ids = [f"obs:{target_id}:{item.time:.3f}" for item in window] if window else evidence_ids
+                if fault is FaultHypothesis.OBJECT_MISSING_OR_DROPPED:
+                    supporting_ids = evidence_ids
+                if not supporting_ids and fault in {
                     FaultHypothesis.SENSOR_STUCK,
                     FaultHypothesis.BELT_STOP_OR_MOTION_LOSS,
-                } else evidence_ids
+                }:
+                    continue
                 latch_hard_fault(fault.value, target_id, when, supporting_ids)
 
     def record_outcome(
@@ -363,7 +379,8 @@ def run_episode(
         system2_verifier_calls += len(b3["verifications"])
         system2_hypotheses_proposed += len(b3["fits"])
         evidence_ids = [f"obs:{target_id}:{o.time:.3f}" for o in s2obs]
-        latch_from_faults(b3["faults"], target_id, observation.time, evidence_ids)
+        latch_from_faults(b3["faults"], target_id, observation.time, evidence_ids,
+                          b3.get("fault_evidence_windows"))
         fault_veto = (hard_fault_veto_record(target_id) if hard_fault_latch["latched"]
                       else positive_fault_veto(b3, target_id, s2obs, policy_target_presence_events))
         chosen = next((h for h in b3["passing"]
@@ -427,7 +444,9 @@ def run_episode(
             "fault_veto": fault_veto,
             "authorization": asdict(auth) if auth is not None else None,
             "attempt": outcome_escalation_attempts, "pause_seconds": 0.0,
-            "verifications": [{"hypothesis_id": v.hypothesis_id, "structure": list(v.structure),
+            "verifications": [{"hypothesis_id": v.hypothesis_id,
+                               "structure_id": _verification_structure_id(v),
+                               "structure": list(v.structure),
                                "parameters": v.fitted_parameters, "rmse": v.rmse, "passed": v.passed}
                               for v in b3["verifications"]],
         })
@@ -448,7 +467,8 @@ def run_episode(
                 "decision_observation": {"time": observation.time, "observed_x": observation.observed_x,
                                          "nominal_x": observation.nominal_x,
                                          "nominal_speed": known_config.belt_speed},
-                "verified": [{"structure": list(v.structure), "rmse": v.rmse,
+                "verified": [{"structure_id": _verification_structure_id(v),
+                              "structure": list(v.structure), "rmse": v.rmse,
                               "n_usable": v.n_usable, "passed": v.passed} for v in b3["verifications"]],
                 "passing": [list(v.structure) for v in b3["passing"]], "gate": b3["gate_reason"],
                 "action_time": b3["action_time"], "faults": [f.value for f in b3["faults"]],
@@ -481,51 +501,6 @@ def run_episode(
                 [f"presence:{plant_observation.target_id}:{plant_observation.time:.3f}"],
             )
         if not plant_observation.target_present:
-            # Absence is a registered evidence escalation; the fault detector sees
-            # only target-presence events and already collected policy observations.
-            if (system2_enabled and not hard_fault_latch["latched"]
-                    and plant_observation.target_id not in outcomes_by_target):
-                s2obs=system2_observations.get(plant_observation.target_id, [])
-                pause_started=perf_counter()
-                b3=run_b3(
-                    s2obs,nominal_speed=known_config.belt_speed,
-                    evidence_refs=[f"presence:{plant_observation.target_id}:{plant_observation.time:.3f}"],
-                    current_time=plant_observation.time,dt=known_config.dt,
-                    horizon=(config.episode_steps-1)*config.dt,tolerance=known_config.tolerance,
-                    presence_events=[e for e in policy_target_presence_events if e["target_id"]==plant_observation.target_id],
-                )
-                system2_wall_latency_seconds += perf_counter()-pause_started
-                system2_calls += 1
-                system2_verifier_calls += len(b3["verifications"])
-                system2_hypotheses_proposed += len(b3["fits"])
-                latch_from_faults(
-                    b3["faults"], plant_observation.target_id, plant_observation.time,
-                    [f"presence:{plant_observation.target_id}:{plant_observation.time:.3f}"],
-                )
-                fault_veto = hard_fault_veto_record(plant_observation.target_id)
-                if include_s2_diagnostics:
-                    n_pre = len(s2obs)
-                    first_s2_sample_count.setdefault(plant_observation.target_id, n_pre)
-                    s2_diagnostic_calls.append({
-                        "seed": int(seed), "target_id": plant_observation.target_id,
-                        "sim_time": plant_observation.time,
-                        "first_observed_at": first_observed_at.get(plant_observation.target_id),
-                        "window_remaining_time": None, "planned_window_end": None,
-                        "n_usable_before_upgrade": n_pre, "n_usable_after_upgrade": 0,
-                        "n_usable_total": n_pre,
-                        "fits": [{"structure": [p.value for p in f.structure], "fit": not f.no_fit,
-                                  "rmse": f.objective, "n_usable": f.n_usable,
-                                  "parameters": f.parameters} for f in b3["fits"]],
-                        "verified": [{"structure": list(v.structure), "rmse": v.rmse,
-                                      "n_usable": v.n_usable, "passed": v.passed}
-                                     for v in b3["verifications"]],
-                        "passing": [list(v.structure) for v in b3["passing"]],
-                        "gate": b3["gate_reason"], "action_time": b3["action_time"],
-                        "faults": [f.value for f in b3["faults"]], "action": b3["action"].value,
-                    })
-                system2_receipts.append({"time":plant_observation.time,"target_id":plant_observation.target_id,"action":Action.HUMAN_ESCALATION.value,"gate_reason":"HARD_FAULT_LATCH","faults":[item["category"] for item in hard_fault_latch["events"]],"fault_veto":fault_veto,"pause_seconds":0.0})
-                record_outcome(plant_observation.target_id,"escalated","target presence fault evidence",plant_observation.step,0.0)
-                safe_stop=True
             if (system2_enabled and hard_fault_latch["latched"]
                     and plant_observation.target_id not in outcomes_by_target):
                 record_outcome(plant_observation.target_id, "escalated", "HARD_FAULT_LATCH",
@@ -562,14 +537,20 @@ def run_episode(
         evidence_ids = [f"obs:{observation.target_id}:{item.time:.3f}"
                         for item in system2_observations[observation.target_id]]
         if system2_enabled:
-            observed_faults = check_faults(
+            observed_fault_result = check_faults(
                 system2_observations[observation.target_id],
                 nominal_speed=known_config.belt_speed, dt=known_config.dt,
                 presence_events=[event for event in policy_target_presence_events
                                  if event["target_id"] == observation.target_id],
+                return_windows=True,
             )
+            if (isinstance(observed_fault_result, tuple) and len(observed_fault_result) == 2
+                    and isinstance(observed_fault_result[1], dict)):
+                observed_faults, observed_fault_windows = observed_fault_result
+            else:  # Compatibility with test doubles and downstream detector overrides.
+                observed_faults, observed_fault_windows = observed_fault_result, {}
             latch_from_faults(observed_faults, observation.target_id,
-                              observation.time, evidence_ids)
+                              observation.time, evidence_ids, observed_fault_windows)
             if hard_fault_latch["latched"]:
                 safe_stop = True
                 record_latched_human_escalation(observation.target_id, observation.time)
@@ -666,6 +647,7 @@ def run_episode(
             latch_from_faults(
                 b3["faults"], observation.target_id, observation.time,
                 [f"obs:{observation.target_id}:{o.time:.3f}" for o in s2obs],
+                b3.get("fault_evidence_windows"),
             )
             fault_veto = positive_fault_veto(
                 b3, observation.target_id, s2obs, policy_target_presence_events
@@ -696,7 +678,8 @@ def run_episode(
                     "decision_observation": {"time": observation.time, "observed_x": observation.observed_x,
                                              "nominal_x": observation.nominal_x,
                                              "nominal_speed": known_config.belt_speed},
-                    "verified": [{"structure": list(v.structure), "rmse": v.rmse,
+                    "verified": [{"structure_id": _verification_structure_id(v),
+                                  "structure": list(v.structure), "rmse": v.rmse,
                                   "n_usable": v.n_usable, "passed": v.passed}
                                  for v in b3["verifications"]],
                     "passing": [list(v.structure) for v in b3["passing"]],
@@ -734,7 +717,9 @@ def run_episode(
                     "time":observation.time,"target_id":observation.target_id,
                     "action":b3["action"].value,"gate_reason":b3["gate_reason"],
                     "fault_veto":fault_veto,
-                    "hypothesis_id":chosen.hypothesis_id,"structure":list(chosen.structure),
+                    "hypothesis_id":chosen.hypothesis_id,
+                    "structure_id":_verification_structure_id(chosen),
+                    "structure":list(chosen.structure),
                     "fitted_parameters":chosen.fitted_parameters,"n_usable":chosen.n_usable,
                     "rmse":chosen.rmse,"residual_vector":list(chosen.residual_vector),
                     "violated_invariants":list(chosen.violated_invariants),"passed":chosen.passed,
@@ -747,7 +732,9 @@ def run_episode(
                     "action":b3["action"].value,"gate_reason":b3["gate_reason"],
                     "faults":[f.value for f in b3["faults"]],"fault_veto":fault_veto,"pause_seconds":0.0,
                     "verifications":[{
-                        "hypothesis_id":v.hypothesis_id,"structure":list(v.structure),
+                        "hypothesis_id":v.hypothesis_id,
+                        "structure_id":_verification_structure_id(v),
+                        "structure":list(v.structure),
                         "fitted_parameters":v.fitted_parameters,"n_usable":v.n_usable,
                         "rmse":v.rmse,"residual_vector":list(v.residual_vector),
                         "violated_invariants":list(v.violated_invariants),"passed":v.passed,
@@ -886,8 +873,11 @@ def run_episode(
                         observation.target_id
                     ]["authorization"]["authorization_id"]
             if include_s2_diagnostics:
-                evaluator_row["actual_x_at_execution"] = delayed_x
-                evaluator_row["execution_time"] = observation.time + response_delay
+                diagnostic = next((row for row in reversed(s2_diagnostic_calls)
+                                   if row["target_id"] == observation.target_id), None)
+                if diagnostic is not None:
+                    diagnostic["actual_x_at_execution"] = delayed_x
+                    diagnostic["execution_time"] = observation.time + response_delay
             policy_feedbacks.append(asdict(command_feedback(
                     command_id=f"{seed}:{observation.target_id}:{observation.step}",
                     target_id=observation.target_id,
@@ -990,6 +980,7 @@ def run_episode(
             "escalations": len(escalations),
             "terminal_counts": terminal_counts,
         },
+        "runtime_versions": {"python": platform.python_version(), "numpy": np.__version__},
     }
     if system2_enabled:
         receipt["system2_decisions"] = system2_receipts
@@ -1037,7 +1028,7 @@ def run_episode(
         receipt["failure_trace"] = failure_trace
     hash_input = {key: value for key, value in receipt.items() if key not in (
         "git_sha", "system2_wall_latency_seconds", "system2_verifier_calls",
-        "system2_hypotheses_proposed", "system2_calls", "s2_diagnostic_trace")}
+        "system2_hypotheses_proposed", "system2_calls", "s2_diagnostic_trace", "runtime_versions")}
     canonical = json.dumps(hash_input, sort_keys=True, separators=(",", ":")).encode("utf-8")
     receipt["receipt_sha256"] = sha256(canonical).hexdigest()
     return receipt

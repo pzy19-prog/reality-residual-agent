@@ -22,8 +22,8 @@ Seeds: 130 from `config/dev_seeds.json`; B3 enumerates all 14 DSL structures at 
 - Verifier calls: 27454
 - Hypotheses proposed: 27454
 - LLM calls: 0
-- Production pause seconds: 386.475
-- Serial / parallel three-seed wall time: 2.722 / 1.359 s
-- Full parallel run wall time: 64.394 s with nproc=8
+- Production pause seconds: 367.107
+- Serial / parallel three-seed wall time: 2.656 / 1.400 s
+- Full parallel run wall time: 61.249 s with nproc=8
 
-Receipt SHA-256: `2bcf3aa81be5d7a7b77d14c29c14c3d0016c072346bffc495d52be5a3c2f5092`
+Receipt SHA-256: `6eb3c6fb986bcbfea2c0fa87fd280be6b23935d9c3d795d187eefbe88052df3d`

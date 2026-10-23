@@ -24,7 +24,8 @@ WORLD_CONFIG = "v3/nominal"
 WRITE_CLOCK_START_MS = 1_000_000
 
 # Evaluator-only keys of s2_diagnostic_trace rows (M8); stripped before storage.
-HIDDEN_DIAGNOSTIC_KEYS = frozenset({"terminal_status", "terminal_reason", "command_issued", "unsafe_witness"})
+HIDDEN_DIAGNOSTIC_KEYS = frozenset({"terminal_status", "terminal_reason", "command_issued", "unsafe_witness",
+                                   "actual_x_at_execution", "execution_time"})
 # Keys that must never appear anywhere inside a stored run record.
 FORBIDDEN_RUN_KEYS = HIDDEN_DIAGNOSTIC_KEYS | frozenset({"evaluator_objects", "realization", "recoverable", "fault"})
 # Every key allowed anywhere inside a stored run record (fail-closed: a new key stops persistence
@@ -40,7 +41,7 @@ ALLOWED_RUN_KEYS = frozenset({
     "residual_vector", "rmse", "safe_stop_clear", "schema", "scope", "seed", "sensor_bias", "sim_time",
     "speed_step_delta", "speed_step_time", "structure", "target_id", "temporary_policy_exception",
     "terminal_condition", "time", "time_correction_seconds", "trigger", "velocity_offset", "verifications",
-    "verified", "verifier_score", "violated_invariants", "window_remaining_time",
+    "verified", "verifier_score", "violated_invariants", "window_remaining_time", "structure_id",
 })
 # Decisions appended without a diagnostic row (hard-fault latch, A02 section 5 deviation from 1:1).
 UNDIAGNOSED_TRIGGERS = frozenset({"hard_fault_latch"})

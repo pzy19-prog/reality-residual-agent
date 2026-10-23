@@ -17,6 +17,14 @@ def test_structures_exactly_14_unique():
     assert len(s)==14 and len(set(s))==14
     assert all(len(set(x))==len(x) for x in s)
 
+
+def test_fault_detector_returns_its_actual_latch_observation_window():
+    from rra.s2.faults import check_faults
+    observations = [Observation(i * .1, 1.0, 1.0 + i * .1) for i in range(6)]
+    faults, windows = check_faults(observations, return_windows=True)
+    ids = [f"obs:2:{row.time:.3f}" for row in windows[next(x for x in faults if x.value == "SENSOR_STUCK")]]
+    assert ids == ["obs:2:0.200", "obs:2:0.300", "obs:2:0.400", "obs:2:0.500"]
+
 @pytest.mark.parametrize('structure,params',[
     ((Primitive.SENSOR_BIAS,),{'sensor_bias':.22}),
     ((Primitive.VELOCITY_OFFSET,),{'velocity_offset':.12}),

@@ -83,7 +83,12 @@ def test_sensor_stuck_positive_evidence_vetoes_and_is_receipted(monkeypatch):
     assert receipt["safe_stop"] is True
 
 
-def test_object_missing_latches_episode_and_vetoes_all_later_targets():
+def test_object_missing_latches_before_absence_escalation_and_vetoes_all_later_targets(monkeypatch):
+    absent_branch_b3_calls = []
+    def unexpected_b3(*args, **kwargs):
+        absent_branch_b3_calls.append(True)
+        raise AssertionError("hard fault latch must run before absent handling")
+    monkeypatch.setattr(episode_module, "run_b3", unexpected_b3)
     realization = EpisodeRealization(
         (), {}, "OBJECT_MISSING", {"trigger_target": 0, "trigger_time": 0.2},
     )
@@ -103,6 +108,7 @@ def test_object_missing_latches_episode_and_vetoes_all_later_targets():
     assert all(row["action"] == Action.HUMAN_ESCALATION.value
                for row in receipt["system2_decisions"])
     assert {row["target_id"] for row in receipt["system2_fault_vetoes"]} == {0, 1, 2}
+    assert absent_branch_b3_calls == []
 
 
 def test_sensor_stuck_hard_latch_revokes_prior_authorization(monkeypatch):

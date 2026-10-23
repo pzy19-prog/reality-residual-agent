@@ -23,22 +23,52 @@ def request_sha256(body: dict) -> str:
     return hashlib.sha256(canonical_json(body).encode("utf-8")).hexdigest()
 
 
+def finalize_payload(request_body: dict, settings: Any) -> dict:
+    """Apply provider settings so live and replay providers hash identical payloads."""
+    def setting(name: str, default: Any) -> Any:
+        return settings.get(name, default) if isinstance(settings, dict) else getattr(settings, name, default)
+
+    payload = dict(request_body)
+    model = setting("model", NIM_MODEL)
+    max_tokens = setting("max_tokens", 1800)
+    chat_template_kwargs = setting("chat_template_kwargs", {"enable_thinking": False})
+    no_think = bool(setting("no_think", False))
+    payload.update({"model": model, "temperature": 0, "max_tokens": int(max_tokens)})
+    if chat_template_kwargs is not None:
+        payload["chat_template_kwargs"] = deepcopy(chat_template_kwargs)
+    else:
+        payload.pop("chat_template_kwargs", None)
+    if no_think:
+        payload["messages"] = deepcopy(payload["messages"])
+        system_message = next((m for m in payload["messages"] if m.get("role") == "system"), None)
+        if system_message is None:
+            raise ValueError("no system message available for /no_think prefix")
+        if not system_message["content"].startswith("/no_think\n"):
+            system_message["content"] = "/no_think\n" + system_message["content"]
+    return payload
+
+
 class ReplayCacheMiss(FileNotFoundError):
     pass
 
 
 class ReplayProvider:
     """Read only provider; cache files contain request and response bodies only."""
-    def __init__(self, cache_dir: str | Path = "artifacts/llm_cache"):
+    def __init__(self, cache_dir: str | Path = "artifacts/llm_cache", *, model: str = NIM_MODEL,
+                 max_tokens: int = 1800, chat_template_kwargs: dict | None = {"enable_thinking": False},
+                 no_think: bool = False):
         self.cache_dir = Path(cache_dir)
+        self.settings = {"model": model, "max_tokens": max_tokens,
+                         "chat_template_kwargs": chat_template_kwargs, "no_think": no_think}
 
     def complete(self, request_body: dict) -> dict:
-        key = request_sha256(request_body)
+        payload = finalize_payload(request_body, self.settings)
+        key = request_sha256(payload)
         path = self.cache_dir / f"{key}.json"
         if not path.is_file():
             raise ReplayCacheMiss(f"replay cache miss: {path}")
         record = json.loads(path.read_text(encoding="utf-8"))
-        if record.get("request") != request_body or not isinstance(record.get("response"), dict):
+        if record.get("request") != payload or not isinstance(record.get("response"), dict):
             raise ValueError(f"invalid replay cache record: {path}")
         return record["response"]
 
@@ -70,16 +100,7 @@ class NvidiaNimProvider:
 
     def complete(self, request_body: dict) -> dict:
         # Caller supplies only evidence_packet and context_text; provider fixes the model settings.
-        payload = dict(request_body)
-        payload.update({"model": self.model, "temperature": 0, "max_tokens": self.max_tokens})
-        if self.chat_template_kwargs is not None:
-            payload["chat_template_kwargs"] = deepcopy(self.chat_template_kwargs)
-        if self.no_think:
-            payload["messages"] = deepcopy(payload["messages"])
-            system_message = next((message for message in payload["messages"] if message.get("role") == "system"), None)
-            if system_message is None:
-                raise ValueError("no system message available for /no_think prefix")
-            system_message["content"] = "/no_think\n" + system_message["content"]
+        payload = finalize_payload(request_body, self)
         self.last_request_body = payload
         data = canonical_json(payload).encode("utf-8")
         request = Request(

@@ -8,6 +8,7 @@
       "issued_time",
       "reason_code",
       "seq",
+      "step",
       "success",
       "target_id"
     ],
@@ -15,6 +16,8 @@
       "belt_speed",
       "dt",
       "episode_id",
+      "episode_steps",
+      "object_count",
       "tolerance",
       "x_pick",
       "y_pick"
@@ -56,6 +59,7 @@
       "issued_time",
       "reason_code",
       "seq",
+      "step",
       "success",
       "target_id"
     ],
@@ -63,6 +67,8 @@
       "belt_speed",
       "dt",
       "episode_id",
+      "episode_steps",
+      "object_count",
       "tolerance",
       "x_pick",
       "y_pick"

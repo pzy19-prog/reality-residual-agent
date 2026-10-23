@@ -1,8 +1,8 @@
 import json
 
-from rra.eval.context_v3 import STRUCTURE_IDS
+from rra.s2.dsl import STRUCTURE_IDS
 from rra.llm.adapter import HypothesisProposer
-from rra.llm.providers import ReplayCacheMiss, ReplayProvider, canonical_json, request_sha256
+from rra.llm.providers import ReplayCacheMiss, ReplayProvider, canonical_json, finalize_payload, request_sha256
 
 
 class FakeProvider:
@@ -51,8 +51,9 @@ def test_invalid_json_returns_empty_proposal_without_raising():
 def test_replay_provider_hit_is_deterministic_and_miss_raises(tmp_path):
     request = {"messages": [{"role": "user", "content": "synthetic"}]}
     response_body = {"choices": [{"message": {"content": '{"items":[]}'}}]}
-    cache_file = tmp_path / f"{request_sha256(request)}.json"
-    cache_file.write_text(canonical_json({"request": request, "response": response_body}), encoding="utf-8")
+    payload = finalize_payload(request, {})
+    cache_file = tmp_path / f"{request_sha256(payload)}.json"
+    cache_file.write_text(canonical_json({"request": payload, "response": response_body}), encoding="utf-8")
     replay = ReplayProvider(tmp_path)
     assert replay.complete(request) == replay.complete(request) == response_body
     from pytest import raises
@@ -100,6 +101,24 @@ def test_nvidia_provider_uses_env_key_and_writes_body_only_cache(tmp_path, monke
     assert "test-secret" not in cache_text
     assert "headers" not in cache_text and "wall_clock" not in cache_text
     assert set(json.loads(cache_text)) == {"request", "response"}
+
+
+def test_nim_cache_entry_is_replayable_from_adapter_request(tmp_path, monkeypatch):
+    from rra.llm import providers
+    monkeypatch.setenv("NVIDIA_API_KEY", "test-secret")
+    response_body = response('{"items":[]}')
+
+    class FakeHttpResponse:
+        status = 200
+        def __enter__(self): return self
+        def __exit__(self, *args): return False
+        def read(self): return json.dumps(response_body).encode()
+
+    monkeypatch.setattr(providers, "urlopen", lambda request, timeout: FakeHttpResponse())
+    provider = providers.NvidiaNimProvider(cache_dir=tmp_path)
+    request_body = {"messages": [{"role": "user", "content": "synthetic"}]}
+    assert provider.complete(request_body) == response_body
+    assert providers.ReplayProvider(tmp_path).complete(request_body) == response_body
 
 
 def test_nvidia_provider_rejects_small_token_limit(monkeypatch):

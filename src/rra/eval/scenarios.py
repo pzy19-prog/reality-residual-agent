@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from itertools import combinations
 from typing import Any
 
 import numpy as np
+from rra.s2.dsl import Primitive, structures
 
-PRIMITIVES = ("SENSOR_BIAS", "VELOCITY_OFFSET", "SPEED_STEP", "ACTUATOR_DELAY")
+PRIMITIVES = tuple(item.value for item in Primitive)
 FAULT_FAMILIES = (
     "SENSOR_STUCK", "SENSOR_SPIKE_BURST", "OBJECT_MISSING", "SECOND_DYNAMICS_CHANGE", "BELT_STOP"
 )
@@ -23,7 +23,7 @@ class EpisodeRealization:
 
 
 def composition_structures() -> tuple[tuple[str, ...], ...]:
-    return tuple((p,) for p in PRIMITIVES) + tuple(combinations(PRIMITIVES, 2)) + tuple(combinations(PRIMITIVES, 3))
+    return tuple(tuple(item.value for item in row) for row in structures())
 
 
 def _signed(rng: np.random.Generator, low: float, high: float) -> float:

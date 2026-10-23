@@ -40,8 +40,8 @@ def fetch_federated_episode(client, episode):
     column_map={
         "observation_samples":("episode_id","seq","target_id","step","time","observed_x","observed_y","nominal_x","nominal_y","nominal_speed"),
         "presence_events":("episode_id","seq","target_id","step","time","target_observed"),
-        "command_feedback":("episode_id","seq","command_id","target_id","issued_time","execution_time","accepted","success","reason_code"),
-        "known_config":("episode_id","dt","tolerance","x_pick","y_pick","belt_speed"),
+        "command_feedback":("episode_id","seq","step","command_id","target_id","issued_time","execution_time","accepted","success","reason_code"),
+        "known_config":("episode_id","dt","tolerance","x_pick","y_pick","belt_speed","episode_steps","object_count"),
         "ops_context":("episode_id","text","content_sha256"),
     }
     parts=[]
@@ -89,11 +89,13 @@ def main():
         def one_pass(tables):
             config = {k:v for k,v in tables["known_config"][0].items() if k != "episode_id"}
             context = {k:v for k,v in tables["ops_context"][0].items() if k != "episode_id"}
-            for d in range(1200):
-                target,step=divmod(d,100)
-                yield build_packet(episode_id=episode,target_id=target,step=step,time=step*0.1,
+            steps = int(config["episode_steps"])
+            for presence in sorted(tables["presence_events"], key=lambda row: row["seq"]):
+                target,step=presence["target_id"],presence["step"]
+                yield build_packet(episode_id=episode,target_id=target,step=step,time=presence["time"],
                     observations=tables["observation_samples"],presence_events=tables["presence_events"],
-                    command_feedback=tables["command_feedback"],known_config=config,context=context)
+                    command_feedback=tables["command_feedback"],known_config=config,context=context,
+                    episode_steps=steps)
         local_packets = one_pass(rr)
         remote_packets = one_pass(remote)
         mismatch = 0
@@ -114,7 +116,7 @@ def main():
                       if x["target_id"]==decision["target_id"] and x["time"]<=decision["time"]]
             auth_mismatches += auth.get("evidence_ids") != expected or not auth.get("evidence_ids")
         output_eps.append({"seed":i,"case":audit_row["case"],"variant":audit_row["variant"],
-            "decision_points":1200,"hard_fault_latch_decisions":audit_row["hard_fault_latch_decisions"],
+            "decision_points":len(rr["presence_events"]),"hard_fault_latch_decisions":audit_row["hard_fault_latch_decisions"],
             "mismatches":mismatch,"packets_sha256_rollup":rollup.hexdigest(),
             "s2_diagnostic_rows":len(audit_row.get("s2_diagnostic_trace",[]))})
         print(f"episode={i} mismatches={mismatch} seconds={elapsed:.3f}")
@@ -127,11 +129,13 @@ def main():
             config={k:v for k,v in tab["known_config"][0].items() if k!="episode_id"}
             context={k:v for k,v in tab["ops_context"][0].items() if k!="episode_id"}
             roll=hashlib.sha256()
-            for d in range(1200):
-                target,step=divmod(d,100)
-                pkt=build_packet(episode_id=episode,target_id=target,step=step,time=step*0.1,
+            steps=int(config["episode_steps"])
+            for presence in sorted(tab["presence_events"], key=lambda row: row["seq"]):
+                target,step=presence["target_id"],presence["step"]
+                pkt=build_packet(episode_id=episode,target_id=target,step=step,time=presence["time"],
                     observations=tab["observation_samples"],presence_events=tab["presence_events"],
-                    command_feedback=tab["command_feedback"],known_config=config,context=context)
+                    command_feedback=tab["command_feedback"],known_config=config,context=context,
+                    episode_steps=steps)
                 roll.update(packet_sha256(pkt).encode("ascii"))
             eps.append({"seed":i,"packets_sha256_rollup":roll.hexdigest()})
         return json.dumps({"episodes":eps},sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()

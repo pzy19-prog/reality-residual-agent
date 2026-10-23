@@ -8,7 +8,9 @@ from pathlib import Path
 import subprocess
 from typing import Any
 
-from rra.eval.scenarios import PRIMITIVES
+from rra.s2.dsl import Primitive, structures as registered_structures
+
+PRIMITIVES = tuple(item.value for item in Primitive)
 
 P3_SHA = "024ea2e3e66b91f5a2157a66c073493e7107e109"
 EXCLUDED = ("SENSOR_BIAS", "VELOCITY_OFFSET", "SPEED_STEP")
@@ -16,12 +18,10 @@ EXCLUDED = ("SENSOR_BIAS", "VELOCITY_OFFSET", "SPEED_STEP")
 
 def structural_holdout() -> dict[str, Any]:
     """Compute the registered nine-way ordered structural holdout."""
-    import itertools
-
     pre_exclusion = [
         {"id": f"AND({','.join(items)})", "primitives": list(items)}
-        for size in (2, 3)
-        for items in itertools.combinations(PRIMITIVES, size)
+        for row in registered_structures() if len(row) in (2, 3)
+        for items in [tuple(item.value for item in row)]
     ]
     excluded_id = f"AND({','.join(EXCLUDED)})"
     eligible = [row for row in pre_exclusion if row["id"] != excluded_id]

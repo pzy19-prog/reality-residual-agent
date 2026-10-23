@@ -4,10 +4,13 @@ from __future__ import annotations
 import json
 import multiprocessing as mp
 import os
+import platform
 from hashlib import sha256
 from pathlib import Path
 from time import perf_counter
 from typing import Any
+
+import numpy as np
 
 from rra.eval.framework import v3_world_config
 from rra.eval.runner import score_against_b1_denominators
@@ -159,6 +162,9 @@ def _run_seed(args: tuple[int, int]) -> dict[str, Any]:
         "preservation_regression_by_source": preservation_by_source,
         "b1_unsafe_action_count": b1_score["unsafe_action_count"],
         "b1_receipt_sha256": b1["receipt_sha256"], "b3_receipt_sha256": b3["receipt_sha256"],
+        # Retain the first 20 dev decision traces for the diagnostic toggle audit.
+        # The aggregate metrics and per-seed receipt hashes still cover all 130 seeds.
+        **({"system2_decisions": b3.get("system2_decisions", [])} if index < 20 else {}),
     }
 
 
@@ -253,8 +259,10 @@ def run_b3_dev(output_dir: Path = ROOT / "artifacts" / "s2", *, nproc: int | Non
         },
         "operational_cost": operational_cost,
         "episodes": episodes,
+        "runtime_versions": {"python": platform.python_version(), "numpy": np.__version__},
     }
-    hash_input = {key: value for key, value in receipt.items() if key != "operational_cost"}
+    hash_input = {key: value for key, value in receipt.items()
+                  if key not in ("operational_cost", "runtime_versions")}
     receipt["receipt_sha256"] = sha256(json.dumps(hash_input, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
     output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / "b3-dev.json").write_text(json.dumps(receipt, indent=2, ensure_ascii=False) + "\n")
