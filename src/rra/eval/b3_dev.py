@@ -51,19 +51,46 @@ def _assert_authorization_contract(receipt: dict[str, Any]) -> None:
                           if row.get("authorization") is not None)
     if any(not authorization.get("temporary_policy_exception") for authorization in authorizations):
         raise AssertionError("T6: authorization has an empty temporary_policy_exception")
-    revoked_pairs = {(int(row["target_id"]), row.get("authorization_id"))
-                     for row in receipt.get("system2_authorization_events", [])
-                     if row.get("reason") == "POST_VERIFICATION_CHANGE"}
-    revoked_pairs.update((int(item["target_id"]), item.get("authorization_id"))
-                         for row in receipt.get("system2_episode_authorizations", [])
-                         for item in row.get("target_revocations", [])
-                         if item.get("reason") == "POST_VERIFICATION_CHANGE")
+    explicit_revocations = [row for row in receipt.get("system2_authorization_events", [])
+                            if row.get("event") == "REVOKE_AUTHORIZATION"]
+    malformed_revocations = [row for row in explicit_revocations
+                              if not row.get("authorization_id") or not row.get("reason")
+                             or row.get("revoked_at") is None or row.get("global_time") is None
+                             or not row.get("evidence_ids")]
+    if malformed_revocations:
+        raise AssertionError(
+            f"T7 seed={receipt.get('seed')}: revocation lacks reason, time, or evidence "
+            f"{malformed_revocations}"
+        )
+    revoked_at = {(int(row["target_id"]), row.get("authorization_id")): row["global_time"]
+                  for row in explicit_revocations}
+    revoked_at.update({
+        (int(item["target_id"]), item.get("authorization_id")): item.get("global_time")
+        for row in receipt.get("system2_episode_authorizations", [])
+        for item in row.get("target_revocations", [])
+    })
     source_by_target = {int(row["target_id"]): row for row in receipt.get("evaluator_objects", [])}
-    invalid = [(target, auth_id, source_by_target.get(target, {})) for target, auth_id in revoked_pairs
+    invalid = [(target, auth_id, source_by_target.get(target, {}))
+               for (target, auth_id), revoked_time in revoked_at.items()
                if source_by_target.get(target, {}).get("authorization_source") == "s2_authorized"
-               and source_by_target.get(target, {}).get("authorization_id") == auth_id]
+               and source_by_target.get(target, {}).get("authorization_id") == auth_id
+               and source_by_target.get(target, {}).get("authorization_global_time", float("inf")) >= revoked_time]
     if invalid:
         raise AssertionError(f"T7 seed={receipt.get('seed')}: command used a revoked authorization {invalid}")
+    latch = receipt.get("system2_hard_fault_latch", {})
+    if latch.get("latched"):
+        latch_time = latch.get("latched_at_global")
+        invalid_after_latch = [
+            int(row["target_id"]) for row in receipt.get("evaluator_objects", [])
+            if row.get("command_issued")
+            and row.get("authorization_source") == "s2_authorized"
+            and row.get("authorization_global_time", float("inf")) >= latch_time
+        ]
+        if invalid_after_latch:
+            raise AssertionError(
+                f"T8 seed={receipt.get('seed')}: S2-authorized commands after hard fault latch "
+                f"for targets {sorted(invalid_after_latch)}"
+            )
 
 
 def _run_seed(args: tuple[int, int]) -> dict[str, Any]:

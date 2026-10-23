@@ -90,6 +90,9 @@ def run_episode(
     system2_infeasible_attempted: set[int] = set()
     system2_escalation_active: set[int] = set()
     system2_fault_vetoes: dict[int, dict[str, Any]] = {}
+    hard_fault_latch: dict[str, Any] = {"latched": False, "latched_at": None, "events": []}
+    hard_fault_latch_categories: set[str] = set()
+    hard_fault_decision_targets: set[int] = set()
     outcome_escalation_pending = False
     outcome_escalation_active = False
     outcome_escalation_attempts = 0
@@ -116,10 +119,11 @@ def run_episode(
         return exception
 
     def revoke_authorization(target_id: int, record: dict[str, Any], when: float,
-                             evidence_ids: list[str]) -> None:
+                             evidence_ids: list[str],
+                             reason: str = "POST_VERIFICATION_CHANGE") -> None:
         nonlocal active_episode_authorization
         record["revoked_at"] = when
-        record["expires_reason"] = "POST_VERIFICATION_CHANGE"
+        record["expires_reason"] = reason
         record["revocation_evidence_ids"] = evidence_ids
         system2_authorized.discard(target_id)
         system2_escalation_active.discard(target_id)
@@ -133,17 +137,18 @@ def run_episode(
                 if history["authorization"]["authorization_id"] == auth_id:
                     history.setdefault("target_revocations", []).append({
                         "target_id": target_id, "revoked_at": when,
-                        "reason": "POST_VERIFICATION_CHANGE",
+                        "global_time": current_global_time,
+                        "reason": reason,
                         "authorization_id": auth_id,
                         "evidence_ids": evidence_ids,
                     })
             if not active_episode_authorization["target_ids"]:
                 active_episode_authorization["expired_at_global"] = when
-                active_episode_authorization["expires_reason"] = "POST_VERIFICATION_CHANGE"
+                active_episode_authorization["expires_reason"] = reason
                 active_episode_authorization = None
         system2_authorization_events.append({
             "time": when, "target_id": target_id, "event": "REVOKE_AUTHORIZATION",
-            "reason": "POST_VERIFICATION_CHANGE", "revoked_at": when,
+            "reason": reason, "revoked_at": when, "global_time": current_global_time,
             "authorization_id": record["authorization"]["authorization_id"],
             "evidence_ids": evidence_ids,
         })
@@ -176,6 +181,74 @@ def run_episode(
         record = {"target_id": target_id, "check_items": checks}
         system2_fault_vetoes[target_id] = record
         return record
+
+    def hard_fault_veto_record(target_id: int) -> dict[str, Any]:
+        return {
+            "target_id": target_id,
+            "check_items": [{
+                "check_item": event["category"],
+                "evidence_ids": list(event["evidence_ids"]),
+            } for event in hard_fault_latch["events"]],
+        }
+
+    def record_latched_human_escalation(target_id: int, when: float) -> None:
+        if not system2_enabled or not hard_fault_latch["latched"]:
+            return
+        veto = hard_fault_veto_record(target_id)
+        system2_fault_vetoes[target_id] = veto
+        if target_id not in hard_fault_decision_targets:
+            hard_fault_decision_targets.add(target_id)
+            system2_receipts.append({
+                "time": when, "target_id": target_id, "trigger": "hard_fault_latch",
+                "action": Action.HUMAN_ESCALATION.value,
+                "gate_reason": "HARD_FAULT_LATCH",
+                "faults": [item["category"] for item in hard_fault_latch["events"]],
+                "fault_veto": veto, "pause_seconds": 0.0,
+            })
+
+    def latch_hard_fault(category: str, target_id: int, when: float,
+                         evidence_ids: list[str]) -> None:
+        nonlocal safe_stop
+        if not system2_enabled:
+            return
+        if category not in hard_fault_latch_categories:
+            hard_fault_latch_categories.add(category)
+            hard_fault_latch["events"].append({
+                "category": category, "time": when,
+                "global_time": current_global_time,
+                "target_id": target_id, "evidence_ids": list(evidence_ids),
+            })
+        if not hard_fault_latch["latched"]:
+            hard_fault_latch["latched"] = True
+            hard_fault_latch["latched_at"] = when
+            hard_fault_latch["latched_at_global"] = current_global_time
+            safe_stop = True
+            for authorized_target, record in list(active_target_authorizations.items()):
+                revoke_authorization(authorized_target, record, when, evidence_ids,
+                                     reason="HARD_FAULT_LATCH")
+            if episode_authorization_history:
+                history = episode_authorization_history[-1]
+                if history.get("revoked_at") is None and active_episode_authorization is None:
+                    history["revoked_at"] = when
+                    history["expires_reason"] = "HARD_FAULT_LATCH"
+        for future_target in range(target_id, config.object_count):
+            system2_fault_vetoes[future_target] = hard_fault_veto_record(future_target)
+        record_latched_human_escalation(target_id, when)
+
+    def latch_from_faults(faults: Any, target_id: int, when: float,
+                          evidence_ids: list[str]) -> None:
+        latchable = {
+            FaultHypothesis.SENSOR_STUCK,
+            FaultHypothesis.BELT_STOP_OR_MOTION_LOSS,
+            FaultHypothesis.OBJECT_MISSING_OR_DROPPED,
+        }
+        for fault in faults:
+            if fault in latchable:
+                supporting_ids = evidence_ids[-4:] if fault in {
+                    FaultHypothesis.SENSOR_STUCK,
+                    FaultHypothesis.BELT_STOP_OR_MOTION_LOSS,
+                } else evidence_ids
+                latch_hard_fault(fault.value, target_id, when, supporting_ids)
 
     def record_outcome(
         target_id: int,
@@ -262,6 +335,12 @@ def run_episode(
                 or outcome_escalation_attempts >= 3):
             return
         target_id = observation.target_id
+        if hard_fault_latch["latched"]:
+            record_latched_human_escalation(target_id, observation.time)
+            outcome_escalation_pending = False
+            outcome_escalation_active = True
+            safe_stop = True
+            return
         s2obs = system2_observations.get(target_id, [])
         prediction_error = partial(
             pick_error_at_command_time, observation=observation,
@@ -283,9 +362,16 @@ def run_episode(
         system2_calls += 1
         system2_verifier_calls += len(b3["verifications"])
         system2_hypotheses_proposed += len(b3["fits"])
-        fault_veto = positive_fault_veto(b3, target_id, s2obs, policy_target_presence_events)
+        evidence_ids = [f"obs:{target_id}:{o.time:.3f}" for o in s2obs]
+        latch_from_faults(b3["faults"], target_id, observation.time, evidence_ids)
+        fault_veto = (hard_fault_veto_record(target_id) if hard_fault_latch["latched"]
+                      else positive_fault_veto(b3, target_id, s2obs, policy_target_presence_events))
         chosen = next((h for h in b3["passing"]
                        if prediction_error(h, b3["action_time"] or observation.time) <= known_config.tolerance), None)
+        if hard_fault_latch["latched"]:
+            chosen = None
+            b3["action"] = Action.HUMAN_ESCALATION
+            b3["gate_reason"] = "HARD_FAULT_LATCH"
         auth = None
         exception = {}
         if chosen is not None:
@@ -297,7 +383,8 @@ def run_episode(
                     exception["time_correction_seconds"] = delta
             if safe_stop:
                 exception["safe_stop_clear"] = 1.0
-        if (b3["action"] is Action.UPDATE_MODEL_AND_REPLAN and chosen is not None
+        if (not hard_fault_latch["latched"]
+                and b3["action"] is Action.UPDATE_MODEL_AND_REPLAN and chosen is not None
                 and not b3["faults"] and exception):
             scope_ids = sorted(set(range(observation.target_id, config.object_count)) - set(outcomes_by_target))
             scope = "episode_targets:" + ",".join(map(str, scope_ids))
@@ -327,7 +414,8 @@ def run_episode(
                 }
             outcome_escalation_active = False
             outcome_escalation_pending = False
-            safe_stop = False
+            if not hard_fault_latch["latched"]:
+                safe_stop = False
         else:
             outcome_escalation_pending = outcome_escalation_attempts < 3
             outcome_retry_at_global = current_global_time + 0.5
@@ -386,10 +474,17 @@ def run_episode(
             time=plant_observation.time,
             target_observed=plant_observation.target_present,
         )))
+        if system2_enabled and not plant_observation.target_present:
+            latch_hard_fault(
+                FaultHypothesis.OBJECT_MISSING_OR_DROPPED.value,
+                plant_observation.target_id, plant_observation.time,
+                [f"presence:{plant_observation.target_id}:{plant_observation.time:.3f}"],
+            )
         if not plant_observation.target_present:
             # Absence is a registered evidence escalation; the fault detector sees
             # only target-presence events and already collected policy observations.
-            if system2_enabled and plant_observation.target_id not in outcomes_by_target:
+            if (system2_enabled and not hard_fault_latch["latched"]
+                    and plant_observation.target_id not in outcomes_by_target):
                 s2obs=system2_observations.get(plant_observation.target_id, [])
                 pause_started=perf_counter()
                 b3=run_b3(
@@ -403,9 +498,11 @@ def run_episode(
                 system2_calls += 1
                 system2_verifier_calls += len(b3["verifications"])
                 system2_hypotheses_proposed += len(b3["fits"])
-                fault_veto = positive_fault_veto(
-                    b3, plant_observation.target_id, s2obs, policy_target_presence_events
+                latch_from_faults(
+                    b3["faults"], plant_observation.target_id, plant_observation.time,
+                    [f"presence:{plant_observation.target_id}:{plant_observation.time:.3f}"],
                 )
+                fault_veto = hard_fault_veto_record(plant_observation.target_id)
                 if include_s2_diagnostics:
                     n_pre = len(s2obs)
                     first_s2_sample_count.setdefault(plant_observation.target_id, n_pre)
@@ -426,9 +523,14 @@ def run_episode(
                         "gate": b3["gate_reason"], "action_time": b3["action_time"],
                         "faults": [f.value for f in b3["faults"]], "action": b3["action"].value,
                     })
-                system2_receipts.append({"time":plant_observation.time,"target_id":plant_observation.target_id,"action":b3["action"].value,"gate_reason":b3["gate_reason"],"faults":[f.value for f in b3["faults"]],"fault_veto":fault_veto,"pause_seconds":0.0})
+                system2_receipts.append({"time":plant_observation.time,"target_id":plant_observation.target_id,"action":Action.HUMAN_ESCALATION.value,"gate_reason":"HARD_FAULT_LATCH","faults":[item["category"] for item in hard_fault_latch["events"]],"fault_veto":fault_veto,"pause_seconds":0.0})
                 record_outcome(plant_observation.target_id,"escalated","target presence fault evidence",plant_observation.step,0.0)
                 safe_stop=True
+            if (system2_enabled and hard_fault_latch["latched"]
+                    and plant_observation.target_id not in outcomes_by_target):
+                record_outcome(plant_observation.target_id, "escalated", "HARD_FAULT_LATCH",
+                               plant_observation.step, 0.0)
+                safe_stop = True
             # The detector event remains visible; positional data never reaches policy.
             world.advance()
             continue
@@ -459,6 +561,18 @@ def run_episode(
         first_observed_at.setdefault(observation.target_id, observation.time)
         evidence_ids = [f"obs:{observation.target_id}:{item.time:.3f}"
                         for item in system2_observations[observation.target_id]]
+        if system2_enabled:
+            observed_faults = check_faults(
+                system2_observations[observation.target_id],
+                nominal_speed=known_config.belt_speed, dt=known_config.dt,
+                presence_events=[event for event in policy_target_presence_events
+                                 if event["target_id"] == observation.target_id],
+            )
+            latch_from_faults(observed_faults, observation.target_id,
+                              observation.time, evidence_ids)
+            if hard_fault_latch["latched"]:
+                safe_stop = True
+                record_latched_human_escalation(observation.target_id, observation.time)
         authorization_record = active_target_authorizations.get(observation.target_id)
         if system2_enabled and authorization_record is not None:
             authorization = authorization_record["authorization"]
@@ -521,7 +635,7 @@ def run_episode(
         if not escalating:
             system2_escalation_active.discard(observation.target_id)
         escalation_event = escalating and observation.target_id not in system2_escalation_active
-        if (system2_enabled and (escalation_event
+        if (system2_enabled and not hard_fault_latch["latched"] and (escalation_event
                 or (correction.infeasible and observation.target_id not in system2_infeasible_attempted))
                 and observation.time >= system2_next_retry.get(observation.target_id, -1.0)):
             if escalation_event:
@@ -549,10 +663,18 @@ def run_episode(
             system2_calls += 1
             system2_verifier_calls += len(b3["verifications"])
             system2_hypotheses_proposed += len(b3["fits"])
+            latch_from_faults(
+                b3["faults"], observation.target_id, observation.time,
+                [f"obs:{observation.target_id}:{o.time:.3f}" for o in s2obs],
+            )
             fault_veto = positive_fault_veto(
                 b3, observation.target_id, s2obs, policy_target_presence_events
             )
-            if fault_veto is not None:
+            if hard_fault_latch["latched"]:
+                fault_veto = hard_fault_veto_record(observation.target_id)
+                b3["action"] = Action.HUMAN_ESCALATION
+                b3["gate_reason"] = "HARD_FAULT_LATCH"
+            if fault_veto is not None or hard_fault_latch["latched"]:
                 safe_stop = True
             if include_s2_diagnostics:
                 first_s2_sample_count.setdefault(observation.target_id, len(s2obs))
@@ -584,7 +706,11 @@ def run_episode(
                 })
             chosen = next((h for h in b3["passing"] if prediction_error(h,b3["action_time"] or observation.time)<=known_config.tolerance),None)
             exception = policy_exception_for(observation, residual, correction, b3["action_time"])
-            if (b3["action"] is Action.UPDATE_MODEL_AND_REPLAN and chosen is not None
+            if hard_fault_latch["latched"]:
+                chosen = None
+                record_latched_human_escalation(observation.target_id, observation.time)
+            if (not hard_fault_latch["latched"]
+                    and b3["action"] is Action.UPDATE_MODEL_AND_REPLAN and chosen is not None
                     and not b3["faults"] and exception):
                 system2_overrides[observation.target_id]=float(b3["action_time"])
                 system2_execution_etas[observation.target_id]=float(b3["action_time"])
@@ -703,6 +829,7 @@ def run_episode(
             and correction.infeasible
             and command_window_reached
             and not safe_stop
+            and not hard_fault_latch["latched"]
             and observation.target_id not in attempted_targets
             and observation.target_id not in outcomes_by_target
         ):
@@ -715,7 +842,8 @@ def run_episode(
             )
         # Issue at the first sample at or beyond the window start. If sampling
         # jumps past the whole window, the controller evaluates the time error.
-        if (not safe_stop and observation.target_id not in attempted_targets
+        if (not safe_stop and not hard_fault_latch["latched"]
+                and observation.target_id not in attempted_targets
                 and observation.target_id not in outcomes_by_target
                 and observation.time >= applied_plan.expected_arrival_time - known_config.dt / 2):
             command = Command(
@@ -748,6 +876,7 @@ def run_episode(
                 "position_error": result.position_error,
             })
             if system2_enabled:
+                evaluator_row["authorization_global_time"] = current_global_time
                 evaluator_row["authorization_source"] = (
                     "s2_authorized" if observation.target_id in system2_authorized
                     else "fast_layer_command"
@@ -865,6 +994,7 @@ def run_episode(
     if system2_enabled:
         receipt["system2_decisions"] = system2_receipts
         receipt["system2_authorization_events"] = system2_authorization_events
+        receipt["system2_hard_fault_latch"] = hard_fault_latch
         receipt["system2_episode_authorizations"] = episode_authorization_history
         receipt["system2_fault_vetoes"] = [system2_fault_vetoes[key]
                                            for key in sorted(system2_fault_vetoes)]
