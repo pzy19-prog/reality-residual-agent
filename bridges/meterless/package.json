@@ -1,0 +1,10 @@
+{
+  "name": "rra-meterless-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "description": "JSON-lines bridge from RRA to the Meterless H-MEM reference implementation.",
+  "type": "module",
+  "devDependencies": {
+    "tsx": "4.23.0"
+  }
+}
