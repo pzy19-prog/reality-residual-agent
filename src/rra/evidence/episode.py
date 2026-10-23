@@ -11,6 +11,7 @@ from functools import partial
 from typing import Any, Literal
 
 import numpy as np
+from rra.runtime import runtime_versions
 
 from rra.controller import Command, Controller, ControllerConfig
 from rra.fast import Corrector, ResidualMonitor
@@ -94,6 +95,11 @@ def run_episode(
     active_target_authorizations: dict[int, dict[str, Any]] = {}
     system2_paused: set[int] = set()
     system2_next_retry: dict[int, float] = {}
+    system2_reobserve_holds: dict[int, str] = {}
+    reobserve_hold_entries = 0
+    reobserve_retry_count = 0
+    reobserve_authorized_count = 0
+    reobserve_exhausted_count = 0
     system2_receipts: list[dict[str, Any]] = []
     system2_authorization_events: list[dict[str, Any]] = []
     system2_wall_latency_seconds = 0.0
@@ -351,6 +357,17 @@ def run_episode(
         else:
             consecutive_outcome_failures = 0
 
+    def finish_reobserve_hold(target_id: int, step: int, residual: float) -> None:
+        nonlocal reobserve_exhausted_count
+        reason = system2_reobserve_holds.pop(target_id, None)
+        if reason is None:
+            return
+        reobserve_exhausted_count += 1
+        terminal_reason = f"{reason};REOBSERVE_EXHAUSTED"
+        record_outcome(target_id, "escalated", terminal_reason, step, residual)
+        escalations.append({"step": step, "target_id": target_id,
+                            "residual": residual, "reason": terminal_reason})
+
     def run_outcome_escalation(observation: Any) -> None:
         nonlocal outcome_escalation_pending, outcome_escalation_attempts
         nonlocal active_episode_authorization, safe_stop, system2_wall_latency_seconds
@@ -509,6 +526,9 @@ def run_episode(
                 plant_observation.target_id, plant_observation.time,
                 [f"presence:{plant_observation.target_id}:{plant_observation.time:.3f}"],
             )
+            if hard_fault_latch["latched"]:
+                for held_target in list(system2_reobserve_holds):
+                    finish_reobserve_hold(held_target, plant_observation.step, 0.0)
         if not plant_observation.target_present:
             if (system2_enabled and hard_fault_latch["latched"]
                     and plant_observation.target_id not in outcomes_by_target):
@@ -520,6 +540,8 @@ def run_episode(
             continue
         observation = sanitize_observation(plant_observation)
         if active_target != observation.target_id:
+            if active_target in system2_reobserve_holds:
+                finish_reobserve_hold(active_target, observation.step, 0.0)
             if active_target is not None and active_target not in outcomes_by_target:
                 record_outcome(
                     active_target,
@@ -563,6 +585,8 @@ def run_episode(
             if hard_fault_latch["latched"]:
                 safe_stop = True
                 record_latched_human_escalation(observation.target_id, observation.time)
+                for held_target in list(system2_reobserve_holds):
+                    finish_reobserve_hold(held_target, observation.step, 0.0)
         authorization_record = active_target_authorizations.get(observation.target_id)
         if system2_enabled and authorization_record is not None:
             authorization = authorization_record["authorization"]
@@ -621,11 +645,21 @@ def run_episode(
         if (outcome_escalation_pending and outcome_retry_at_global is not None
                 and current_global_time >= outcome_retry_at_global):
             run_outcome_escalation(observation)
+        hold_due = (observation.target_id in system2_reobserve_holds
+                    and observation.time >= system2_next_retry.get(observation.target_id, float("inf")))
+        if hold_due:
+            window_end = (base_plan.expected_arrival_time + known_config.dt / 2)
+            if window_end - observation.time <= 0:
+                finish_reobserve_hold(observation.target_id, observation.step, residual)
+                hold_due = False
+            else:
+                reobserve_retry_count += 1
         escalating = "ESCALATE:" in correction.reason
         if not escalating:
             system2_escalation_active.discard(observation.target_id)
         escalation_event = escalating and observation.target_id not in system2_escalation_active
-        if (system2_enabled and not hard_fault_latch["latched"] and (escalation_event
+        s2_action = None
+        if (system2_enabled and not hard_fault_latch["latched"] and (escalation_event or hold_due
                 or (correction.infeasible and observation.target_id not in system2_infeasible_attempted))
                 and observation.time >= system2_next_retry.get(observation.target_id, -1.0)):
             if escalation_event:
@@ -649,6 +683,7 @@ def run_episode(
                 tolerance=known_config.tolerance, error=prediction_error,
                 presence_events=[e for e in policy_target_presence_events if e["target_id"]==observation.target_id],
             )
+            s2_action = b3["action"]
             if (s2_variant in ("B4_STRICT", "B4_TIEBREAK")
                     and not b3["faults"] and b3["gate_reason"] == "AMBIGUOUS"):
                 evidence_packet = {
@@ -834,14 +869,36 @@ def run_episode(
                 if b3["action"] is Action.PAUSE_AND_REOBSERVE:
                     system2_paused.add(observation.target_id)
                     system2_next_retry[observation.target_id]=observation.time+0.5
+                    if observation.target_id in system2_reobserve_holds:
+                        safe_stop = True
+            if (observation.target_id in system2_reobserve_holds
+                    and s2_action is not Action.PAUSE_AND_REOBSERVE
+                    and observation.target_id not in system2_authorized):
+                finish_reobserve_hold(observation.target_id, observation.step, residual)
+            if (observation.target_id in system2_reobserve_holds
+                    and observation.target_id in system2_authorized):
+                system2_reobserve_holds.pop(observation.target_id, None)
+                reobserve_authorized_count += 1
+                if not system2_reobserve_holds and not hard_fault_latch["latched"]:
+                    safe_stop = False
         if "ESCALATE:" in correction.reason and observation.target_id not in system2_authorized:
-            record_outcome(
-                observation.target_id, "escalated", correction.reason,
-                observation.step, residual,
-            )
-            if not safe_stop:
-                escalations.append({"step": observation.step,"target_id": observation.target_id,"residual": residual,"reason": correction.reason})
-            safe_stop = True
+            if (system2_enabled and not hard_fault_latch["latched"]
+                    and s2_action is Action.PAUSE_AND_REOBSERVE):
+                if observation.target_id not in system2_reobserve_holds:
+                    reobserve_hold_entries += 1
+                system2_reobserve_holds.setdefault(observation.target_id, correction.reason)
+                system2_next_retry[observation.target_id] = observation.time + 0.5
+                safe_stop = True
+            elif observation.target_id in system2_reobserve_holds:
+                finish_reobserve_hold(observation.target_id, observation.step, residual)
+            else:
+                record_outcome(
+                    observation.target_id, "escalated", correction.reason,
+                    observation.step, residual,
+                )
+                if not safe_stop:
+                    escalations.append({"step": observation.step,"target_id": observation.target_id,"residual": residual,"reason": correction.reason})
+                safe_stop = True
         applied_plan = correction.plan if compensation else nominal_plan
         if observation.target_id in system2_overrides:
             applied_plan = applied_plan.model_copy(update={"expected_arrival_time":system2_overrides[observation.target_id]})
@@ -1030,6 +1087,8 @@ def run_episode(
                 })
         world.advance()
 
+    for target_id in list(system2_reobserve_holds):
+        finish_reobserve_hold(target_id, config.episode_steps - 1, 0.0)
     for target_id in range(config.object_count):
         if target_id not in outcomes_by_target:
             record_outcome(
@@ -1070,10 +1129,16 @@ def run_episode(
             "escalations": len(escalations),
             "terminal_counts": terminal_counts,
         },
-        "runtime_versions": {"python": platform.python_version(), "numpy": np.__version__},
+        "runtime_versions": runtime_versions(),
     }
     if system2_enabled:
         receipt["system2_decisions"] = system2_receipts
+        receipt["system2_reobserve"] = {
+            "hold_entries": reobserve_hold_entries,
+            "reobservations": reobserve_retry_count,
+            "authorized_after_hold": reobserve_authorized_count,
+            "exhausted": reobserve_exhausted_count,
+        }
         receipt["system2_authorization_events"] = system2_authorization_events
         receipt["system2_hard_fault_latch"] = hard_fault_latch
         receipt["system2_episode_authorizations"] = episode_authorization_history

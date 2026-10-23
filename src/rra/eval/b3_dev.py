@@ -163,6 +163,10 @@ def _run_seed(args: tuple[int, int]) -> dict[str, Any]:
         "preservation_regression_by_source": preservation_by_source,
         "b1_unsafe_action_count": b1_score["unsafe_action_count"],
         "b1_receipt_sha256": b1["receipt_sha256"], "b3_receipt_sha256": b3["receipt_sha256"],
+        "system2_reobserve": b3.get("system2_reobserve", {
+            "hold_entries": 0, "reobservations": 0,
+            "authorized_after_hold": 0, "exhausted": 0,
+        }),
         # Retain the first 20 dev decision traces for the diagnostic toggle audit.
         # The aggregate metrics and per-seed receipt hashes still cover all 130 seeds.
         **({"system2_decisions": b3.get("system2_decisions", [])} if index < 20 else {}),
