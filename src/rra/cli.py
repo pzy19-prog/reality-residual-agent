@@ -131,6 +131,11 @@ def main(argv: list[str] | None = None) -> int:
     bench_parser.add_argument("--output-dir", type=Path, default=Path("."))
     s2_parser = commands.add_parser("s2-b3-dev", help="run paired corrected B1 and exhaustive B3 on dev seeds")
     s2_parser.add_argument("--output-dir", type=Path, default=ROOT / "artifacts" / "s2")
+    b4_parser = commands.add_parser("s2-b4-dev", help="run paired B4 strict and text-tiebreak dev episodes")
+    b4_parser.add_argument("--output-dir", type=Path, default=ROOT / "artifacts" / "s2")
+    b4_parser.add_argument("--nproc", type=int, default=None)
+    b4_parser.add_argument("--subset", action="store_true", help="use the registered L1g 33-seed subset")
+    b4_parser.add_argument("--replay", action="store_true", help="run offline from artifacts/llm_cache")
     args = parser.parse_args(argv)
     if args.command == "run":
         args.output_dir.mkdir(parents=True, exist_ok=True)
@@ -148,6 +153,14 @@ def main(argv: list[str] | None = None) -> int:
         from rra.eval.b3_dev import run_b3_dev
         receipt = run_b3_dev(args.output_dir)
         print(json.dumps(receipt["metrics"], indent=2))
+        return 0
+    if args.command == "s2-b4-dev":
+        from rra.eval.b4_dev import run_b4_dev
+        receipt = run_b4_dev(args.output_dir, nproc=args.nproc, subset=args.subset,
+                             replay_only=args.replay)
+        print(json.dumps({"receipt_sha256": receipt["receipt_sha256"],
+                          "llm_calls": receipt["llm_calls"],
+                          "serial_parallel_check": receipt["serial_parallel_check"]}, indent=2))
         return 0
     result = run_bench(args.output_dir)
     print(result["markdown"])

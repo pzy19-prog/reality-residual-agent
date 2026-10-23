@@ -29,6 +29,7 @@ from rra.s2.dsl import structures as registered_structures
 from rra.s2.faults import check_faults
 from rra.s2.authorization import authorize
 from rra.s2.prediction import pick_error_at_command_time, predicted_residual_at_time
+from rra.s2.verifier import common_action
 from rra.sim import World, WorldConfig
 from rra.eval.scenarios import EpisodeRealization
 from rra.sim.v3_world import V3World
@@ -57,6 +58,8 @@ def run_episode(
     fast_residual_threshold: float = 1.25,
     system2_enabled: bool = False,
     include_s2_diagnostics: bool = False,
+    s2_variant: Literal["B3", "B4_STRICT", "B4_TIEBREAK"] = "B3",
+    proposer: Any | None = None,
 ) -> dict[str, Any]:
     """Run a fixed-step episode and return its complete reproducibility receipt."""
     world = V3World(config, seed, realization) if realization is not None else World(config, seed)
@@ -113,6 +116,10 @@ def run_episode(
     first_observed_at: dict[int, float] = {}
     first_s2_sample_count: dict[int, int] = {}
     s2_diagnostic_calls: list[dict[str, Any]] = []
+    s2_proposal_rank: list[dict[str, Any]] = []
+
+    if s2_variant not in ("B3", "B4_STRICT", "B4_TIEBREAK"):
+        raise ValueError(f"unknown System-2 variant: {s2_variant}")
 
     def policy_exception_for(observation: Any, residual: float, correction: Any,
                              action_time: float | None) -> dict[str, float]:
@@ -640,6 +647,67 @@ def run_episode(
                 tolerance=known_config.tolerance, error=prediction_error,
                 presence_events=[e for e in policy_target_presence_events if e["target_id"]==observation.target_id],
             )
+            if (s2_variant in ("B4_STRICT", "B4_TIEBREAK")
+                    and not b3["faults"] and b3["gate_reason"] == "AMBIGUOUS"):
+                evidence_packet = {
+                    "observations": [{"time": item.time, "observed_x": item.observed_x,
+                                      "nominal_x": item.nominal_x}
+                                     for item in s2obs],
+                    "feedback": [{"issued_time": item["issued_time"],
+                                  "execution_time": item["execution_time"],
+                                  "accepted": item["accepted"], "success": item["success"]}
+                                 for item in policy_feedbacks],
+                    "passing": [{"structure_id": _verification_structure_id(item),
+                                 "rmse": item.rmse, "n_usable": item.n_usable}
+                                for item in b3["passing"]],
+                    "current_time": observation.time, "dt": known_config.dt,
+                    "horizon": (config.episode_steps - 1) * config.dt,
+                    "tolerance": known_config.tolerance,
+                }
+                if proposer is None:
+                    proposal = None
+                    proposal_error = "NO_PROPOSER"
+                else:
+                    proposal = proposer.propose(evidence_packet, text_context)
+                    provider_status = getattr(getattr(proposer, "provider", None), "last_http_status", None)
+                    if provider_status in (401, 403):
+                        raise SystemExit(f"NVIDIA NIM HTTP {provider_status}; stop Phase B")
+                    # Keep receipts free of provider error bodies or other raw text.
+                    raw_error_type = proposal.error.split(":", 1)[0] if proposal.error else None
+                    proposal_error = (
+                        "INVALID_PROPOSAL"
+                        if raw_error_type in {"ValueError", "TypeError", "ValidationError", "JSONDecodeError"}
+                        else "PROVIDER_ERROR" if raw_error_type else None
+                    )
+                ranked_ids = [] if proposal is None else [item.hypothesis_id for item in proposal.items]
+                s2_proposal_rank.append({
+                    "time": observation.time, "target_id": observation.target_id,
+                    "ranked_ids": ranked_ids,
+                    "unknown_ids": [] if proposal is None else proposal.receipt.get("unknown_ids", []),
+                    "error": proposal_error,
+                })
+                if s2_variant == "B4_TIEBREAK":
+                    if proposal_error:
+                        b3["gate_reason"] = f"TIEBREAK_FALLBACK:{proposal_error}"
+                    else:
+                        passing_by_id = {_verification_structure_id(item): item for item in b3["passing"]}
+                        selected = next((passing_by_id[item_id] for item_id in ranked_ids
+                                         if item_id in passing_by_id), None)
+                        if selected is None:
+                            b3["gate_reason"] = "TIEBREAK_FALLBACK:NO_PROPOSED_PASSING_STRUCTURE"
+                        else:
+                            tie_action, tie_time, tie_reason = common_action(
+                                [selected], current_time=observation.time, dt=known_config.dt,
+                                horizon=(config.episode_steps - 1) * config.dt,
+                                tolerance=known_config.tolerance, error=prediction_error,
+                            )
+                            if tie_action is Action.UPDATE_MODEL_AND_REPLAN:
+                                b3["action"] = tie_action
+                                b3["action_time"] = tie_time
+                                b3["gate_reason"] = "TEXT_TIEBREAK"
+                                b3["tiebreak_selected"] = selected
+                            else:
+                                b3["gate_reason"] = f"TIEBREAK_FALLBACK:{tie_reason}"
             system2_wall_latency_seconds += perf_counter()-pause_started
             system2_calls += 1
             system2_verifier_calls += len(b3["verifications"])
@@ -687,7 +755,11 @@ def run_episode(
                     "faults": [f.value for f in b3["faults"]],
                     "action": b3["action"].value,
                 })
-            chosen = next((h for h in b3["passing"] if prediction_error(h,b3["action_time"] or observation.time)<=known_config.tolerance),None)
+            chosen = b3.get("tiebreak_selected") or next(
+                (h for h in b3["passing"]
+                 if prediction_error(h, b3["action_time"] or observation.time) <= known_config.tolerance),
+                None,
+            )
             exception = policy_exception_for(observation, residual, correction, b3["action_time"])
             if hard_fault_latch["latched"]:
                 chosen = None
@@ -725,6 +797,8 @@ def run_episode(
                     "violated_invariants":list(chosen.violated_invariants),"passed":chosen.passed,
                     "evidence_refs":list(chosen.evidence_refs),"common_action_time":b3["action_time"],
                     "authorization":asdict(authorization),"pause_seconds":0.0,
+                    **({"tiebreak_selected_structure_id": _verification_structure_id(b3["tiebreak_selected"])}
+                       if b3.get("tiebreak_selected") is not None else {}),
                 })
             else:
                 system2_receipts.append({
@@ -740,6 +814,8 @@ def run_episode(
                         "violated_invariants":list(v.violated_invariants),"passed":v.passed,
                         "evidence_refs":list(v.evidence_refs),
                     } for v in b3["verifications"]],
+                    **({"tiebreak_selected_structure_id": _verification_structure_id(b3["tiebreak_selected"])}
+                       if b3.get("tiebreak_selected") is not None else {}),
                 })
                 if b3["action"] is Action.PAUSE_AND_REOBSERVE:
                     system2_paused.add(observation.target_id)
@@ -994,6 +1070,9 @@ def run_episode(
         receipt["system2_verifier_calls"] = system2_verifier_calls
         receipt["system2_hypotheses_proposed"] = system2_hypotheses_proposed
         receipt["system2_calls"] = system2_calls
+    if s2_variant in ("B4_STRICT", "B4_TIEBREAK"):
+        receipt["s2_variant"] = s2_variant
+        receipt["system2_proposal_rank"] = s2_proposal_rank
     if include_s2_diagnostics:
         for row in s2_diagnostic_calls:
             outcome = outcomes_by_target.get(row["target_id"])

@@ -40,7 +40,8 @@ ALLOWED_RUN_KEYS = frozenset({
     "pause_seconds", "permitted_action", "planned_window_end", "residual_above_threshold",
     "residual_vector", "rmse", "safe_stop_clear", "schema", "scope", "seed", "sensor_bias", "sim_time",
     "speed_step_delta", "speed_step_time", "structure", "target_id", "temporary_policy_exception",
-    "terminal_condition", "time", "time_correction_seconds", "trigger", "velocity_offset", "verifications",
+    "terminal_condition", "tiebreak_selected_structure_id", "time", "time_correction_seconds",
+    "trigger", "velocity_offset", "verifications",
     "verified", "verifier_score", "violated_invariants", "window_remaining_time", "structure_id",
 })
 # Decisions appended without a diagnostic row (hard-fault latch, A02 section 5 deviation from 1:1).
