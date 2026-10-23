@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import platform
 import subprocess
+import sys
 from pathlib import Path
 
 from rra.eval.context_v3 import freeze_context, VARIANTS
@@ -16,7 +17,7 @@ from rra.sponsor.meterless import build_manifest, episode_id_for, persist_episod
 
 ROOT = Path(__file__).resolve().parents[1]
 ARTIFACT = ROOT / "artifacts" / "sponsor" / "meterless-persistence.json"
-OUT_ROOT = ROOT / "outputs" / "l6" / "meterless" / "b4-phaseb"
+OUT_ROOT = ROOT / "outputs" / "l6" / "meterless" / "b4-phaseb-r1"
 
 
 def realization_for(seed: int):
@@ -36,9 +37,9 @@ def main() -> int:
     cache = ROOT / "artifacts" / "llm_cache"
     bridge_root = ROOT / "bridges" / "meterless"
     if not (bridge_root / "vendor" / "Meterless" / "engines" / "hmem" / "reference" / "src" / "index.ts").is_file():
-        shared_bridge = ROOT.parent / "l5a-hygiene" / "bridges" / "meterless"
-        if (shared_bridge / "vendor" / "Meterless" / "engines" / "hmem" / "reference" / "src" / "index.ts").is_file():
-            bridge_root = shared_bridge
+        print("Meterless vendor source is missing; run scripts/setup_meterless.sh in this worktree.",
+              file=sys.stderr)
+        return 2
     bridge_cmd = [str(bridge_root / "node_modules" / ".bin" / "tsx"), str(bridge_root / "bridge.ts")]
     rows = []
     for seed in seeds:

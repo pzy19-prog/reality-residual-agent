@@ -31,6 +31,7 @@ class _ReadThroughProvider:
         self.replay = ReplayProvider(cache_dir, model=NIM_MODEL)
         self.live = None if replay_only else NvidiaNimProvider(cache_dir=cache_dir)
         self.live_calls = 0
+        self.requests_served = 0
 
     @property
     def last_http_status(self):
@@ -38,7 +39,9 @@ class _ReadThroughProvider:
 
     def complete(self, request_body: dict) -> dict:
         try:
-            return self.replay.complete(request_body)
+            result = self.replay.complete(request_body)
+            self.requests_served += 1
+            return result
         except ReplayCacheMiss:
             if self.live is None:
                 raise
@@ -46,6 +49,7 @@ class _ReadThroughProvider:
                 try:
                     result = self.live.complete(request_body)
                     self.live_calls += 1
+                    self.requests_served += 1
                     return result
                 except RuntimeError:
                     status = self.live.last_http_status
@@ -112,7 +116,8 @@ def _summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
                 "miss": sum(x["ordinary_miss_count"] for x in score),
                 "unsafe_action": sum(x["unsafe_action_count"] for x in score),
                 "unsafe_by_source": unsafe_by_source,
-                "llm_calls": sum(x["llm_calls"] for x in variant_rows) if mode == "B4_STRICT" else 0,
+                "llm_calls": sum(x["llm_requests_served"] for x in variant_rows)
+                             if mode == "B4_STRICT" else 0,
                 "TEXT_TIEBREAK": sum(d.get("gate_reason") == "TEXT_TIEBREAK"
                                      for x in selected for d in x.get("system2_decisions", [])),
                 "fallbacks": fallbacks,
@@ -175,6 +180,7 @@ def run_b4_dev(output_dir: Path = ROOT / "artifacts" / "s2", *,
                nproc: int | None = None, subset: bool = False,
                replay_only: bool = False) -> dict[str, Any]:
     """Run paired B4 modes for every dev episode and frozen text variant."""
+    run_started = time.perf_counter()
     all_seeds = json.loads((ROOT / "config" / "dev_seeds.json").read_text())["seeds"]
     if subset:
         seeds = json.loads((ROOT / "artifacts" / "s2" / "diag-d1g.json").read_text())["seeds"]
@@ -226,7 +232,8 @@ def run_b4_dev(output_dir: Path = ROOT / "artifacts" / "s2", *,
             "B3_receipt_sha256": b3["receipt_sha256"],
             "B3": b3,
             "B4_STRICT": strict, "B4_TIEBREAK": tie, "scores": scores,
-            "llm_calls": provider.live_calls,
+            "llm_requests_served": provider.requests_served,
+            "live_llm_calls": provider.live_calls,
         }
 
     workers = max(1, min(nproc or min(4, os.cpu_count() or 1), len(tasks)))
@@ -252,6 +259,7 @@ def run_b4_dev(output_dir: Path = ROOT / "artifacts" / "s2", *,
                            text_context=frozen.text, system2_enabled=True,
                            s2_variant="B4_TIEBREAK", proposer=proposer)
         return seed, variant, strict, tie
+    serial_parallel_started = time.perf_counter()
     serial_sample = [replay_task(task) for task in sample]
     with ThreadPoolExecutor(max_workers=min(workers, max(1, len(sample)))) as pool:
         parallel_sample = list(pool.map(replay_task, sample))
@@ -266,6 +274,7 @@ def run_b4_dev(output_dir: Path = ROOT / "artifacts" / "s2", *,
                 mismatches.append({"seed": key[0], "variant": key[1], "mode": mode})
     if mismatches:
         raise RuntimeError(f"serial/parallel mismatch: {mismatches[0]}")
+    serial_parallel_seconds = time.perf_counter() - serial_parallel_started
 
     compact = [{
         "seed": row["seed"], "text_variant": row["text_variant"],
@@ -290,20 +299,32 @@ def run_b4_dev(output_dir: Path = ROOT / "artifacts" / "s2", *,
             "B4_STRICT": _misleading_audit(row, "B4_STRICT"),
             "B4_TIEBREAK": _misleading_audit(row, "B4_TIEBREAK"),
         }} if row["text_variant"] == "MISLEADING_TEXT_CONTEXT" else {}),
-        "llm_calls": row["llm_calls"],
+        "llm_requests_served": row["llm_requests_served"],
     } for row in rows]
     body = {
         "schema_version": "rra.s2.b4-dev.v1", "subset": subset,
         "seed_identity": {"path": "artifacts/s2/diag-d1g.json" if subset else "config/dev_seeds.json",
                           "values": seeds},
-        "episode_count": len(seeds), "text_variants": list(VARIANTS), "nproc": workers,
+        "episode_count": len(seeds), "text_variants": list(VARIANTS),
         "N_amb": n_amb, "estimated_llm_calls": round(4 * n_amb * 1.3, 1),
         "serial_parallel_check": {"consistent": True, "sample_pairs": len(sample)},
-        "llm_calls": sum(row["llm_calls"] for row in rows),
+        "llm_requests_served": sum(row["llm_requests_served"] for row in rows),
+        "llm_calls": sum(row["llm_requests_served"] for row in rows),
         "metrics": _summary(rows), "episodes": compact,
         "runtime_versions": {"python": platform.python_version(), "numpy": np.__version__},
+        "operational_cost": {
+            "live_llm_calls": sum(row["live_llm_calls"] for row in rows),
+            "elapsed_seconds": time.perf_counter() - run_started,
+            "nproc": workers,
+            "serial_parallel_seconds": serial_parallel_seconds,
+            "historical_live_run": {
+                "source_commit": "92e2b89", "live_llm_calls": 376,
+                "note": "transcribed from REPORT_D3_L5B.md",
+            },
+        },
     }
-    hash_input = {key: value for key, value in body.items() if key != "runtime_versions"}
+    hash_input = {key: value for key, value in body.items()
+                  if key not in ("runtime_versions", "operational_cost")}
     body["receipt_sha256"] = sha256(json.dumps(hash_input, sort_keys=True,
                                                   separators=(",", ":")).encode()).hexdigest()
     output_dir.mkdir(parents=True, exist_ok=True)

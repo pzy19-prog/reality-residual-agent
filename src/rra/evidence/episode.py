@@ -691,9 +691,21 @@ def run_episode(
                         b3["gate_reason"] = f"TIEBREAK_FALLBACK:{proposal_error}"
                     else:
                         passing_by_id = {_verification_structure_id(item): item for item in b3["passing"]}
-                        selected = next((passing_by_id[item_id] for item_id in ranked_ids
-                                         if item_id in passing_by_id), None)
-                        if selected is None:
+                        fault_ids = {fault.value for fault in FaultHypothesis}
+                        selected = None
+                        fault_before_selected = False
+                        for item_id in ranked_ids:
+                            if item_id in fault_ids:
+                                fault_before_selected = True
+                                break
+                            if item_id in passing_by_id:
+                                selected = passing_by_id[item_id]
+                                break
+                        if fault_before_selected:
+                            b3["gate_reason"] = "TIEBREAK_FALLBACK:FAULT_ID"
+                        elif proposal is not None and proposal.receipt.get("unknown_ids"):
+                            b3["gate_reason"] = "TIEBREAK_FALLBACK:UNKNOWN_ID"
+                        elif selected is None:
                             b3["gate_reason"] = "TIEBREAK_FALLBACK:NO_PROPOSED_PASSING_STRUCTURE"
                         else:
                             tie_action, tie_time, tie_reason = common_action(
