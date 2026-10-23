@@ -151,7 +151,9 @@ def main():
     for item in pg:
         table,column=item.split(":",1)
         if table not in pg_allowed or column not in pg_allowed[table]: pg_extra.append(item)
-    receipt={"schema":"rra.l3.equivalence.v1","base_git_sha":"2a3b52dcf15cf352064f064e2a8b499c4fe06280",
+    base_git_sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT,
+                                  check=True, capture_output=True, text=True).stdout.strip()
+    receipt={"schema":"rra.l3.equivalence.v1","base_git_sha":base_git_sha,
         "python":platform.python_version(),"numpy":np.__version__,"plan":"A",
         "source_containers":["rra-l3-pg","rra-l3-ops"],
         "registration_sql":["CREATE DATASOURCE RRA_L3_TELEMETRY DESCRIBE BY \"L3 whitelisted policy telemetry\" OPTIONS (jdbcdriver \"org.postgresql.Driver\", jdbcurl \"jdbc:postgresql://rra-l3-pg:5432/rra_telemetry\", username \"postgres\", password \"\")","CREATE LIGHTNING DATABASE RRA_L3_OPS DESCRIBE BY \"L3 whitelisted operational context\"","CREATE LIGHTNING REST TABLE known_config FROM RRA_L3_OPS REQUEST(endpoint \"http://rra-l3-ops:8000/known_config\", method \"get\", response_type \"json\", http_encoding \"URLENCODED\") HEADER () BODY ()","CREATE LIGHTNING REST TABLE ops_context FROM RRA_L3_OPS REQUEST(endpoint \"http://rra-l3-ops:8000/ops_context\", method \"get\", response_type \"json\", http_encoding \"URLENCODED\") HEADER () BODY ()"],
