@@ -632,7 +632,7 @@
   "run_tag": "l5a-phasea",
   "schema": "rra.l6.meterless_persistence.v1",
   "summary": {
-    "B4": "DEFERRED: L5/D4",
+    "B4": "PASS: B4_TIEBREAK meterless off/on decisions 20/20, receipt hashes 20/20",
     "M1_roundtrip_mismatches": 0,
     "M2_equal": 20,
     "M2_production_decisions_equal": 20,
@@ -646,5 +646,239 @@
     "all_ok": true,
     "episodes": 20
   },
-  "tsx": "tsx v4.23.0"
+  "tsx": "tsx v4.23.0",
+  "B4": {
+    "status": "PASS",
+    "provider": "ReplayProvider",
+    "cache_dir": "artifacts/llm_cache",
+    "s2_variant": "B4_TIEBREAK",
+    "text_variant": "NO_TEXT_CONTEXT",
+    "seed_source": "artifacts/s2/diag-d1g.json:first-20",
+    "episode_count": 20,
+    "decisions_equal": 20,
+    "receipt_equal": 20,
+    "live_llm_calls": 0,
+    "episodes": [
+      {
+        "episode_id": "ep-001",
+        "seed": 1,
+        "decisions_equal": true,
+        "receipt_equal": true,
+        "decision_count": 15,
+        "off_receipt_sha256": "509b34f0a3272e70d987f359ac2f5fe06562b563ff3605cbd560f160f199abe5",
+        "on_receipt_sha256": "509b34f0a3272e70d987f359ac2f5fe06562b563ff3605cbd560f160f199abe5",
+        "persisted_decision_records": 15,
+        "manifest_sha256": "42fd40dc7226d283004853605ea09e544190a02f21f601d90b84dbc133b71372"
+      },
+      {
+        "episode_id": "ep-002",
+        "seed": 2,
+        "decisions_equal": true,
+        "receipt_equal": true,
+        "decision_count": 12,
+        "off_receipt_sha256": "01d4ad7b05426a460f282e1087106271dcae805e93a3820b53e80560d7dbc0e4",
+        "on_receipt_sha256": "01d4ad7b05426a460f282e1087106271dcae805e93a3820b53e80560d7dbc0e4",
+        "persisted_decision_records": 12,
+        "manifest_sha256": "ad9a7cbb9f102f18fd27348bd73fb8b4639d2ea6067b6cb70891704a2d3c8f1d"
+      },
+      {
+        "episode_id": "ep-003",
+        "seed": 3,
+        "decisions_equal": true,
+        "receipt_equal": true,
+        "decision_count": 12,
+        "off_receipt_sha256": "d0ba12ed9c845693c79c0a7c8c3550e0e239eedfd94dd0ae4524879b08b5da44",
+        "on_receipt_sha256": "d0ba12ed9c845693c79c0a7c8c3550e0e239eedfd94dd0ae4524879b08b5da44",
+        "persisted_decision_records": 12,
+        "manifest_sha256": "6b86644169ef2362495aa513b899060bd9cfed8aadff5f7799dc25f9c3ad3e5c"
+      },
+      {
+        "episode_id": "ep-020",
+        "seed": 20,
+        "decisions_equal": true,
+        "receipt_equal": true,
+        "decision_count": 15,
+        "off_receipt_sha256": "d2402b83dc16fd1ef6c2937999d7e829da6baf959089841b1e1d49513b2e4799",
+        "on_receipt_sha256": "d2402b83dc16fd1ef6c2937999d7e829da6baf959089841b1e1d49513b2e4799",
+        "persisted_decision_records": 15,
+        "manifest_sha256": "6952fe3139f11ccb31fc3f0b1b7ce9c88cdeefb1961a988a5c46cc982e252e00"
+      },
+      {
+        "episode_id": "ep-021",
+        "seed": 21,
+        "decisions_equal": true,
+        "receipt_equal": true,
+        "decision_count": 21,
+        "off_receipt_sha256": "e2093befb0970f8ac4daa05c273d9b148197340d25c4e48c08482c3b1ab166a1",
+        "on_receipt_sha256": "e2093befb0970f8ac4daa05c273d9b148197340d25c4e48c08482c3b1ab166a1",
+        "persisted_decision_records": 21,
+        "manifest_sha256": "dfb16a96205aeed38ea635c18660cb1b2644a0d4d49b3d3dae369319817f84c7"
+      },
+      {
+        "episode_id": "ep-022",
+        "seed": 22,
+        "decisions_equal": true,
+        "receipt_equal": true,
+        "decision_count": 12,
+        "off_receipt_sha256": "8f10c878a387f50955778e5d3b3d4dc2fad2e0e4a4b351921a9d4080a1d5e1d9",
+        "on_receipt_sha256": "8f10c878a387f50955778e5d3b3d4dc2fad2e0e4a4b351921a9d4080a1d5e1d9",
+        "persisted_decision_records": 12,
+        "manifest_sha256": "1b92ed824a6525121b2577b501279f3df6c214f8df077c6b5831b7165e374c43"
+      },
+      {
+        "episode_id": "ep-024",
+        "seed": 24,
+        "decisions_equal": true,
+        "receipt_equal": true,
+        "decision_count": 12,
+        "off_receipt_sha256": "a1ae34beb3cdde3da346db7c498c1bee44acdc3fe9f05a075fe81bde2706a3a1",
+        "on_receipt_sha256": "a1ae34beb3cdde3da346db7c498c1bee44acdc3fe9f05a075fe81bde2706a3a1",
+        "persisted_decision_records": 12,
+        "manifest_sha256": "201e4abfaf55bd54c55e6d3c6d697ed34a986fcf3e40e96dda24f105f5e734af"
+      },
+      {
+        "episode_id": "ep-026",
+        "seed": 26,
+        "decisions_equal": true,
+        "receipt_equal": true,
+        "decision_count": 12,
+        "off_receipt_sha256": "071dcb75e9fa6af611a23b52c860c76fb3acbdcea8e170f7d007b2d7374d5f48",
+        "on_receipt_sha256": "071dcb75e9fa6af611a23b52c860c76fb3acbdcea8e170f7d007b2d7374d5f48",
+        "persisted_decision_records": 12,
+        "manifest_sha256": "d85c6dc1cd5515dc5595f04bff8ab38bdcd98444091701b8bb08cd0a557dc82f"
+      },
+      {
+        "episode_id": "ep-030",
+        "seed": 30,
+        "decisions_equal": true,
+        "receipt_equal": true,
+        "decision_count": 15,
+        "off_receipt_sha256": "1ce8374c2026bad666e05a1f247c8635f07783267bdfda4a35f6cc15a7719b15",
+        "on_receipt_sha256": "1ce8374c2026bad666e05a1f247c8635f07783267bdfda4a35f6cc15a7719b15",
+        "persisted_decision_records": 15,
+        "manifest_sha256": "50049cf0352522768e117dc47747231f89e919defc5360b83a5ea728a4db76a9"
+      },
+      {
+        "episode_id": "ep-039",
+        "seed": 39,
+        "decisions_equal": true,
+        "receipt_equal": true,
+        "decision_count": 24,
+        "off_receipt_sha256": "f5317b93a4f3a581e084bf7e3219cf94650d6a4d288d22591ccc5de8909bf9dd",
+        "on_receipt_sha256": "f5317b93a4f3a581e084bf7e3219cf94650d6a4d288d22591ccc5de8909bf9dd",
+        "persisted_decision_records": 24,
+        "manifest_sha256": "c0b4dc32465fec6590f191d7168bd43c814924ab2b5b0cc251c9c80c9ee3d40c"
+      },
+      {
+        "episode_id": "ep-040",
+        "seed": 40,
+        "decisions_equal": true,
+        "receipt_equal": true,
+        "decision_count": 12,
+        "off_receipt_sha256": "c3749b7794093e829fd961076c9f607040ede981091db5bef6c4adde7978155e",
+        "on_receipt_sha256": "c3749b7794093e829fd961076c9f607040ede981091db5bef6c4adde7978155e",
+        "persisted_decision_records": 12,
+        "manifest_sha256": "5d49a33d7341c4fadfc83bfc4aec15ec9d2c210db7eee59a4a678952dc65f922"
+      },
+      {
+        "episode_id": "ep-041",
+        "seed": 41,
+        "decisions_equal": true,
+        "receipt_equal": true,
+        "decision_count": 15,
+        "off_receipt_sha256": "d16b7879ef24d7055dcf98f7fde65acf26ab4064a5d70439f7e6886d3aeaed4f",
+        "on_receipt_sha256": "d16b7879ef24d7055dcf98f7fde65acf26ab4064a5d70439f7e6886d3aeaed4f",
+        "persisted_decision_records": 15,
+        "manifest_sha256": "a000e677fb191dc2aa0c389e1868ef19d441a1f62741832c437034bb2de9dab7"
+      },
+      {
+        "episode_id": "ep-046",
+        "seed": 46,
+        "decisions_equal": true,
+        "receipt_equal": true,
+        "decision_count": 23,
+        "off_receipt_sha256": "09ffc32a4e9857d5bb6d6fb34e5e52f790a25f0d4f11427c665ebe6a39ba9756",
+        "on_receipt_sha256": "09ffc32a4e9857d5bb6d6fb34e5e52f790a25f0d4f11427c665ebe6a39ba9756",
+        "persisted_decision_records": 23,
+        "manifest_sha256": "d4575ac27da446f86c062e08e48ab1ef672b032cbc7eb472eb48012d2dedfb09"
+      },
+      {
+        "episode_id": "ep-048",
+        "seed": 48,
+        "decisions_equal": true,
+        "receipt_equal": true,
+        "decision_count": 18,
+        "off_receipt_sha256": "410c2cc5eb46ae808e3fe51ae0681d6f3e639b706dde847cc0ef39620e241069",
+        "on_receipt_sha256": "410c2cc5eb46ae808e3fe51ae0681d6f3e639b706dde847cc0ef39620e241069",
+        "persisted_decision_records": 18,
+        "manifest_sha256": "d33b03b52d4eb3a3b6d6cede5b08e3f8ef6311d31e9998a12a9b706d795f36b6"
+      },
+      {
+        "episode_id": "ep-051",
+        "seed": 51,
+        "decisions_equal": true,
+        "receipt_equal": true,
+        "decision_count": 15,
+        "off_receipt_sha256": "51e11878b59307e11b9b7fe6f772578ed21b6796730fc1c971abcf3951edf738",
+        "on_receipt_sha256": "51e11878b59307e11b9b7fe6f772578ed21b6796730fc1c971abcf3951edf738",
+        "persisted_decision_records": 15,
+        "manifest_sha256": "8bafcb1fab07ca17610e0c3571cd2a9cd8abad27f8f3610de010c762879757a5"
+      },
+      {
+        "episode_id": "ep-052",
+        "seed": 52,
+        "decisions_equal": true,
+        "receipt_equal": true,
+        "decision_count": 13,
+        "off_receipt_sha256": "1d2cb9f3f0d9b6b2331ed1190029412e0e523690de6843b878d46de45b5fe6ed",
+        "on_receipt_sha256": "1d2cb9f3f0d9b6b2331ed1190029412e0e523690de6843b878d46de45b5fe6ed",
+        "persisted_decision_records": 13,
+        "manifest_sha256": "8325afaea919336898943dfc6fade7f659380366f8221c5ebc2235ca6bd2ebb6"
+      },
+      {
+        "episode_id": "ep-058",
+        "seed": 58,
+        "decisions_equal": true,
+        "receipt_equal": true,
+        "decision_count": 12,
+        "off_receipt_sha256": "64371fafb937fcd3cff9b88e1eb848b9a7bc6753fc16b115bab9418e505f3e73",
+        "on_receipt_sha256": "64371fafb937fcd3cff9b88e1eb848b9a7bc6753fc16b115bab9418e505f3e73",
+        "persisted_decision_records": 12,
+        "manifest_sha256": "f99a67b181bab2318727c50fbc3491210b6940a22929330b8de02da3a146e19c"
+      },
+      {
+        "episode_id": "ep-059",
+        "seed": 59,
+        "decisions_equal": true,
+        "receipt_equal": true,
+        "decision_count": 12,
+        "off_receipt_sha256": "8e8f09635be4efd4e08d9077adf8b9cae307d4b356b0e18ca4ffbfd54b22a823",
+        "on_receipt_sha256": "8e8f09635be4efd4e08d9077adf8b9cae307d4b356b0e18ca4ffbfd54b22a823",
+        "persisted_decision_records": 12,
+        "manifest_sha256": "d59dfecac0e5a917f390fd0d827b3b8319ca3256b53fca53f763a4231c46edf1"
+      },
+      {
+        "episode_id": "ep-060",
+        "seed": 60,
+        "decisions_equal": true,
+        "receipt_equal": true,
+        "decision_count": 15,
+        "off_receipt_sha256": "b9c7153766d40fd36638514ca679cabe9997687a6763df309b0b48074abfd0e1",
+        "on_receipt_sha256": "b9c7153766d40fd36638514ca679cabe9997687a6763df309b0b48074abfd0e1",
+        "persisted_decision_records": 15,
+        "manifest_sha256": "b8a40ebe4843f03dd490e2bf176f759a1780e1634f9f8dbdcef3db61a6345b9a"
+      },
+      {
+        "episode_id": "ep-067",
+        "seed": 67,
+        "decisions_equal": true,
+        "receipt_equal": true,
+        "decision_count": 12,
+        "off_receipt_sha256": "4b25880305e3c95a950b7863794d29bdc1f1126ac8e446a0bdffd6eb76ea6ba7",
+        "on_receipt_sha256": "4b25880305e3c95a950b7863794d29bdc1f1126ac8e446a0bdffd6eb76ea6ba7",
+        "persisted_decision_records": 12,
+        "manifest_sha256": "8db683c8700125eef15f112e5ff0244181e20bbb8f4fea918b18c396441e289b"
+      }
+    ]
+  }
 }
