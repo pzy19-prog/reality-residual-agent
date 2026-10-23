@@ -130,3 +130,13 @@ def test_b3_default_and_explicit_variant_have_identical_receipt_hashes():
                            realization=realization, system2_enabled=True,
                            s2_variant="B3", proposer=PassingFirstProposer())
     assert implicit["receipt_sha256"] == explicit["receipt_sha256"]
+
+
+def test_b4_variants_require_a_proposer():
+    import pytest
+    from rra.sim.world import WorldConfig
+
+    for variant in ("B4_STRICT", "B4_TIEBREAK"):
+        with pytest.raises(ValueError, match="requires a proposer"):
+            run_episode(WorldConfig(object_count=1), 1, True, system2_enabled=True,
+                        s2_variant=variant, proposer=None)

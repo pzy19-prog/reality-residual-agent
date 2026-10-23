@@ -120,6 +120,8 @@ def run_episode(
 
     if s2_variant not in ("B3", "B4_STRICT", "B4_TIEBREAK"):
         raise ValueError(f"unknown System-2 variant: {s2_variant}")
+    if s2_variant in ("B4_STRICT", "B4_TIEBREAK") and proposer is None:
+        raise ValueError(f"{s2_variant} requires a proposer")
 
     def policy_exception_for(observation: Any, residual: float, correction: Any,
                              action_time: float | None) -> dict[str, float]:
