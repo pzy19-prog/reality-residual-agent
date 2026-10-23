@@ -1,0 +1,96 @@
+{
+  "allowed": {
+    "command_feedback": [
+      "accepted",
+      "command_id",
+      "episode_id",
+      "execution_time",
+      "issued_time",
+      "reason_code",
+      "seq",
+      "success",
+      "target_id"
+    ],
+    "known_config": [
+      "belt_speed",
+      "dt",
+      "episode_id",
+      "tolerance",
+      "x_pick",
+      "y_pick"
+    ],
+    "observation_samples": [
+      "episode_id",
+      "nominal_speed",
+      "nominal_x",
+      "nominal_y",
+      "observed_x",
+      "observed_y",
+      "seq",
+      "step",
+      "target_id",
+      "time"
+    ],
+    "ops_context": [
+      "content_sha256",
+      "episode_id",
+      "text"
+    ],
+    "presence_events": [
+      "episode_id",
+      "seq",
+      "step",
+      "target_id",
+      "target_observed",
+      "time"
+    ]
+  },
+  "extra_count": 0,
+  "schema": "rra.l3.whitelist.v1",
+  "zetaris_headers": {
+    "command_feedback": [
+      "accepted",
+      "command_id",
+      "episode_id",
+      "execution_time",
+      "issued_time",
+      "reason_code",
+      "seq",
+      "success",
+      "target_id"
+    ],
+    "known_config": [
+      "belt_speed",
+      "dt",
+      "episode_id",
+      "tolerance",
+      "x_pick",
+      "y_pick"
+    ],
+    "observation_samples": [
+      "episode_id",
+      "nominal_speed",
+      "nominal_x",
+      "nominal_y",
+      "observed_x",
+      "observed_y",
+      "seq",
+      "step",
+      "target_id",
+      "time"
+    ],
+    "ops_context": [
+      "content_sha256",
+      "episode_id",
+      "text"
+    ],
+    "presence_events": [
+      "episode_id",
+      "seq",
+      "step",
+      "target_id",
+      "target_observed",
+      "time"
+    ]
+  }
+}
