@@ -20,7 +20,10 @@ from rra.evidence.policy import (
 )
 from rra.s2.b3 import run_b3
 from rra.s2.dsl import Action, FaultHypothesis
-from rra.s2.fitter import Observation as S2Observation, CommandFeedback as S2Feedback
+from rra.s2.fitter import Observation as S2Observation, CommandFeedback as S2Feedback, fit as fit_hypothesis
+from rra.s2.verifier import verify as verify_hypothesis
+from rra.s2.dsl import structures as registered_structures
+from rra.s2.faults import check_faults
 from rra.s2.authorization import authorize
 from rra.s2.prediction import pick_error_at_command_time, predicted_residual_at_time
 from rra.sim import World, WorldConfig
@@ -75,14 +78,17 @@ def run_episode(
     system2_overrides: dict[int, float] = {}
     system2_execution_etas: dict[int, float] = {}
     system2_authorized: set[int] = set()
+    active_target_authorizations: dict[int, dict[str, Any]] = {}
     system2_paused: set[int] = set()
     system2_next_retry: dict[int, float] = {}
     system2_receipts: list[dict[str, Any]] = []
+    system2_authorization_events: list[dict[str, Any]] = []
     system2_wall_latency_seconds = 0.0
     system2_verifier_calls = 0
     system2_hypotheses_proposed = 0
     system2_calls = 0
     system2_infeasible_attempted: set[int] = set()
+    system2_escalation_active: set[int] = set()
     system2_fault_vetoes: dict[int, dict[str, Any]] = {}
     outcome_escalation_pending = False
     outcome_escalation_active = False
@@ -94,6 +100,53 @@ def run_episode(
     first_observed_at: dict[int, float] = {}
     first_s2_sample_count: dict[int, int] = {}
     s2_diagnostic_calls: list[dict[str, Any]] = []
+
+    def policy_exception_for(observation: Any, residual: float, correction: Any,
+                             action_time: float | None) -> dict[str, float]:
+        exception: dict[str, float] = {}
+        plan = base_plans.get(observation.target_id)
+        if action_time is not None and plan is not None:
+            delta = float(action_time - plan.expected_arrival_time)
+            if abs(delta) > fast_time_limit:
+                exception["time_correction_seconds"] = delta
+        if abs(residual) > fast_residual_threshold:
+            exception["residual_above_threshold"] = float(residual)
+        if safe_stop:
+            exception["safe_stop_clear"] = 1.0
+        return exception
+
+    def revoke_authorization(target_id: int, record: dict[str, Any], when: float,
+                             evidence_ids: list[str]) -> None:
+        nonlocal active_episode_authorization
+        record["revoked_at"] = when
+        record["expires_reason"] = "POST_VERIFICATION_CHANGE"
+        record["revocation_evidence_ids"] = evidence_ids
+        system2_authorized.discard(target_id)
+        system2_escalation_active.discard(target_id)
+        system2_overrides.pop(target_id, None)
+        system2_execution_etas.pop(target_id, None)
+        active_target_authorizations.pop(target_id, None)
+        if record.get("episode_level") and active_episode_authorization is not None:
+            active_episode_authorization["target_ids"].discard(target_id)
+            auth_id = record["authorization"]["authorization_id"]
+            for history in episode_authorization_history:
+                if history["authorization"]["authorization_id"] == auth_id:
+                    history.setdefault("target_revocations", []).append({
+                        "target_id": target_id, "revoked_at": when,
+                        "reason": "POST_VERIFICATION_CHANGE",
+                        "authorization_id": auth_id,
+                        "evidence_ids": evidence_ids,
+                    })
+            if not active_episode_authorization["target_ids"]:
+                active_episode_authorization["expired_at_global"] = when
+                active_episode_authorization["expires_reason"] = "POST_VERIFICATION_CHANGE"
+                active_episode_authorization = None
+        system2_authorization_events.append({
+            "time": when, "target_id": target_id, "event": "REVOKE_AUTHORIZATION",
+            "reason": "POST_VERIFICATION_CHANGE", "revoked_at": when,
+            "authorization_id": record["authorization"]["authorization_id"],
+            "evidence_ids": evidence_ids,
+        })
 
     def positive_fault_veto(b3: dict[str, Any], target_id: int,
                             observations: list[S2Observation],
@@ -142,6 +195,16 @@ def run_episode(
             "reason": reason,
         }
         evaluator_objects.setdefault(target_id, {"target_id": target_id})["terminal_status"] = status
+        terminal_authorization = active_target_authorizations.pop(target_id, None)
+        if terminal_authorization is not None:
+            terminal_authorization["revoked_at"] = current_global_time
+            terminal_authorization["expires_reason"] = "target_terminal"
+            system2_authorized.discard(target_id)
+            system2_authorization_events.append({
+                "time": current_global_time, "target_id": target_id,
+                "event": "TARGET_TERMINAL", "reason": "target_terminal",
+                "authorization_id": terminal_authorization["authorization"]["authorization_id"],
+            })
         if (active_episode_authorization is not None
                 and target_id in active_episode_authorization["target_ids"]
                 and status in ("attempt_failed", "rejected", "skipped")):
@@ -157,6 +220,20 @@ def run_episode(
             outcome_escalation_active = True
             outcome_escalation_pending = outcome_escalation_attempts < 3
             outcome_retry_at_global = current_global_time
+        if (terminal_authorization is not None and terminal_authorization.get("episode_level")
+                and active_episode_authorization is not None
+                and target_id in active_episode_authorization["target_ids"]):
+            active_episode_authorization["target_ids"].discard(target_id)
+            auth_id = terminal_authorization["authorization"]["authorization_id"]
+            for history in episode_authorization_history:
+                if history["authorization"]["authorization_id"] == auth_id:
+                    history.setdefault("target_terminal_events", []).append({
+                        "target_id": target_id, "time": current_global_time,
+                    })
+            if not active_episode_authorization["target_ids"]:
+                active_episode_authorization["expired_at_global"] = current_global_time
+                active_episode_authorization["expires_reason"] = "all_targets_terminal"
+                active_episode_authorization = None
         if status in ("attempt_failed", "skipped"):
             consecutive_outcome_failures += 1
             if consecutive_outcome_failures >= CONSECUTIVE_OUTCOME_FAILURE_THRESHOLD:
@@ -210,7 +287,18 @@ def run_episode(
         chosen = next((h for h in b3["passing"]
                        if prediction_error(h, b3["action_time"] or observation.time) <= known_config.tolerance), None)
         auth = None
-        if b3["action"] is Action.UPDATE_MODEL_AND_REPLAN and chosen is not None and not b3["faults"]:
+        exception = {}
+        if chosen is not None:
+            if abs(observation.observed_x - observation.nominal_x) > fast_residual_threshold:
+                exception["residual_above_threshold"] = float(observation.observed_x - observation.nominal_x)
+            if b3["action_time"] is not None and target_id in base_plans:
+                delta = float(b3["action_time"] - base_plans[target_id].expected_arrival_time)
+                if abs(delta) > fast_time_limit:
+                    exception["time_correction_seconds"] = delta
+            if safe_stop:
+                exception["safe_stop_clear"] = 1.0
+        if (b3["action"] is Action.UPDATE_MODEL_AND_REPLAN and chosen is not None
+                and not b3["faults"] and exception):
             scope_ids = sorted(set(range(observation.target_id, config.object_count)) - set(outcomes_by_target))
             scope = "episode_targets:" + ",".join(map(str, scope_ids))
             expires = (config.object_count * config.episode_steps) * config.dt
@@ -219,18 +307,24 @@ def run_episode(
                 evidence_ids=[f"obs:{target_id}:{o.time:.3f}" for o in s2obs],
                 parameters=chosen.fitted_parameters, score=chosen.rmse,
                 action=Action.UPDATE_MODEL_AND_REPLAN, scope=scope,
-                expires_at=expires, exception={},
+                expires_at=expires, exception=exception,
                 terminal_condition="next_authorized_failure_or_model_contradiction",
             )
             active_episode_authorization = {"authorization": asdict(auth), "target_ids": set(scope_ids),
                                             "parameters": dict(chosen.fitted_parameters)}
             episode_authorization_history.append({"time": observation.time, "authorization": asdict(auth),
-                                                  "target_ids": scope_ids, "revoked_at": None})
+                                                  "target_ids": scope_ids, "revoked_at": None,
+                                                  "target_revocations": []})
             for scoped_target in scope_ids:
                 if scoped_target == target_id and b3["action_time"] is not None:
                     system2_overrides[scoped_target] = float(b3["action_time"])
                     system2_execution_etas[scoped_target] = float(b3["action_time"])
                 system2_authorized.add(scoped_target)
+                active_target_authorizations[scoped_target] = {
+                    "authorization": asdict(auth),
+                    "structure": list(chosen.structure),
+                    "episode_level": True,
+                }
             outcome_escalation_active = False
             outcome_escalation_pending = False
             safe_stop = False
@@ -363,6 +457,52 @@ def run_episode(
             S2Observation(observation.time, observation.observed_x, observation.nominal_x)
         )
         first_observed_at.setdefault(observation.target_id, observation.time)
+        evidence_ids = [f"obs:{observation.target_id}:{item.time:.3f}"
+                        for item in system2_observations[observation.target_id]]
+        authorization_record = active_target_authorizations.get(observation.target_id)
+        if system2_enabled and authorization_record is not None:
+            authorization = authorization_record["authorization"]
+            structure = next((candidate for candidate in registered_structures()
+                              if tuple(item.value for item in candidate)
+                              == tuple(authorization_record["structure"])), None)
+            verified = None
+            if structure is not None:
+                fitted = fit_hypothesis(
+                    structure, system2_observations[observation.target_id],
+                    nominal_speed=known_config.belt_speed,
+                    feedback=[S2Feedback(x["issued_time"], x["execution_time"], x["accepted"], x["success"])
+                              for x in policy_feedbacks],
+                )
+                verified = verify_hypothesis(
+                    fitted, hypothesis_id=authorization["hypothesis_id"],
+                    evidence_refs=evidence_ids,
+                )
+            faults = check_faults(
+                system2_observations[observation.target_id],
+                nominal_speed=known_config.belt_speed, dt=known_config.dt,
+                presence_events=[event for event in policy_target_presence_events
+                                 if event["target_id"] == observation.target_id],
+            )
+            positive_faults = [fault for fault in faults
+                               if fault is not FaultHypothesis.UNKNOWN_OR_INSUFFICIENT_EVIDENCE]
+            if verified is not None and verified.passed and not positive_faults:
+                system2_authorization_events.append({
+                    "time": observation.time, "target_id": observation.target_id,
+                    "event": "POST_VERIFICATION_PASS",
+                    "hypothesis_id": authorization["hypothesis_id"],
+                    "n_usable": verified.n_usable, "rmse": verified.rmse,
+                    "evidence_ids": evidence_ids,
+                })
+            if verified is None or not verified.passed or positive_faults:
+                if positive_faults:
+                    system2_fault_vetoes[observation.target_id] = {
+                        "target_id": observation.target_id,
+                        "check_items": [{"check_item": fault.value, "evidence_ids": evidence_ids}
+                                        for fault in positive_faults],
+                    }
+                    safe_stop = True
+                revoke_authorization(observation.target_id, authorization_record,
+                                     observation.time, evidence_ids)
         residual = monitor.update(observation)
         disturbance = monitor.classify()
         if observation.target_id not in base_plans:
@@ -374,31 +514,18 @@ def run_episode(
         correction = corrector.correct(working_plan, residual, disturbance, known_config.belt_speed)
         nominal_plan = working_plan
         recovered_by_s2 = False
-        if (system2_enabled and active_episode_authorization is not None
-                and observation.target_id in active_episode_authorization["target_ids"]):
-            params = active_episode_authorization["parameters"]
-            model_residual = predicted_residual_at_time(params, observation.time)
-            # The registered observation-noise scale is σ = 0.015 (P3 §13.5).
-            if abs(residual - model_residual) > 2 * 0.015:
-                active_episode_authorization["expired_at_global"] = current_global_time
-                active_episode_authorization["expires_reason"] = "model_contradiction"
-                episode_authorization_history[-1]["revoked_at"] = current_global_time
-                episode_authorization_history[-1]["expires_reason"] = "model_contradiction"
-                active_episode_authorization = None
-                for scoped_target in system2_authorized.copy():
-                    if scoped_target in episode_authorization_history[-1]["target_ids"]:
-                        system2_authorized.discard(scoped_target)
-                safe_stop = True
-                outcome_escalation_active = True
-                outcome_escalation_pending = outcome_escalation_attempts < 3
-                outcome_retry_at_global = current_global_time
         if (outcome_escalation_pending and outcome_retry_at_global is not None
                 and current_global_time >= outcome_retry_at_global):
             run_outcome_escalation(observation)
-        if (system2_enabled and ("ESCALATE:" in correction.reason
+        escalating = "ESCALATE:" in correction.reason
+        if not escalating:
+            system2_escalation_active.discard(observation.target_id)
+        escalation_event = escalating and observation.target_id not in system2_escalation_active
+        if (system2_enabled and (escalation_event
                 or (correction.infeasible and observation.target_id not in system2_infeasible_attempted))
-                and observation.target_id not in system2_authorized
                 and observation.time >= system2_next_retry.get(observation.target_id, -1.0)):
+            if escalation_event:
+                system2_escalation_active.add(observation.target_id)
             if correction.infeasible:
                 system2_infeasible_attempted.add(observation.target_id)
             s2obs = system2_observations[observation.target_id]
@@ -456,7 +583,9 @@ def run_episode(
                     "action": b3["action"].value,
                 })
             chosen = next((h for h in b3["passing"] if prediction_error(h,b3["action_time"] or observation.time)<=known_config.tolerance),None)
-            if b3["action"] is Action.UPDATE_MODEL_AND_REPLAN and chosen is not None and not b3["faults"]:
+            exception = policy_exception_for(observation, residual, correction, b3["action_time"])
+            if (b3["action"] is Action.UPDATE_MODEL_AND_REPLAN and chosen is not None
+                    and not b3["faults"] and exception):
                 system2_overrides[observation.target_id]=float(b3["action_time"])
                 system2_execution_etas[observation.target_id]=float(b3["action_time"])
                 system2_authorized.add(observation.target_id)
@@ -469,8 +598,12 @@ def run_episode(
                     action=Action.UPDATE_MODEL_AND_REPLAN,
                     scope=f"target:{observation.target_id}",
                     expires_at=(observation.target_id+1)*config.episode_steps*config.dt,
-                    exception={},
+                    exception=exception,
                 )
+                active_target_authorizations[observation.target_id] = {
+                    "authorization": asdict(authorization),
+                    "structure": list(chosen.structure),
+                }
                 system2_receipts.append({
                     "time":observation.time,"target_id":observation.target_id,
                     "action":b3["action"].value,"gate_reason":b3["gate_reason"],
@@ -619,6 +752,10 @@ def run_episode(
                     "s2_authorized" if observation.target_id in system2_authorized
                     else "fast_layer_command"
                 )
+                if observation.target_id in system2_authorized:
+                    evaluator_row["authorization_id"] = active_target_authorizations[
+                        observation.target_id
+                    ]["authorization"]["authorization_id"]
             if include_s2_diagnostics:
                 evaluator_row["actual_x_at_execution"] = delayed_x
                 evaluator_row["execution_time"] = observation.time + response_delay
@@ -727,6 +864,7 @@ def run_episode(
     }
     if system2_enabled:
         receipt["system2_decisions"] = system2_receipts
+        receipt["system2_authorization_events"] = system2_authorization_events
         receipt["system2_episode_authorizations"] = episode_authorization_history
         receipt["system2_fault_vetoes"] = [system2_fault_vetoes[key]
                                            for key in sorted(system2_fault_vetoes)]

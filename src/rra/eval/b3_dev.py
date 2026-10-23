@@ -44,6 +44,28 @@ def _preservation_regression_sources(
     return counts
 
 
+def _assert_authorization_contract(receipt: dict[str, Any]) -> None:
+    authorizations = [row["authorization"] for row in receipt.get("system2_decisions", [])
+                     if row.get("authorization") is not None]
+    authorizations.extend(row["authorization"] for row in receipt.get("system2_episode_authorizations", [])
+                          if row.get("authorization") is not None)
+    if any(not authorization.get("temporary_policy_exception") for authorization in authorizations):
+        raise AssertionError("T6: authorization has an empty temporary_policy_exception")
+    revoked_pairs = {(int(row["target_id"]), row.get("authorization_id"))
+                     for row in receipt.get("system2_authorization_events", [])
+                     if row.get("reason") == "POST_VERIFICATION_CHANGE"}
+    revoked_pairs.update((int(item["target_id"]), item.get("authorization_id"))
+                         for row in receipt.get("system2_episode_authorizations", [])
+                         for item in row.get("target_revocations", [])
+                         if item.get("reason") == "POST_VERIFICATION_CHANGE")
+    source_by_target = {int(row["target_id"]): row for row in receipt.get("evaluator_objects", [])}
+    invalid = [(target, auth_id, source_by_target.get(target, {})) for target, auth_id in revoked_pairs
+               if source_by_target.get(target, {}).get("authorization_source") == "s2_authorized"
+               and source_by_target.get(target, {}).get("authorization_id") == auth_id]
+    if invalid:
+        raise AssertionError(f"T7 seed={receipt.get('seed')}: command used a revoked authorization {invalid}")
+
+
 def _run_seed(args: tuple[int, int]) -> dict[str, Any]:
     index, seed = args
     config = v3_world_config("nominal")
@@ -56,6 +78,7 @@ def _run_seed(args: tuple[int, int]) -> dict[str, Any]:
     b1 = run_episode(config, seed, True, terminal_monitoring="corrected", realization=realization)
     b3 = run_episode(config, seed, True, terminal_monitoring="corrected", realization=realization,
                      system2_enabled=True)
+    _assert_authorization_contract(b3)
     score = score_against_b1_denominators(b3, realization, config, b1)
     b1_score = score_against_b1_denominators(b1, realization, config, b1)
     labels = dispositions_for_episode(realization, config.object_count)
