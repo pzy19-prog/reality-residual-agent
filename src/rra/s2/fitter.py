@@ -43,7 +43,7 @@ def fit(structure: Sequence[Primitive], observations: Sequence[Observation], *, 
     t=np.array([o.time for o in obs]); y=np.array([o.observed_x-o.nominal_x for o in obs]); cols=[]; names=[]
     if Primitive.SENSOR_BIAS in s: cols.append(np.ones(len(t))); names.append('sensor_bias')
     if Primitive.VELOCITY_OFFSET in s: cols.append(t); names.append('velocity_offset')
-    best=None
+    candidates=[]
     taus=np.arange(0.5,5.001,0.05) if Primitive.SPEED_STEP in s else [None]
     delays=np.arange(0.0,0.501,0.01) if Primitive.ACTUATOR_DELAY in s else [None]
     for tau,d in product(taus,delays):
@@ -58,8 +58,14 @@ def fit(structure: Sequence[Primitive], observations: Sequence[Observation], *, 
         f=[q for q in feedback if q.accepted]
         if d is not None and f:
             sq += sum((q.execution_time-q.issued_time-d)**2 for q in f)
-        key=(sq, float(tau) if tau is not None else -1, float(d) if d is not None else -1)
-        if best is None or key<best[0]: best=(key,params,res)
-    key,params,res=best
-    rmse=sqrt(float(key[0])/max(1,len(obs)+(len(feedback) if feedback else 0)))
+        candidates.append((sq, tau, d, params, res))
+    minimum = min(row[0] for row in candidates)
+    tie_tolerance = 1e-12 * max(1.0, abs(minimum))
+    tied = [row for row in candidates if row[0] - minimum <= tie_tolerance]
+    sq, tau, d, params, res = min(
+        tied,
+        key=lambda row: (float(row[1]) if row[1] is not None else -1.0,
+                         float(row[2]) if row[2] is not None else -1.0),
+    )
+    rmse=sqrt(float(sq)/max(1,len(obs)+(len(feedback) if feedback else 0)))
     return FitResult(s,params,rmse,tuple(map(float,res)),len(obs),False)

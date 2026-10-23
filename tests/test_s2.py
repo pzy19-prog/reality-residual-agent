@@ -95,6 +95,24 @@ def test_actuator_delay_requires_command_feedback():
     result=fit((Primitive.ACTUATOR_DELAY,),obs,nominal_speed=1.0)
     assert result.no_fit
 
+
+def test_speed_step_fit_chooses_smallest_grid_point_within_tie_tolerance(monkeypatch):
+    import numpy as np
+    import rra.s2.fitter as fitter
+
+    calls = 0
+    def near_tie(A, y):
+        nonlocal calls
+        objective = 1.0 + 5e-13 if calls == 0 else 1.0
+        calls += 1
+        return np.zeros(A.shape[1]), np.array([objective ** 0.5, 0, 0, 0, 0, 0])
+
+    monkeypatch.setattr(fitter, "_linear_fit", near_tie)
+    obs = [Observation(i * .1, 0.0, 0.0) for i in range(6)]
+    result = fitter.fit((Primitive.SPEED_STEP,), obs, nominal_speed=1.0)
+
+    assert result.parameters["speed_step_time"] == 0.5
+
 def test_episode_runner_has_no_dsl_prediction_implementation():
     import inspect
     from rra.evidence import episode
