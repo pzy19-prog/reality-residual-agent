@@ -27,6 +27,9 @@ def test_runtime_versions_are_receipted_but_excluded_from_receipt_hash():
     receipt = run_episode(WorldConfig(scenario="nominal", object_count=1), 4, True)
     assert receipt["runtime_versions"]["numpy"] == np.__version__
     assert receipt["runtime_versions"]["python"].startswith("3.12.")
+    assert receipt["runtime_versions"]["machine"]
+    assert "cpu_model" in receipt["runtime_versions"]
+    assert "blas" in receipt["runtime_versions"]
     hashed = {key: value for key, value in receipt.items() if key not in (
         "git_sha", "system2_wall_latency_seconds", "system2_verifier_calls",
         "system2_hypotheses_proposed", "system2_calls", "s2_diagnostic_trace",

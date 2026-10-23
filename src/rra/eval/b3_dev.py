@@ -11,6 +11,7 @@ from time import perf_counter
 from typing import Any
 
 import numpy as np
+from rra.runtime import runtime_versions
 
 from rra.eval.framework import v3_world_config
 from rra.eval.runner import score_against_b1_denominators
@@ -257,9 +258,13 @@ def run_b3_dev(output_dir: Path = ROOT / "artifacts" / "s2", *, nproc: int | Non
             },
             "preservation_count": preservation, "authorization_count": sum(ep["authorizations"] for ep in episodes),
         },
+        "system2_reobserve": {
+            key: sum(ep["system2_reobserve"][key] for ep in episodes)
+            for key in ("hold_entries", "reobservations", "authorized_after_hold", "exhausted")
+        },
         "operational_cost": operational_cost,
         "episodes": episodes,
-        "runtime_versions": {"python": platform.python_version(), "numpy": np.__version__},
+        "runtime_versions": runtime_versions(),
     }
     hash_input = {key: value for key, value in receipt.items()
                   if key not in ("operational_cost", "runtime_versions")}

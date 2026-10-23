@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+from rra.runtime import runtime_versions
 
 from rra.eval.context_v3 import VARIANTS, freeze_episode_contexts
 from rra.eval.framework import v3_world_config
@@ -311,7 +312,7 @@ def run_b4_dev(output_dir: Path = ROOT / "artifacts" / "s2", *,
         "llm_requests_served": sum(row["llm_requests_served"] for row in rows),
         "llm_calls": sum(row["llm_requests_served"] for row in rows),
         "metrics": _summary(rows), "episodes": compact,
-        "runtime_versions": {"python": platform.python_version(), "numpy": np.__version__},
+        "runtime_versions": runtime_versions(),
         "operational_cost": {
             "live_llm_calls": sum(row["live_llm_calls"] for row in rows),
             "elapsed_seconds": time.perf_counter() - run_started,
