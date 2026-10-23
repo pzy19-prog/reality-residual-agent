@@ -1,0 +1,352 @@
+{
+  "T1": "PASS",
+  "T1_postgres_information_schema_extra": [],
+  "T1_schema_extra": {
+    "command_feedback": [],
+    "known_config": [],
+    "observation_samples": [],
+    "ops_context": [],
+    "presence_events": []
+  },
+  "T2": "PASS",
+  "T3": "PASS",
+  "T3_anchor_mismatches": 0,
+  "T3_authorization_field": "system2_decisions[].authorization.evidence_ids",
+  "T3_authorization_mismatches": 0,
+  "T4": "PASS",
+  "T4_mismatches": 0,
+  "T5": "PASS",
+  "T6": "PASS",
+  "T7": "PASS",
+  "T8": "PASS",
+  "T8_reference_receipt_bytes_identical": true,
+  "T8_reference_receipt_sha256": "5412f92ea3857987ef7b76684b735e53d4e2661010e1937c0973dd06559d89d3",
+  "b3_receipt_sha256_reproduced": "20/20",
+  "base_git_sha": "2a3b52dcf15cf352064f064e2a8b499c4fe06280",
+  "episodes": [
+    {
+      "case": 0,
+      "decision_points": 1200,
+      "hard_fault_latch_decisions": 0,
+      "mismatches": 0,
+      "packets_sha256_rollup": "3d09f897554e510fecbf84cab6c2ff1cc57f107b62d9cff4b69e68dfad084d2e",
+      "s2_diagnostic_rows": 12,
+      "seed": 0,
+      "variant": "NO_TEXT_CONTEXT"
+    },
+    {
+      "case": 1,
+      "decision_points": 1200,
+      "hard_fault_latch_decisions": 0,
+      "mismatches": 0,
+      "packets_sha256_rollup": "20d8f4f31616029c168bc9b606e5070b907888cd5947cdae4df12839c09c5f62",
+      "s2_diagnostic_rows": 15,
+      "seed": 1,
+      "variant": "HELPFUL_TEXT_CONTEXT"
+    },
+    {
+      "case": 2,
+      "decision_points": 1200,
+      "hard_fault_latch_decisions": 0,
+      "mismatches": 0,
+      "packets_sha256_rollup": "f6c0e4fde0514ad138dbfb909d2424fe8ea7fe6843c637655764bd6d847f6091",
+      "s2_diagnostic_rows": 12,
+      "seed": 2,
+      "variant": "IRRELEVANT_TEXT_CONTEXT"
+    },
+    {
+      "case": 3,
+      "decision_points": 1200,
+      "hard_fault_latch_decisions": 0,
+      "mismatches": 0,
+      "packets_sha256_rollup": "9e1c9ef84da186c9a73702c86419f06809f017efab2f1af75db78591a8206574",
+      "s2_diagnostic_rows": 12,
+      "seed": 3,
+      "variant": "MISLEADING_TEXT_CONTEXT"
+    },
+    {
+      "case": 4,
+      "decision_points": 1200,
+      "hard_fault_latch_decisions": 0,
+      "mismatches": 0,
+      "packets_sha256_rollup": "1d0b4a8b7a4543f2bd6b104180fe2cad626650c010035a64dd37e447ef5355f5",
+      "s2_diagnostic_rows": 12,
+      "seed": 4,
+      "variant": "NO_TEXT_CONTEXT"
+    },
+    {
+      "case": 5,
+      "decision_points": 1200,
+      "hard_fault_latch_decisions": 0,
+      "mismatches": 0,
+      "packets_sha256_rollup": "6f1d657ab0356053ce8537f598ef5afd051cdd428b6eb5b8cfcfe488dc1c7e01",
+      "s2_diagnostic_rows": 12,
+      "seed": 5,
+      "variant": "HELPFUL_TEXT_CONTEXT"
+    },
+    {
+      "case": 6,
+      "decision_points": 1200,
+      "hard_fault_latch_decisions": 0,
+      "mismatches": 0,
+      "packets_sha256_rollup": "26908dd001728a2542fbdf33ca780a6b3e3ed1983e2fb79cf42d95f758bf5f5b",
+      "s2_diagnostic_rows": 12,
+      "seed": 6,
+      "variant": "IRRELEVANT_TEXT_CONTEXT"
+    },
+    {
+      "case": 7,
+      "decision_points": 1200,
+      "hard_fault_latch_decisions": 0,
+      "mismatches": 0,
+      "packets_sha256_rollup": "c8125242d5ad7fd55f7e867119455cd907ba1db0757605573a68eda513baac16",
+      "s2_diagnostic_rows": 24,
+      "seed": 7,
+      "variant": "MISLEADING_TEXT_CONTEXT"
+    },
+    {
+      "case": 8,
+      "decision_points": 1200,
+      "hard_fault_latch_decisions": 0,
+      "mismatches": 0,
+      "packets_sha256_rollup": "5aca8943c866c52bf18eb828234bc0c3ac4d517db05d4e83ea153401c82dcf83",
+      "s2_diagnostic_rows": 15,
+      "seed": 8,
+      "variant": "NO_TEXT_CONTEXT"
+    },
+    {
+      "case": 9,
+      "decision_points": 1200,
+      "hard_fault_latch_decisions": 0,
+      "mismatches": 0,
+      "packets_sha256_rollup": "9a3a35c6df8f8787c73658df29ff136988ef27799d82a39a9ec7bb83ee275ec4",
+      "s2_diagnostic_rows": 15,
+      "seed": 9,
+      "variant": "HELPFUL_TEXT_CONTEXT"
+    },
+    {
+      "case": 10,
+      "decision_points": 1200,
+      "hard_fault_latch_decisions": 0,
+      "mismatches": 0,
+      "packets_sha256_rollup": "1404a929fca1991e1da495fb4908acad0e51bbacde0147a63ec6c2570faa1426",
+      "s2_diagnostic_rows": 22,
+      "seed": 10,
+      "variant": "IRRELEVANT_TEXT_CONTEXT"
+    },
+    {
+      "case": 11,
+      "decision_points": 1200,
+      "hard_fault_latch_decisions": 0,
+      "mismatches": 0,
+      "packets_sha256_rollup": "cde9b08faad9373986d9de21d566f4a4ef61cd1d786923e6dbc44d5a57a15ff5",
+      "s2_diagnostic_rows": 20,
+      "seed": 11,
+      "variant": "MISLEADING_TEXT_CONTEXT"
+    },
+    {
+      "case": 12,
+      "decision_points": 1200,
+      "hard_fault_latch_decisions": 0,
+      "mismatches": 0,
+      "packets_sha256_rollup": "062aa278d95540c90816558cf198e5b236f546330fb9d3b33268f71b4cfa00fa",
+      "s2_diagnostic_rows": 15,
+      "seed": 12,
+      "variant": "NO_TEXT_CONTEXT"
+    },
+    {
+      "case": 13,
+      "decision_points": 1200,
+      "hard_fault_latch_decisions": 0,
+      "mismatches": 0,
+      "packets_sha256_rollup": "93af00a09d3bb04006f60b5bcc83600ef2d19c94eeb727ab9d2919e7289f5ee8",
+      "s2_diagnostic_rows": 22,
+      "seed": 13,
+      "variant": "HELPFUL_TEXT_CONTEXT"
+    },
+    {
+      "case": 14,
+      "decision_points": 1200,
+      "hard_fault_latch_decisions": 0,
+      "mismatches": 0,
+      "packets_sha256_rollup": "e7229cc9bcaecddb47ad4f636900d02f5873aef72d2c4b15e95eab302660212f",
+      "s2_diagnostic_rows": 13,
+      "seed": 14,
+      "variant": "IRRELEVANT_TEXT_CONTEXT"
+    },
+    {
+      "case": 15,
+      "decision_points": 1200,
+      "hard_fault_latch_decisions": 0,
+      "mismatches": 0,
+      "packets_sha256_rollup": "8f9b6116db6b27989edf03695f63683a41c910de5e0d3015512cdb37d0b272c0",
+      "s2_diagnostic_rows": 12,
+      "seed": 15,
+      "variant": "MISLEADING_TEXT_CONTEXT"
+    },
+    {
+      "case": 16,
+      "decision_points": 1200,
+      "hard_fault_latch_decisions": 10,
+      "mismatches": 0,
+      "packets_sha256_rollup": "6badcc17505104232944d5dd5d34233e828cc1b11e63102e96143a818e58852e",
+      "s2_diagnostic_rows": 3,
+      "seed": 16,
+      "variant": "NO_TEXT_CONTEXT"
+    },
+    {
+      "case": 17,
+      "decision_points": 1200,
+      "hard_fault_latch_decisions": 0,
+      "mismatches": 0,
+      "packets_sha256_rollup": "b0d2343c8e7697f1b7e1f2d1834f7f0ded79664dd256d65d6333efdccc85fa20",
+      "s2_diagnostic_rows": 22,
+      "seed": 17,
+      "variant": "HELPFUL_TEXT_CONTEXT"
+    },
+    {
+      "case": 18,
+      "decision_points": 1200,
+      "hard_fault_latch_decisions": 10,
+      "mismatches": 0,
+      "packets_sha256_rollup": "352da66b2a622967b2f671bcf3a34fd5f4a71e5f6dbc956fbb9cb153fef59a75",
+      "s2_diagnostic_rows": 3,
+      "seed": 18,
+      "variant": "IRRELEVANT_TEXT_CONTEXT"
+    },
+    {
+      "case": 0,
+      "decision_points": 1200,
+      "hard_fault_latch_decisions": 0,
+      "mismatches": 0,
+      "packets_sha256_rollup": "8f6f8582c57f3b30b8c040f72186615ee09f8fc94ddac9fda8ad549cd3fb2647",
+      "s2_diagnostic_rows": 12,
+      "seed": 19,
+      "variant": "MISLEADING_TEXT_CONTEXT"
+    }
+  ],
+  "federation_rows": 1,
+  "federation_seconds": 0.557202,
+  "federation_sql": "SELECT o.episode_id, k.dt FROM RRA_L3_TELEMETRY.observation_samples o JOIN RRA_L3_OPS.known_config k ON o.episode_id=k.episode_id WHERE o.episode_id='0' LIMIT 1",
+  "numpy": "2.5.4",
+  "plan": "A",
+  "pytest": {
+    "full_suite": "161 passed in 294.27s",
+    "l3_targeted": "4 passed, 1 skipped"
+  },
+  "python": "3.12.3",
+  "query_latencies": [
+    {
+      "queries": 1,
+      "query_seconds": 0.97571,
+      "seed": 0
+    },
+    {
+      "queries": 1,
+      "query_seconds": 1.20053,
+      "seed": 1
+    },
+    {
+      "queries": 1,
+      "query_seconds": 1.251996,
+      "seed": 2
+    },
+    {
+      "queries": 1,
+      "query_seconds": 1.267547,
+      "seed": 3
+    },
+    {
+      "queries": 1,
+      "query_seconds": 0.883797,
+      "seed": 4
+    },
+    {
+      "queries": 1,
+      "query_seconds": 0.703263,
+      "seed": 5
+    },
+    {
+      "queries": 1,
+      "query_seconds": 0.858496,
+      "seed": 6
+    },
+    {
+      "queries": 1,
+      "query_seconds": 0.668125,
+      "seed": 7
+    },
+    {
+      "queries": 1,
+      "query_seconds": 0.783417,
+      "seed": 8
+    },
+    {
+      "queries": 1,
+      "query_seconds": 0.731448,
+      "seed": 9
+    },
+    {
+      "queries": 1,
+      "query_seconds": 0.90976,
+      "seed": 10
+    },
+    {
+      "queries": 1,
+      "query_seconds": 0.703241,
+      "seed": 11
+    },
+    {
+      "queries": 1,
+      "query_seconds": 0.672368,
+      "seed": 12
+    },
+    {
+      "queries": 1,
+      "query_seconds": 0.995801,
+      "seed": 13
+    },
+    {
+      "queries": 1,
+      "query_seconds": 0.768928,
+      "seed": 14
+    },
+    {
+      "queries": 1,
+      "query_seconds": 0.822687,
+      "seed": 15
+    },
+    {
+      "queries": 1,
+      "query_seconds": 0.783012,
+      "seed": 16
+    },
+    {
+      "queries": 1,
+      "query_seconds": 0.909621,
+      "seed": 17
+    },
+    {
+      "queries": 1,
+      "query_seconds": 0.683351,
+      "seed": 18
+    },
+    {
+      "queries": 1,
+      "query_seconds": 0.795927,
+      "seed": 19
+    }
+  ],
+  "registration_sql": [
+    "CREATE DATASOURCE RRA_L3_TELEMETRY DESCRIBE BY \"L3 whitelisted policy telemetry\" OPTIONS (jdbcdriver \"org.postgresql.Driver\", jdbcurl \"jdbc:postgresql://rra-l3-pg:5432/rra_telemetry\", username \"postgres\", password \"\")",
+    "CREATE LIGHTNING DATABASE RRA_L3_OPS DESCRIBE BY \"L3 whitelisted operational context\"",
+    "CREATE LIGHTNING REST TABLE known_config FROM RRA_L3_OPS REQUEST(endpoint \"http://rra-l3-ops:8000/known_config\", method \"get\", response_type \"json\", http_encoding \"URLENCODED\") HEADER () BODY ()",
+    "CREATE LIGHTNING REST TABLE ops_context FROM RRA_L3_OPS REQUEST(endpoint \"http://rra-l3-ops:8000/ops_context\", method \"get\", response_type \"json\", http_encoding \"URLENCODED\") HEADER () BODY ()"
+  ],
+  "schema": "rra.l3.equivalence.v1",
+  "secret_audit_match_files": 0,
+  "source_containers": [
+    "rra-l3-pg",
+    "rra-l3-ops"
+  ]
+}
