@@ -4,8 +4,8 @@
 from pathlib import Path
 import sys
 
-if sys.version_info[:2] != (3, 11):
-    raise SystemExit("RRA V0 requires Python 3.11")
+if sys.version_info[:2] != (3, 12):
+    raise SystemExit("RRA requires Python 3.12")
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 
