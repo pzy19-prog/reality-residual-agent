@@ -8,6 +8,7 @@ from dataclasses import asdict, dataclass
 from typing import Literal, Sequence
 
 from rra.eval.text_context import validate_text_context
+from rra.s2.dsl import STRUCTURE_IDS, Primitive, FaultHypothesis
 
 TextVariant = Literal[
     "NO_TEXT_CONTEXT", "HELPFUL_TEXT_CONTEXT", "IRRELEVANT_TEXT_CONTEXT", "MISLEADING_TEXT_CONTEXT"
@@ -19,19 +20,9 @@ TEMPLATE_FAMILIES = (
     "TXT-MOTOR-SERVICE", "TXT-SENSOR-CAL", "TXT-ACTUATOR-SLOW",
     "TXT-PACKAGE-SLIP", "TXT-FLOW-MISSING", "TXT-UNRELATED",
 )
-# The 14 preregistered structures, represented with canonical primitive order.
-PRIMITIVES = ("SENSOR_BIAS", "VELOCITY_OFFSET", "SPEED_STEP", "ACTUATOR_DELAY")
-from itertools import combinations
-
-STRUCTURE_IDS = tuple(
-    combo[0] if size == 1 else "AND(" + ",".join(combo) + ")"
-    for size in (1, 2, 3)
-    for combo in combinations(PRIMITIVES, size)
-)
-FAULT_HYPOTHESIS_IDS = (
-    "SENSOR_STUCK", "SENSOR_SPIKE_OR_UNRELIABLE", "OBJECT_MISSING_OR_DROPPED",
-    "BELT_STOP_OR_MOTION_LOSS", "POST_VERIFICATION_CHANGE", "UNKNOWN_OR_INSUFFICIENT_EVIDENCE",
-)
+# Compatibility exports derived from the sole structural vocabulary.
+PRIMITIVES = tuple(item.value for item in Primitive)
+FAULT_HYPOTHESIS_IDS = tuple(item.value for item in FaultHypothesis)
 
 _WORDING: dict[str, tuple[str, ...]] = {
     "TXT-MOTOR-SERVICE": (

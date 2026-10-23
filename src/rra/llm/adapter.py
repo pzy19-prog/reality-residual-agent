@@ -7,7 +7,9 @@ from typing import Any, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-from rra.eval.context_v3 import FAULT_HYPOTHESIS_IDS, STRUCTURE_IDS
+from rra.s2.dsl import STRUCTURE_IDS, FaultHypothesis
+
+FAULT_HYPOTHESIS_IDS = tuple(item.value for item in FaultHypothesis)
 
 _ALLOWED_IDS = frozenset((*STRUCTURE_IDS, *FAULT_HYPOTHESIS_IDS))
 
@@ -63,7 +65,6 @@ class HypothesisProposer:
 
     def propose(self, evidence_packet: dict, context_text: str) -> Proposal:
         request_body = {
-            "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
             "temperature": 0,
             "max_tokens": 1800,
             "response_format": {"type": "json_object"},
