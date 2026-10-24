@@ -24,10 +24,10 @@ This addendum does not move or rewrite `p3-prereg`, and does not alter `docs/P3_
 
 ## 2. Generator request content (owner rulings, 2026-10-24)
 
-- R10: The frozen P3 Section 12 context text is carried inside the request as `evidence_packet.context = {text, content_sha256}`. It is the same text, from the same generator, with the same leakage validation as before. Only its position changes, from a separate channel to a sub-object of the packet. `context` is not a C1 field and adds no observable data.
+- R10: The frozen P3 Section 12 context text is carried inside the request as `evidence_packet.context = {text, content_sha256}`. It is the same text, from the same generator, with the same leakage validation as before. Only its position changes, from a separate channel to a sub-object of the packet. `context` is not a C1 field and adds no observable data. This changes only the position of the text relative to the description in docs/H1_EVAL_FOUNDATION.md line 17, where free-form text is a separate channel; the text, its generator, and its leakage validation are unchanged.
 - R11: The generator request carries no seed identifier. `episode_id` is removed from the packet's `decision` section and from every row. In command feedback, `command_id` is rewritten from `"{seed}:{target_id}:{step}"` to `"{target_id}:{step}"`. The L3 export, the Zetaris path and their packet hashes keep the original form.
 - R12: Keys outside the C1 field names that remain in the request are `schema`, `decision.{target_id, step, time, seq}`, row-level `seq`, feedback-row `step`, `context.{text, content_sha256}`, and the System-2 summary of R6. None of them carries a seed value or a hidden simulator parameter.
-- R13: The per-response model record of R9 is the aggregate `served_models = {returned model name: response count}` in the B4 receipt.
+- R13: The per-response model record of R9 is the aggregate `served_models = {returned model name: response count}` in the B4 receipt. served_models counts every response served in a generation, including cache hits; in the scored replay it therefore counts every response.
 - Feedback precedence (Addendum 06 Section 4.7): a feedback row precedes the decision when its `seq = target_id × episode_steps + step` is strictly less than the decision's `seq`.
 
 ## 3. Format-mode probe (Addendum 06 Section 3.2)
@@ -42,23 +42,25 @@ This addendum does not move or rewrite `p3-prereg`, and does not alter `docs/P3_
 
 ## 4. Live run, counting, interruption, and incomplete runs (Addendum 06 Sections 2.3, 3.3–3.5)
 
-4.1 Response handling during live calls:
+4.1 Response handling during live calls (owner ruling R14, conforming to Addendum 04 Section 3 rule 1):
 
-- HTTP 200: the response is cached.
-- HTTP 400, 404, 413 or 422: these are deterministic for a given request, so an error record (status code, no credentials) is cached in place of a response. Replay reproduces the same `PROVIDER_ERROR` fallback (Addendum 04 rule 1).
-- HTTP 429, 5xx, timeouts and network errors: retried with back-off. If they persist, the run stops without writing to the cache and may be resumed.
-- HTTP 401 or 403: the run stops. It may be resumed after the credential is corrected.
+- HTTP 200 with a JSON body: the response is cached.
+- Deterministic errors: HTTP 3xx, 400, 404, 409, 413, 422, and any other 4xx not listed below. An error record (status code, no credentials) is cached at once in place of a response.
+- Transient errors: HTTP 408, 429, 5xx, timeouts, network errors, and HTTP 200 with a non-JSON body. The request is retried up to five attempts in total, with back-off and honouring Retry-After. If it still fails, an error record is cached.
+- An error record is final. Replay reproduces the same `PROVIDER_ERROR` fallback, which counts toward Addendum 04 Section 6.2.
+- If ten consecutive requests end in error records, the run stops so that it can be resumed after an outage. Those error records are kept.
+- HTTP 401 or 403: the run stops without caching. It may be resumed after the credential is corrected.
 
-4.2 Counting: a distinct live request is a finalized-request SHA-256 for which at least one HTTP attempt was made. Each such SHA-256 is appended to `artifacts/eval_v3/live_ledger.jsonl` before its first attempt, and the ledger is never rewritten. Retries and resumptions of the same request do not add to the count. The cap of 2,500 applies to the number of distinct entries in the ledger.
+4.2 Counting: a distinct live request is a finalized-request SHA-256 for which at least one HTTP attempt was made. Each such SHA-256 is appended to `artifacts/eval_v3/live_ledger.jsonl` before its first attempt, and the ledger is never rewritten. Retries and resumptions of the same request do not add to the count. The cap of 2,500 applies to the number of distinct entries in the ledger. The cap is checked before a new entry is appended: when the ledger already holds 2,500 distinct entries, no new request is attempted and the run ends as incomplete. Error records count as live requests.
 
 4.3 Runs:
 
 - B1, B1-legacy, B2, and B3 are each run once to completion. A run that crashed before writing its result file may be restarted, and the completed run is the result.
 - For B4, one registered run consists of the live fill (resumable) followed by two replay generations. The first replay is the scored artifact, and the second must match it.
 
-4.4 Deadline: the live fill must be complete by 2026-10-27 06:00 UTC. If it is, the replay generations and the result commit may follow after that time. If it is not, live calls stop at that time.
+4.4 Deadline: the live fill is complete when the live command exits with status complete and every request of every (seed, text condition) pair has a cached response or error record. Completion must occur before 2026-10-27 06:00 UTC by the runner clock, as recorded in the receipt. If the fill is complete by then, the replay generations and the result commit may follow after that time. If it is not, live calls stop at that time.
 
-4.5 Incomplete B4: if the cap is reached or the deadline passes, no B4 metrics and no Addendum 04 Section 6 counts are reported. The B4 rows report the status, the reason, the number of completed (seed, text condition) pairs, and the ledger count. The B1, B1-legacy, B2, and B3 rows are reported in full.
+4.5 Incomplete B4 (owner ruling R15): if the cap is reached or the deadline passes, no B4 metrics are reported. The B4 rows report the status, the reason, the number of completed (seed, text condition) pairs, and the ledger count. They also report the Addendum 04 Section 6.1 counts that can be computed from the ledger and the cache: LLM calls, and responses classified by the adapter rules as valid, `INVALID_PROPOSAL`, `PROVIDER_ERROR`, or truncated. The `gate_reason` distribution is reported as "not available (incomplete)". For this case only, this amends Addendum 04 Section 6.1. The B1, B1-legacy, B2, and B3 rows are reported in full.
 
 4.6 Seed visibility: no command output or log prints seed values. The seed file and the seed fields of result files are not opened before every row is complete or declared incomplete. All result artifacts are committed together after that point.
 
@@ -72,9 +74,9 @@ All of these are committed in Z. No existing cache file may be modified or delet
 
 ## 5. Structural holdout disclosure (P3 Section 13.4)
 
-5.1 The structural holdout `AND(SPEED_STEP,ACTUATOR_DELAY)` (H1 receipt) is composition index 9. All System-2 development runs since the B3 development command (commit `7ea70ce`, 2026-10-22) assign cases by `index mod 19` over the 14 composition structures. This includes dev seeds 9, 28, 47, 66, 85, 104 and 123 with this structure. Contrary to P3 Section 13.4, the holdout structure therefore appeared in development examples.
+5.1 The structural holdout `AND(SPEED_STEP,ACTUATOR_DELAY)` (H1 receipt) is composition index 9. The B3 development runs since commit `7ea70ce` (2026-10-22) assign cases by `index mod 19` over the 14 composition structures. The read-only diagnostics built on them do the same. Both therefore include dev seeds 9, 28, 47, 66, 85, 104, and 123 with this structure, contrary to P3 Section 13.4. None of the 33 seeds of the B4 development subset (`artifacts/s2/diag-d1g.json`) belongs to case 9, so the generator has not received this structure during development.
 
-5.2 Eval-v3 keeps the registered assignment. Case 9 results are reported separately, labelled as the structural holdout seen during development, and no claim of composition generalization to an unseen structure is made from eval-v3.
+5.2 Eval-v3 keeps the registered assignment. Case 9 results are reported separately, labelled as the structural holdout seen during development, and no claim of composition generalization to an unseen structure is made from eval-v3. This handling is owner ruling R16 (2026-10-24). Choosing a different holdout now would be a post hoc change and is not done.
 
 5.3 Eval-v3 does not include the P3 Section 13.1 V0 known-family scenarios. These were covered by the frozen eval v2 run.
 
