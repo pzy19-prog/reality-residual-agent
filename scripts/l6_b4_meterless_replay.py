@@ -1,11 +1,15 @@
 """Verify that meterless persistence leaves cached B4-tiebreak decisions unchanged."""
 from __future__ import annotations
 
+import argparse
 import json
 import platform
 import subprocess
 import sys
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
 
 from rra.eval.context_v3 import freeze_context, VARIANTS
 from rra.eval.framework import v3_world_config
@@ -15,9 +19,9 @@ from rra.llm.adapter import HypothesisProposer
 from rra.llm.providers import ReplayProvider
 from rra.sponsor.meterless import build_manifest, episode_id_for, persist_episode_run
 
-ROOT = Path(__file__).resolve().parents[1]
 ARTIFACT = ROOT / "artifacts" / "sponsor" / "meterless-persistence.json"
 OUT_ROOT = ROOT / "outputs" / "l6" / "meterless" / "b4-phaseb-r1"
+DEFAULT_OUTPUT = ROOT / "outputs" / "l6" / "meterless-persistence.json"
 
 
 def realization_for(seed: int):
@@ -29,7 +33,13 @@ def realization_for(seed: int):
             else realize_episode(seed, (), FAULT_FAMILIES[case - len(structures)]))
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--output", type=Path, default=DEFAULT_OUTPUT,
+        help="where to write the updated persistence JSON (default: outputs/l6/meterless-persistence.json); "
+             f"pass {ARTIFACT.relative_to(ROOT)} explicitly to rewrite the tracked file")
+    args = parser.parse_args(argv)
     artifact = json.loads(ARTIFACT.read_text())
     subset = json.loads((ROOT / "artifacts" / "s2" / "diag-d1g.json").read_text())["seeds"]
     seeds = subset[:20]
@@ -90,7 +100,8 @@ def main() -> int:
         f"{result['decisions_equal']}/{result['episode_count']}, receipt hashes "
         f"{result['receipt_equal']}/{result['episode_count']}"
     )
-    ARTIFACT.write_text(json.dumps(artifact, indent=2, ensure_ascii=False) + "\n")
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(json.dumps(artifact, indent=2, ensure_ascii=False) + "\n")
     print(json.dumps({key: result[key] for key in (
         "status", "s2_variant", "episode_count", "decisions_equal", "receipt_equal", "live_llm_calls")}, indent=2))
     return 0 if result["status"] == "PASS" else 1
