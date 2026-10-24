@@ -1513,3 +1513,243 @@ dec = json.loads(rec["request"]["messages"][1]["content"])["evidence_packet"]["d
 print("cache files written:", len(files), "| stored request decision:", dec, "| episode_id == seed:", dec["episode_id"] == str(seed0))
 print("headers/key in record:", "UNUSED" in files[0].read_text())
 ```
+
+---
+
+## 第 3 阶段（PR #27，FRZ-2A-R1）
+
+本节在第 2 阶段之后追加，第 1、2 阶段内容未改动。
+
+- 审查对象：PR #27 新 head `466bec6613f3950b12c00c789ed81c4c36aa3e39`（`git rev-parse origin/feat/frz2-b4req`），单个新提交 "Strip seed identifiers from the B4 generator request"，父提交 `a9fa6c3`。
+- 改动文件：`src/rra/evidence/episode.py`（+3/−3）、`src/rra/evidence/packet.py`（+21）、`tests/test_frz2_packet_equivalence.py`（+42/−12）。环境、只读 worktree、离线约束同第 2 阶段；没有 live 调用，没有设置 key。
+- 合成种子：第 1 项使用 `100000007`、`987654320` 两个 9 位数。它们是我自己选的值，不来自任何种子文件。PR 中的测试用的是 `987654321`、`123456789`。
+
+### P3.1 最终请求中的种子标识（第 1 项）
+
+脚本 `p3_seed_check.py`（A.P3-1）对每个 B4 请求取 `canonical_json(finalize_payload(...))`，解析 user message 后逐键遍历：
+
+| 范围 | 请求数 | `episode_id` 键 | 字符串值等于 `str(seed)` 或以 `"{seed}:"` 开头 | 9 位种子子串出现在整个 payload 中 |
+|---|---|---|---|---|
+| 130 个 dev seed，`HELPFUL_TEXT_CONTEXT` | 350 | 0 | 2（都在 `command_feedback[].command_id`，见下） | 不适用 |
+| 合成 seed `100000007`、`987654320`，4 个变体 | 4 | 0 | 0 | 0 |
+
+- dev 上的 2 处命中不是种子：生成器视图中 `command_id` 为 `"{target_id}:{step}"`，当 `target_id` 恰好等于一个短 seed（例如 seed 1 的 target 1）时，值也以 `"{seed}:"` 开头。按键值位置看，840 个 `command_id` 全部等于 `f"{target_id}:{step}"`（下一节），所以这 2 处是 target_id。
+- 短 seed（0、1 这类）在整个 payload 中做子串检查没有意义，所以只对 9 位种子做了这项检查。
+- 用第 2 阶段的方法（不调用 `__init__`、`urlopen` 换成假响应）让 live provider 写出一次缓存：文件中不含种子子串，也不含 `episode_id` 键。
+- PR 新增的 `test_b4_finalized_payload_omits_nine_digit_seed_identifiers` 检查 finalized payload 不含 `str(seed)` 和 `"episode_id"`：passed。
+
+### P3.2 `command_id`（第 2 项）
+
+- 生成器视图：dev 350 个请求中 840 个 `command_id`、合成 seed 中 24 个，全部等于 `f"{target_id}:{step}"`。由 `generator_view` 改写（`src/rra/evidence/packet.py` 中新增函数）。
+- L3：`export_sources(out, 20)` 的 `command_feedback.jsonl` 共 128 行，`command_id == f"{episode_id}:{target_id}:{step}"` 为 128/128，仍是原格式（例：`"0:0:55"`）。
+
+### P3.3 白名单外键（第 3 项，对照 R12）
+
+`check_packet_p2.py`（第 2 阶段脚本，未改）在 `466bec6` 上运行，130 个 dev seed、350 个请求：
+- user message 键：`evidence_packet`、`s2_summary`。
+- `evidence_packet` 键：`schema`、`observations`、`presence_events`、`command_feedback`、`known_config`、`context`、`decision`。
+- 每组的白名单外键：observations `seq`；presence_events `seq`；command_feedback `seq`、`step`；known_config 无。
+- `decision` 键：`seq`、`step`、`target_id`、`time`。`context` 键：`text`、`content_sha256`。`s2_summary` 键：`passing`（行键 structure_id, rmse, n_usable）、`current_time`、`horizon`。
+- 白名单外的键是 `schema`、`decision.{seq, step, target_id, time}`、行级 `seq`/`step`、`context.*`。此外没有其他白名单外键（`s2_summary` 为 R6 项）。C1 字段均无缺失；R7 范围与"决策之前"0 违例。
+
+### P3.4 等价测试（第 4 项）
+
+- 两个原有测试的期望值都改为 `_projected_generator_view(reference, context)`，即 `generator_view({**L3 包, known_config: project_c1_known_config(...), context: B4 的冻结 context})`。比较方式从只比 `packet_sha256` 改为先 `internal == expected` 再比 `packet_sha256`。
+- 覆盖范围不变：测试 1 仍为 dev seed 0、3、7；测试 2 仍断言 `active_seeds == [3]`、`checked == 8`。
+- 新增第 3 个测试（P3.1）。3 个测试都 passed。
+
+### P3.5 回归（第 5、6、7 项）
+
+| 项 | 实测 |
+|---|---|
+| 全量 pytest | `222 passed, 4 skipped in 350.32s`，exit 0；skipped 同前（meterless ×3、Zetaris ×1） |
+| B1 | 对 PR 中 `b3-dev.json`：0/130 不同 |
+| B3 同机两次 | run1 = run2 = `0fbebcb9f5d024a8d2fbed49a7313d7628fb4129c20abc29538c6920e1968914`，逐 seed 0/130 不同；与第 2 阶段在 `a9fa6c3` 上的本机值相同 |
+| B3 与 PR 中 `b3-dev.json` | metrics 相同；逐 seed 115/130 不同（跨机） |
+| PR 中 `b3-dev.json` | 本次提交没有改动 `artifacts/`（`git diff --stat a9fa6c3 466bec6 -- artifacts` 无输出），receipt 仍为 `bfda4d10…`，重算等于存储值 |
+| L3 | 5 个表文件 sha256 与 `5a05f6d` 完全相同；20 个 `packets_sha256_rollup` 全部相同；审计总哈希 `cecbfbbd…` 与第 2 阶段相同，唯一差异仍是 seed 7 的 B3 决策记录 |
+| 模板 SHA | 只改 context 文本：相同；证据包与 s2_summary 都改：相同；三种 format_mode：互不相同。json_object 模板 SHA 仍为 `6a4bc876…5c25`，与 `a9fa6c3` 相同 |
+
+### P3.6 相对 `a9fa6c3` 的行为改动（第 8 项）
+
+- `src/` 的 diff 只有两处：新增 `generator_view`（深拷贝；删掉 `decision.episode_id` 和三组行级 `episode_id`；把反馈 `command_id` 改写为 `"{target_id}:{step}"`）；`episode.py` 中 B4 包改为 `generator_view(build_packet(...))`。`build_packet`、`sources.py`、B3 路径、`s2_summary`、`adapter.py`、`providers.py` 都没有改动。
+- 影响面（FACT）：B4 请求内容和 cache key 随之改变；B3 本机 receipt 与 `a9fa6c3` 相同；L3 导出与包哈希不变；模板 SHA 不变。
+- 除 R11 所述内容外，diff 中没有看到其他行为改动。
+
+### 附录 A.P3
+
+A.P3-1 `p3_seed_check.py` 输出：
+
+```
+dev 130 seeds: {'requests': 350, 'episode_id_keys': 0, 'string_values_eq_or_prefixed_seed': 2, 'command_ids': 840, 'command_id_target_step': 840, 'long_seed_substring_hits': 0, 'where': ['$.evidence_packet.command_feedback[].command_id']}
+synthetic 9-digit seeds (100000007, 987654320): {'requests': 4, 'episode_id_keys': 0, 'string_values_eq_or_prefixed_seed': 0, 'command_ids': 24, 'command_id_target_step': 24, 'long_seed_substring_hits': 0, 'where': []}
+fake-HTTP cache file: seed substring False | episode_id key False
+```
+
+A.P3-2 `check_packet_p2.py HELPFUL_TEXT_CONTEXT`（`466bec6`）：
+
+```
+variant=HELPFUL_TEXT_CONTEXT seeds=130 requests=350
+user message keys ['evidence_packet', 's2_summary']
+evidence_packet keys ['command_feedback', 'context', 'decision', 'known_config', 'observations', 'presence_events', 'schema']
+observations: keys=['nominal_speed', 'nominal_x', 'nominal_y', 'observed_x', 'observed_y', 'seq', 'step', 'target_id', 'time'] | missing C1=none | outside C1=['seq']
+presence_events: keys=['seq', 'step', 'target_id', 'target_observed', 'time'] | missing C1=none | outside C1=['seq']
+known_config: keys=['belt_speed', 'dt', 'tolerance', 'x_pick', 'y_pick'] | missing C1=none | outside C1=none
+command_feedback: keys=['accepted', 'command_id', 'execution_time', 'issued_time', 'reason_code', 'seq', 'step', 'success', 'target_id'] | missing C1=none | outside C1=['seq', 'step']
+decision keys ['seq', 'step', 'target_id', 'time']
+context keys ['content_sha256', 'text']
+s2_summary keys ['current_time', 'horizon', 'passing'] | passing row keys ['n_usable', 'rmse', 'structure_id']
+scope/timing violations none
+examples {}
+```
+
+A.P3-3 `g4_check.py`（`466bec6`）：
+
+```
+context-only differ: template equal True | cache key equal False
+packet+summary differ: template equal True
+template from body == default skeleton template True
+template per mode distinct True | cache key per mode distinct True
+json_object payload format keys: {'response_format': 'json_object'} False
+json_schema payload format keys: {'response_format': 'json_schema'} False
+nvext_guided_json payload format keys: {} True
+system prompt change -> template differs True
+bogus mode -> unknown format_mode: bogus
+template sha json_object 6a4bc876b1f3bf0c0f68048d55b786bbbf936157c090076b50544decffcf5c25
+```
+
+A.P3-4 L3（`l3_export_hash.py` 与 `l3_audit_diff.py`，`466bec6`）：
+
+```
+9112912f46366427aaa1c7925c6ba111a2387e840c275ddf8382ad06a40961ef command_feedback.jsonl
+d7215ff8a5f54761c78619a61916223184d88bb45c1f58d76855cefbea838f17 known_config.jsonl
+f56a175d2a6ae3e827d2f98793c3be36581a94dba747fda21c86aa6164ea004f observation_samples.jsonl
+d14c5bca946026ac2671d46a543cd917a228fef9dabc4b512fbbbfc008509184 ops_context.jsonl
+bb9ff6bcffee1c063e8602d3b60585d25cec16d3d1f7b32496db3203f8476a92 presence_events.jsonl
+audits_sha256 cecbfbbde4cfd735d513863cf309c6399b92ae674ceb4c33742fc8504755fe91
+episodes 20 decision_points 24000
+audit keys ['auth_evidence_nonempty', 'case', 'decision_points', 'hard_fault_latch_decisions', 'mismatches', 'packets_sha256_rollup', 's2_diagnostic_trace', 'seed', 'system2_decisions', 'variant']
+0 NO_TEXT_CONTEXT rollup equal True | differing keys []
+1 HELPFUL_TEXT_CONTEXT rollup equal True | differing keys []
+2 IRRELEVANT_TEXT_CONTEXT rollup equal True | differing keys []
+3 MISLEADING_TEXT_CONTEXT rollup equal True | differing keys []
+4 NO_TEXT_CONTEXT rollup equal True | differing keys []
+5 HELPFUL_TEXT_CONTEXT rollup equal True | differing keys []
+6 IRRELEVANT_TEXT_CONTEXT rollup equal True | differing keys []
+7 MISLEADING_TEXT_CONTEXT rollup equal True | differing keys ['s2_diagnostic_trace', 'system2_decisions']
+8 NO_TEXT_CONTEXT rollup equal True | differing keys []
+9 HELPFUL_TEXT_CONTEXT rollup equal True | differing keys []
+10 IRRELEVANT_TEXT_CONTEXT rollup equal True | differing keys []
+11 MISLEADING_TEXT_CONTEXT rollup equal True | differing keys []
+12 NO_TEXT_CONTEXT rollup equal True | differing keys []
+13 HELPFUL_TEXT_CONTEXT rollup equal True | differing keys []
+14 IRRELEVANT_TEXT_CONTEXT rollup equal True | differing keys []
+15 MISLEADING_TEXT_CONTEXT rollup equal True | differing keys []
+16 NO_TEXT_CONTEXT rollup equal True | differing keys []
+17 HELPFUL_TEXT_CONTEXT rollup equal True | differing keys []
+18 IRRELEVANT_TEXT_CONTEXT rollup equal True | differing keys []
+19 MISLEADING_TEXT_CONTEXT rollup equal True | differing keys []
+```
+
+A.P3-5 `compare_b3.py`（`466bec6` 两次运行对 PR 中 `b3-dev.json`）与指定测试：
+
+```
+run1 receipt 0fbebcb9f5d024a8d2fbed49a7313d7628fb4129c20abc29538c6920e1968914
+run2 receipt 0fbebcb9f5d024a8d2fbed49a7313d7628fb4129c20abc29538c6920e1968914
+run1==run2 True
+b1_receipt_sha256: run1 vs run2 differ 0/130; run1 vs committed differ 0/130
+b3_receipt_sha256: run1 vs run2 differ 0/130; run1 vs committed differ 115/130
+metrics run1==committed True
+run1 runtime_versions {"python": "3.12.3", "numpy": "2.5.4", "machine": "x86_64", "cpu_model": "Intel(R) Xeon(R) Processor @ 2.10GHz", "blas": {"name": "scipy-openblas", "version": "0.3.34.106.0"}}
+committed runtime_versions {"python": "3.12.3", "numpy": "2.5.4", "machine": "x86_64", "cpu_model": "Intel(R) Core(TM) i7-10750H CPU @ 2.60GHz", "blas": {"name": "scipy-openblas", "version": "0.3.34.106.0"}}
+committed receipt stored bfda4d101bd79f8d62738807402b33e24aba29028f5f4bc550a9b13304cb1132 recomputed equal True
+PASSED tests/test_frz2_packet_equivalence.py::test_b4_packets_match_l3_export_projection_for_three_seeds
+PASSED tests/test_frz2_packet_equivalence.py::test_all_diag_b4_call_points_match_projected_export_packets
+PASSED tests/test_frz2_packet_equivalence.py::test_b4_finalized_payload_omits_nine_digit_seed_identifiers
+PASSED tests/test_t6_frz2.py::test_b4_variants_enter_and_exhaust_reobserve_hold_like_b3[B4_STRICT]
+PASSED tests/test_t6_frz2.py::test_b4_variants_enter_and_exhaust_reobserve_hold_like_b3[B4_TIEBREAK]
+PASSED tests/test_t6_frz2.py::test_actuator_delay_fit_chooses_smallest_delay_within_tie_tolerance
+PASSED tests/test_t6_frz2.py::test_actuator_delay_fit_without_tie_keeps_strict_minimum
+PASSED tests/test_t6_frz2.py::test_speed_step_delay_tie_selects_lexicographic_smallest_tau_then_delay
+PASSED tests/test_t6_frz2.py::test_s2_b4_dev_replay_cache_miss_exits_nonzero_without_artifact
+PASSED tests/test_t6_frz2.py::test_finalized_request_floats_are_six_decimal_fixed_points
+PASSED tests/test_t6_frz2.py::test_request_body_and_cache_key_ignore_float_changes_beyond_six_places
+PASSED tests/test_t6_frz2.py::test_b4_episode_provider_payload_floats_are_rounded_to_six_places
+12 passed in 44.61s
+```
+
+A.P3-6 `p3_seed_check.py` 源码：
+
+```python
+"""T6 phase 3: seed identifiers in the finalized B4 request (dev seeds + two synthetic 9-digit seeds),
+generator-view command_id format, and a fake-HTTP cache write. Offline, no API key."""
+import io, json, re, sys, tempfile
+from pathlib import Path
+from rra.eval.b4_dev import _realization
+from rra.eval.context_v3 import VARIANTS, freeze_episode_contexts
+from rra.eval.framework import v3_world_config
+from rra.eval.scenarios import realize_episode
+from rra.evidence import run_episode
+from rra.llm.adapter import HypothesisProposer
+import rra.llm.providers as P
+SET = P.ReplayProvider("unused").settings
+class Cap:
+    last_http_status = None
+    def __init__(s): s.b = []
+    def complete(s, body): s.b.append(body); return {"choices": [{"message": {"content": '{"items": []}'}}]}
+def walk(v, path="$"):
+    if isinstance(v, dict):
+        for k, x in v.items():
+            yield path + "." + k, k, x
+            yield from walk(x, path + "." + k)
+    elif isinstance(v, list):
+        for i, x in enumerate(v): yield from walk(x, f"{path}[]")
+def check(seed, real, text, stats):
+    cap = Cap()
+    run_episode(v3_world_config("nominal"), seed, True, terminal_monitoring="corrected", realization=real,
+                text_context=text, system2_enabled=True, s2_variant="B4_STRICT", proposer=HypothesisProposer(cap))
+    for body in cap.b:
+        canon = P.canonical_json(P.finalize_payload(body, SET)); stats["requests"] += 1
+        user = json.loads(json.loads(canon)["messages"][1]["content"])
+        for path, k, x in walk(user):
+            if k == "episode_id": stats["episode_id_keys"] += 1
+            if isinstance(x, str) and (x == str(seed) or x.startswith(f"{seed}:")) and k != "content_sha256":
+                stats["string_values_eq_or_prefixed_seed"] += 1; stats["where"].add(path)
+        for f in user["evidence_packet"]["command_feedback"]:
+            stats["command_ids"] += 1
+            stats["command_id_target_step"] += f["command_id"] == f"{f['target_id']}:{f['step']}"
+        if len(str(seed)) >= 9:
+            stats["long_seed_substring_hits"] += str(seed) in canon
+    return cap.b
+dev = json.load(open("config/dev_seeds.json"))["seeds"]
+st = dict(requests=0, episode_id_keys=0, string_values_eq_or_prefixed_seed=0, command_ids=0, command_id_target_step=0,
+          long_seed_substring_hits=0, where=set())
+for i, s in enumerate(dev):
+    real = _realization(i, s); ctx = freeze_episode_contexts(str(s), s, real.fault_family or real.structure)
+    check(s, real, ctx["HELPFUL_TEXT_CONTEXT"].text, st)
+print("dev 130 seeds:", {k: (sorted(v) if isinstance(v, set) else v) for k, v in st.items()})
+syn = dict(requests=0, episode_id_keys=0, string_values_eq_or_prefixed_seed=0, command_ids=0, command_id_target_step=0,
+           long_seed_substring_hits=0, where=set()); last = None
+for s in (100000007, 987654320):  # synthetic, not from any seed file
+    real = realize_episode(s, ("VELOCITY_OFFSET",))
+    ctx = freeze_episode_contexts(str(s), s, real.structure)
+    for v in VARIANTS:
+        b = check(s, real, ctx[v].text, syn)
+        if b: last = (s, b[0])
+print("synthetic 9-digit seeds (100000007, 987654320):", {k: (sorted(v) if isinstance(v, set) else v) for k, v in syn.items()})
+s, body = last
+tmp = Path(tempfile.mkdtemp(dir=sys.argv[1]))
+prov = object.__new__(P.NvidiaNimProvider)
+for k, v in dict(api_key="UNUSED", cache_dir=tmp, timeout=1, base_url="http://invalid", model=P.NIM_MODEL, max_tokens=1800,
+                 chat_template_kwargs={"enable_thinking": False}, no_think=False, format_mode="json_object",
+                 last_http_status=None, last_latency_seconds=None, last_response_body=None, last_request_body=None).items():
+    setattr(prov, k, v)
+class R(io.BytesIO):
+    status = 200
+    def __enter__(s): return s
+    def __exit__(s, *a): return False
+P.urlopen = lambda req, timeout=None: R(json.dumps({"model": "fake", "choices": [{"message": {"content": '{"items": []}'}}]}).encode())
+prov.complete(body)
+f = next(tmp.glob("*.json")).read_text()
+print("fake-HTTP cache file: seed substring", str(s) in f, "| episode_id key", '"episode_id' in f or '\\"episode_id' in f)
+```
