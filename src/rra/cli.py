@@ -6,10 +6,12 @@ import argparse
 import json
 import os
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
 from rra.evidence import run_episode
+from rra.llm.providers import DEFAULT_FORMAT_MODE
 from rra.sim import WorldConfig
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -137,7 +139,10 @@ def main(argv: list[str] | None = None) -> int:
     b4_parser.add_argument("--subset", action="store_true", help="use the registered L1g 33-seed subset")
     b4_parser.add_argument("--replay", action="store_true", help="run offline from artifacts/llm_cache")
     b4_parser.add_argument("--format-mode", choices=("json_object", "json_schema", "nvext_guided_json"),
-                           default="json_object")
+                           default=DEFAULT_FORMAT_MODE)
+    eval_v3_parser = commands.add_parser("eval-v3", help="run a frozen eval-v3 baseline row")
+    eval_v3_parser.add_argument("row")
+    eval_v3_parser.add_argument("eval_args", nargs=argparse.REMAINDER)
     args = parser.parse_args(argv)
     if args.command == "run":
         args.output_dir.mkdir(parents=True, exist_ok=True)
@@ -158,12 +163,20 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "s2-b4-dev":
         from rra.eval.b4_dev import run_b4_dev
-        receipt = run_b4_dev(args.output_dir, nproc=args.nproc, subset=args.subset,
-                             replay_only=args.replay, format_mode=args.format_mode)
+        from rra.llm.providers import LiveOutageStop
+        try:
+            receipt = run_b4_dev(args.output_dir, nproc=args.nproc, subset=args.subset,
+                                 replay_only=args.replay, format_mode=args.format_mode)
+        except LiveOutageStop as exc:
+            print(f"s2-b4-dev error: {exc}", file=sys.stderr)
+            return 3
         print(json.dumps({"receipt_sha256": receipt["receipt_sha256"],
                           "llm_calls": receipt["llm_calls"],
                           "serial_parallel_check": receipt["serial_parallel_check"]}, indent=2))
         return 0
+    if args.command == "eval-v3":
+        from rra.eval.final_v3 import main as eval_v3_main
+        return eval_v3_main([args.row, *args.eval_args])
     result = run_bench(args.output_dir)
     print(result["markdown"])
     return 0

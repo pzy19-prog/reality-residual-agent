@@ -200,9 +200,11 @@ def verify_serial_parallel(seeds: list[int], nproc: int) -> dict[str, Any]:
             "nproc": min(nproc, max(1, len(args)))}
 
 
-def run_b3_dev(output_dir: Path = ROOT / "artifacts" / "s2", *, nproc: int | None = None) -> dict[str, Any]:
+def run_b3_dev(output_dir: Path = ROOT / "artifacts" / "s2", *, nproc: int | None = None,
+               seeds_path: Path | None = None) -> dict[str, Any]:
     """Run sorted dev seeds in worker processes after a three-seed parity check."""
-    seeds = json.loads((ROOT / "config" / "dev_seeds.json").read_text())["seeds"]
+    seed_file = seeds_path if seeds_path is not None else ROOT / "config" / "dev_seeds.json"
+    seeds = json.loads(seed_file.read_text())["seeds"]
     worker_count = max(1, min(nproc or min(8, os.cpu_count() or 1), len(seeds)))
     parity = verify_serial_parallel(seeds, worker_count)
     if not parity["consistent"]:
@@ -240,7 +242,8 @@ def run_b3_dev(output_dir: Path = ROOT / "artifacts" / "s2", *, nproc: int | Non
         ep.pop("pause_seconds", None)
     receipt = {
         "schema_version": "rra.s2.b3-dev.v1",
-        "seed_identity": {"path": "config/dev_seeds.json", "values": seeds},
+        "seed_identity": {"path": "config/dev_seeds.json" if seeds_path is None else str(seeds_path),
+                          "values": seeds},
         "episode_count": len(episodes), "b1": "corrected", "b3": "exhaustive-14-structures",
         "metrics": {
             "recoverable_success": challenge_success / recoverable_challenge if recoverable_challenge else 0.0,

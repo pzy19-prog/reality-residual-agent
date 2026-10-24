@@ -1,4 +1,9 @@
+import io
 import json
+from email.message import EmailMessage
+from urllib.error import HTTPError
+
+import pytest
 
 from rra.s2.dsl import STRUCTURE_IDS
 from rra.llm.adapter import HypothesisProposer
@@ -171,3 +176,289 @@ def test_nim_thinking_controls_are_in_canonical_payload_and_cache_key(tmp_path, 
     assert seen[1]["messages"][0]["content"].startswith("/no_think\n")
     assert providers.request_sha256(seen[0]) != providers.request_sha256(seen[1])
     assert len(list(tmp_path.glob("*.json"))) == 2
+
+
+def _http_error(code, headers=None, body=b"secret-body"):
+    return HTTPError("https://example.invalid", code, "err", headers, io.BytesIO(body))
+
+
+def _retry_headers(value):
+    headers = EmailMessage()
+    headers["Retry-After"] = str(value)
+    return headers
+
+
+def _install_live(monkeypatch, tmp_path, urlopen):
+    from rra.llm import providers
+
+    monkeypatch.setenv("NVIDIA_API_KEY", "test-secret")
+    monkeypatch.setattr(providers.time, "sleep", lambda seconds: None)
+    monkeypatch.setattr(providers, "urlopen", urlopen)
+    providers.disable_live_outage()
+    return providers, providers.NvidiaNimProvider(cache_dir=tmp_path)
+
+
+def test_repeated_500_writes_one_error_record_and_replay_matches(tmp_path, monkeypatch):
+    calls = {"n": 0}
+
+    def urlopen(request, timeout):
+        calls["n"] += 1
+        raise _http_error(500, body=b"upstream secret")
+
+    providers, provider = _install_live(monkeypatch, tmp_path, urlopen)
+    request = {"messages": [{"role": "user", "content": "synthetic"}]}
+    with pytest.raises(providers.CachedProviderError, match="^transient_exhausted$"):
+        provider.complete(request)
+    assert calls["n"] == 5
+    record = json.loads(next(tmp_path.glob("*.json")).read_text(encoding="utf-8"))
+    assert record["error"] == {"class": "transient_exhausted", "http_status": 500}
+    assert "upstream secret" not in json.dumps(record)
+    assert "test-secret" not in json.dumps(record)
+    with pytest.raises(providers.CachedProviderError, match="^transient_exhausted$"):
+        providers.ReplayProvider(tmp_path).complete(request)
+
+
+@pytest.mark.parametrize("status", [400, 302, 409, 422])
+def test_deterministic_http_status_is_cached_without_retry(tmp_path, monkeypatch, status):
+    calls = {"n": 0}
+
+    def urlopen(request, timeout):
+        calls["n"] += 1
+        raise _http_error(status, body=b"do-not-store")
+
+    providers, provider = _install_live(monkeypatch, tmp_path, urlopen)
+    request = {"messages": [{"role": "user", "content": f"status-{status}"}]}
+    with pytest.raises(providers.CachedProviderError, match="^deterministic$"):
+        provider.complete(request)
+    assert calls["n"] == 1
+    record = json.loads(next(tmp_path.glob("*.json")).read_text(encoding="utf-8"))
+    assert record["error"] == {"class": "deterministic", "http_status": status}
+    assert "do-not-store" not in json.dumps(record)
+
+
+def test_retry_after_is_capped_and_preferred_over_backoff(tmp_path, monkeypatch):
+    from rra.llm import providers
+
+    sleeps = []
+    monkeypatch.setenv("NVIDIA_API_KEY", "test-secret")
+    monkeypatch.setattr(providers.time, "sleep", lambda seconds: sleeps.append(seconds))
+    providers.disable_live_outage()
+    plan = {"left": [("429", "7"), ("200", None), ("429", "120"), ("200", None)]}
+
+    def urlopen(request, timeout):
+        kind, retry_after = plan["left"].pop(0)
+        if kind == "200":
+            class Response:
+                status = 200
+                headers = None
+                def __enter__(self): return self
+                def __exit__(self, *args): return False
+                def read(self):
+                    return b'{"choices":[{"message":{"content":"{}"}}]}'
+            return Response()
+        raise _http_error(429, headers=_retry_headers(retry_after), body=b"slow-down")
+
+    monkeypatch.setattr(providers, "urlopen", urlopen)
+    provider = providers.NvidiaNimProvider(cache_dir=tmp_path)
+    provider.complete({"messages": [{"role": "user", "content": "first"}]})
+    provider.complete({"messages": [{"role": "user", "content": "second"}]})
+    assert sleeps == [7.0, 60.0]
+
+
+def test_non_json_200_is_retried_then_cached_as_transient(tmp_path, monkeypatch):
+    calls = {"n": 0}
+
+    def urlopen(request, timeout):
+        calls["n"] += 1
+        class Response:
+            status = 200
+            headers = None
+            def __enter__(self): return self
+            def __exit__(self, *args): return False
+            def read(self): return b"not-json-secret"
+        return Response()
+
+    providers, provider = _install_live(monkeypatch, tmp_path, urlopen)
+    request = {"messages": [{"role": "user", "content": "bad-json"}]}
+    with pytest.raises(providers.CachedProviderError, match="^transient_exhausted$"):
+        provider.complete(request)
+    assert calls["n"] == 5
+    record = json.loads(next(tmp_path.glob("*.json")).read_text(encoding="utf-8"))
+    assert record["error"] == {"class": "transient_exhausted", "http_status": 200}
+    assert "not-json-secret" not in json.dumps(record)
+
+
+def test_auth_failure_stops_without_a_cache_record(tmp_path, monkeypatch):
+    calls = {"n": 0}
+
+    def urlopen(request, timeout):
+        calls["n"] += 1
+        raise _http_error(401, body=b"credential-body")
+
+    providers, provider = _install_live(monkeypatch, tmp_path, urlopen)
+    with pytest.raises(SystemExit, match="401") as exc_info:
+        provider.complete({"messages": [{"role": "user", "content": "auth"}]})
+    assert calls["n"] == 1
+    assert list(tmp_path.glob("*.json")) == []
+    assert "credential-body" not in str(exc_info.value)
+
+
+def test_ten_consecutive_error_records_stop_and_a_success_resets(tmp_path, monkeypatch):
+    from rra.llm import providers
+
+    monkeypatch.setenv("NVIDIA_API_KEY", "test-secret")
+    monkeypatch.setattr(providers.time, "sleep", lambda seconds: None)
+    mode = {"ok": False}
+
+    def urlopen(request, timeout):
+        if mode["ok"]:
+            class Response:
+                status = 200
+                headers = None
+                def __enter__(self): return self
+                def __exit__(self, *args): return False
+                def read(self):
+                    return b'{"choices":[{"message":{"content":"{}"}}]}'
+            return Response()
+        raise _http_error(400, body=b"nope")
+
+    monkeypatch.setattr(providers, "urlopen", urlopen)
+    providers.reset_live_outage()
+    try:
+        provider = providers.NvidiaNimProvider(cache_dir=tmp_path)
+        for index in range(9):
+            with pytest.raises(providers.CachedProviderError):
+                provider.complete({"messages": [{"role": "user", "content": f"err-{index}"}]})
+        mode["ok"] = True
+        provider.complete({"messages": [{"role": "user", "content": "ok"}]})
+        mode["ok"] = False
+        for index in range(9):
+            with pytest.raises(providers.CachedProviderError):
+                provider.complete({"messages": [{"role": "user", "content": f"again-{index}"}]})
+        with pytest.raises(providers.LiveOutageStop):
+            provider.complete({"messages": [{"role": "user", "content": "tenth-after-success"}]})
+        assert len(list(tmp_path.glob("*.json"))) == 20
+    finally:
+        providers.disable_live_outage()
+
+
+def test_a_deadline_blocks_the_next_http_attempt(tmp_path, monkeypatch):
+    from datetime import datetime, timezone
+    from rra.llm import providers
+
+    clock = {"now": datetime(2026, 10, 27, 5, 0, tzinfo=timezone.utc)}
+    calls = {"n": 0}
+    monkeypatch.setenv("NVIDIA_API_KEY", "test-secret")
+    monkeypatch.setattr(providers, "utc_now", lambda: clock["now"])
+    monkeypatch.setattr(providers.time, "sleep", lambda seconds: None)
+
+    def urlopen(request, timeout):
+        calls["n"] += 1
+        clock["now"] = datetime(2026, 10, 27, 6, 0, tzinfo=timezone.utc)
+        raise _http_error(500, body=b"later")
+
+    monkeypatch.setattr(providers, "urlopen", urlopen)
+    providers.set_live_deadline(datetime(2026, 10, 27, 6, 0, tzinfo=timezone.utc))
+    providers.disable_live_outage()
+    try:
+        provider = providers.NvidiaNimProvider(cache_dir=tmp_path)
+        with pytest.raises(providers.LiveDeadlineExceeded):
+            provider.complete({"messages": [{"role": "user", "content": "retry-across-deadline"}]})
+        assert calls["n"] == 1
+        assert list(tmp_path.glob("*.json")) == []
+    finally:
+        providers.set_live_deadline(None)
+
+
+def test_http_202_json_is_transient_and_not_cached_as_a_response(tmp_path, monkeypatch):
+    calls = {"n": 0}
+
+    def urlopen(request, timeout):
+        calls["n"] += 1
+        assert timeout == 90.0
+
+        class Response:
+            status = 202
+            headers = None
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def read(self):
+                return b'{"choices":[{"message":{"content":"{\\"items\\": []}"}}]}'
+
+        return Response()
+
+    providers, provider = _install_live(monkeypatch, tmp_path, urlopen)
+    with pytest.raises(providers.CachedProviderError, match="^transient_exhausted$"):
+        provider.complete({"messages": [{"role": "user", "content": "accepted"}]})
+    assert calls["n"] == 5
+    record = json.loads(next(tmp_path.glob("*.json")).read_text(encoding="utf-8"))
+    assert record["error"] == {"class": "transient_exhausted", "http_status": 202}
+    assert "response" not in record
+    assert "items" not in json.dumps(record)
+
+
+def test_non_200_success_status_uses_two_four_eight_sixteen(tmp_path, monkeypatch):
+    sleeps = []
+
+    def urlopen(request, timeout):
+        assert timeout == 90.0
+        raise _http_error(201, body=b"partial-body")
+
+    providers, provider = _install_live(monkeypatch, tmp_path, urlopen)
+    monkeypatch.setattr(providers.time, "sleep", lambda seconds: sleeps.append(seconds))
+    with pytest.raises(providers.CachedProviderError, match="^transient_exhausted$"):
+        provider.complete({"messages": [{"role": "user", "content": "created"}]})
+    assert sleeps == [2.0, 4.0, 8.0, 16.0]
+    record = json.loads(next(tmp_path.glob("*.json")).read_text(encoding="utf-8"))
+    assert record["error"] == {"class": "transient_exhausted", "http_status": 201}
+    assert "partial-body" not in json.dumps(record)
+
+
+def test_cache_hits_do_not_change_the_outage_streak(tmp_path, monkeypatch):
+    from rra.eval.b4_dev import _ReadThroughProvider
+    from rra.llm import providers
+
+    monkeypatch.setenv("NVIDIA_API_KEY", "test-secret")
+    monkeypatch.setattr(providers.time, "sleep", lambda seconds: None)
+    mode = {"ok": True}
+
+    def urlopen(request, timeout):
+        if mode["ok"]:
+            class Response:
+                status = 200
+                headers = None
+
+                def __enter__(self):
+                    return self
+
+                def __exit__(self, *args):
+                    return False
+
+                def read(self):
+                    return b'{"choices":[{"message":{"content":"{}"}}]}'
+
+            return Response()
+        raise _http_error(400, body=b"nope")
+
+    monkeypatch.setattr(providers, "urlopen", urlopen)
+    providers.reset_live_outage()
+    try:
+        live = providers.NvidiaNimProvider(cache_dir=tmp_path)
+        live.complete({"messages": [{"role": "user", "content": "cached-ok"}]})
+        mode["ok"] = False
+        for index in range(9):
+            with pytest.raises(providers.CachedProviderError):
+                live.complete({"messages": [{"role": "user", "content": f"err-{index}"}]})
+        reader = _ReadThroughProvider(tmp_path)
+        reader.complete({"messages": [{"role": "user", "content": "cached-ok"}]})
+        with pytest.raises(providers.CachedProviderError):
+            reader.complete({"messages": [{"role": "user", "content": "err-0"}]})
+        with pytest.raises(providers.LiveOutageStop):
+            live.complete({"messages": [{"role": "user", "content": "tenth"}]})
+    finally:
+        providers.disable_live_outage()
