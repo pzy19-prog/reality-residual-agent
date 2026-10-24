@@ -18,12 +18,12 @@ Seeds: 130 from `config/dev_seeds.json`; B3 enumerates all 14 DSL structures at 
 
 ## Operational cost
 
-- System-2 calls: 2009
-- Verifier calls: 28126
-- Hypotheses proposed: 28126
+- System-2 calls: 2010
+- Verifier calls: 28140
+- Hypotheses proposed: 28140
 - LLM calls: 0
-- Production pause seconds: 503.707
-- Serial / parallel three-seed wall time: 2.806 / 1.473 s
-- Full parallel run wall time: 91.493 s with nproc=8
+- Production pause seconds: 825.221
+- Serial / parallel three-seed wall time: 4.901 / 2.774 s
+- Full parallel run wall time: 148.087 s with nproc=8
 
-Receipt SHA-256: `75115f44cc3bd212bd461620bd8c8a5a4e8f310a2e8e5823edf1136bd90a5e32`
+Receipt SHA-256: `bfda4d101bd79f8d62738807402b33e24aba29028f5f4bc550a9b13304cb1132`
