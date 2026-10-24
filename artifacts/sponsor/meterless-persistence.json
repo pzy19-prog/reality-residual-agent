@@ -1,5 +1,5 @@
 {
-  "base_git_sha": "d54faa7ec5b61af7c5c2204c0895228ef9fb9adc",
+  "base_git_sha": "9fe17301c899abd9b2bf715ea7e62f0b47643e3d",
   "episodes": {
     "ep-000": {
       "M1_roundtrip_mismatches": 0,
@@ -14,7 +14,7 @@
         "not_found_code": "E_NOT_FOUND",
         "reader": "ep-001"
       },
-      "M3_read_entries": 26,
+      "M3_read_entries": 52,
       "M4_replay_decisions_match": true,
       "M4_replay_receipt_match": true,
       "M5_state_ledger_identical": true,
@@ -25,12 +25,12 @@
       "decisions": 12,
       "decisions_without_diagnostic": 0,
       "fault_family": null,
-      "ledger_sha256": "ea86bc1b70ce88d513b4ddb6a920693b09566b090e2f3a9b6edb2abcab67c9b1",
+      "ledger_sha256": "b6c25ec431f95de36e65164c71f59c1242898a5079ba5770af1c6fa9d79fafae",
       "ok": true,
-      "persist_seconds": 0.3141246380037046,
+      "persist_seconds": 0.6322112830021069,
       "seed": 0,
-      "state_sha256": "7cf9b948e8222d9a376d9e85aa8ceca52f61bf60796ff24b9c6d35d59ee02220",
-      "store_bytes": 298869
+      "state_sha256": "30873c328746c717119a0262427b6393677a3ce0eee4d78b65cd67b483ee2cfb",
+      "store_bytes": 298919
     },
     "ep-001": {
       "M1_roundtrip_mismatches": 0,
@@ -45,7 +45,7 @@
         "not_found_code": "E_NOT_FOUND",
         "reader": "ep-002"
       },
-      "M3_read_entries": 32,
+      "M3_read_entries": 64,
       "M4_replay_decisions_match": true,
       "M4_replay_receipt_match": true,
       "M5_state_ledger_identical": true,
@@ -56,12 +56,12 @@
       "decisions": 15,
       "decisions_without_diagnostic": 0,
       "fault_family": null,
-      "ledger_sha256": "32149ee4ab9691abf15dc21b865ae6af2741331f8bbda869f8e29dc2730c999e",
+      "ledger_sha256": "4e841bad61b09be36a0c383c2666f57d6af6c638c55079fefdd73430c59a98ac",
       "ok": true,
-      "persist_seconds": 0.31330952099960996,
+      "persist_seconds": 0.650337204002426,
       "seed": 1,
-      "state_sha256": "72b1e79b18f32dd950c88eb75fcdfb5f7bbbf8a7b1a8f21a05b84d8d787e63a4",
-      "store_bytes": 338735
+      "state_sha256": "ea0a725faec54087c540e22bb93755bd0e7f56b3f6738b6b9900953f41629d54",
+      "store_bytes": 338812
     },
     "ep-002": {
       "M1_roundtrip_mismatches": 0,
@@ -76,7 +76,7 @@
         "not_found_code": "E_NOT_FOUND",
         "reader": "ep-003"
       },
-      "M3_read_entries": 26,
+      "M3_read_entries": 52,
       "M4_replay_decisions_match": true,
       "M4_replay_receipt_match": true,
       "M5_state_ledger_identical": true,
@@ -87,12 +87,12 @@
       "decisions": 12,
       "decisions_without_diagnostic": 0,
       "fault_family": null,
-      "ledger_sha256": "71e1aac5b342fc3c0cf9e5469e624b7c05ab2e59ba59404584f4ef5b21e03ffa",
+      "ledger_sha256": "9ed08d64c5e01021279d665b6de32de448eafb2dd36974f2ec04a1e4f178db48",
       "ok": true,
-      "persist_seconds": 0.3538838059976115,
+      "persist_seconds": 0.5059759790019598,
       "seed": 2,
-      "state_sha256": "c6d22fee3225a3b99e81f873d8ece7848c6eaae8bce9736f8bc0087ec9cf1cad",
-      "store_bytes": 273029
+      "state_sha256": "d12f7e954bb13471f5e40b74c26efff0393769f28c4b33700f46b2aa6b354e03",
+      "store_bytes": 273098
     },
     "ep-003": {
       "M1_roundtrip_mismatches": 0,
@@ -107,7 +107,7 @@
         "not_found_code": "E_NOT_FOUND",
         "reader": "ep-004"
       },
-      "M3_read_entries": 26,
+      "M3_read_entries": 52,
       "M4_replay_decisions_match": true,
       "M4_replay_receipt_match": true,
       "M5_state_ledger_identical": true,
@@ -118,12 +118,12 @@
       "decisions": 12,
       "decisions_without_diagnostic": 0,
       "fault_family": null,
-      "ledger_sha256": "56e3ce44b32bc78f38faf96f2c1a6dd5c625fbd8b0bb6c5417b53f75bc2decfb",
+      "ledger_sha256": "1adc12090eca9865ef2dc17f00040855221af7dd6b0acaba96c515d6d50773e6",
       "ok": true,
-      "persist_seconds": 0.3228034620042308,
+      "persist_seconds": 0.6259155570005532,
       "seed": 3,
-      "state_sha256": "81246a1a511bbbf1b74e60fd6529b98975540781c3fd97537d68f505456111a8",
-      "store_bytes": 299811
+      "state_sha256": "70a153d2d9461cb9d54dabe4d9ecdead3c4be29fb6ffc5c851714ad13b08f84c",
+      "store_bytes": 299896
     },
     "ep-004": {
       "M1_roundtrip_mismatches": 0,
@@ -138,7 +138,7 @@
         "not_found_code": "E_NOT_FOUND",
         "reader": "ep-005"
       },
-      "M3_read_entries": 26,
+      "M3_read_entries": 52,
       "M4_replay_decisions_match": true,
       "M4_replay_receipt_match": true,
       "M5_state_ledger_identical": true,
@@ -150,12 +150,12 @@
       "decisions": 12,
       "decisions_without_diagnostic": 0,
       "fault_family": null,
-      "ledger_sha256": "eea749805afdc18087bf40754e3c5426ef25f6d1591f8032a44022ed5af30906",
+      "ledger_sha256": "dcbfc46c1c1c0bb5fdb37a8c52a8f0fed3e65618b219cd46fb99cc4912e1d134",
       "ok": true,
-      "persist_seconds": 0.28759763199923327,
+      "persist_seconds": 0.4854816520019085,
       "seed": 4,
-      "state_sha256": "bca62496b3ed5f2487bb7db37c52561d3534a491713804f717016345ece3ae00",
-      "store_bytes": 279762
+      "state_sha256": "c03aa6d2a3bf2549d72ff8d5c624aa4f97897b15bb69f60cbd278ede2de4e5db",
+      "store_bytes": 279826
     },
     "ep-005": {
       "M1_roundtrip_mismatches": 0,
@@ -170,7 +170,7 @@
         "not_found_code": "E_NOT_FOUND",
         "reader": "ep-006"
       },
-      "M3_read_entries": 26,
+      "M3_read_entries": 52,
       "M4_replay_decisions_match": true,
       "M4_replay_receipt_match": true,
       "M5_state_ledger_identical": true,
@@ -182,12 +182,12 @@
       "decisions": 12,
       "decisions_without_diagnostic": 0,
       "fault_family": null,
-      "ledger_sha256": "5dfb53a1b5ee82f2eefc375a6fda45b658187514e010d26f846db7e6c5bfdb27",
+      "ledger_sha256": "6cb6c05aac084eefe3a7b25bc6e0d3b8aff66ca136decd55ca658fe1c7b79ce6",
       "ok": true,
-      "persist_seconds": 0.3212006640023901,
+      "persist_seconds": 0.615331906999927,
       "seed": 5,
-      "state_sha256": "f5e982e99174b2153e4e01c2ac267993118f2c37c9048fc0ae389e8f0759f8d2",
-      "store_bytes": 290350
+      "state_sha256": "7058edb10b43ef616a861e28bf704cf90a862ccedeb52c3fb5f7298984902fc7",
+      "store_bytes": 290413
     },
     "ep-006": {
       "M1_roundtrip_mismatches": 0,
@@ -202,7 +202,7 @@
         "not_found_code": "E_NOT_FOUND",
         "reader": "ep-007"
       },
-      "M3_read_entries": 26,
+      "M3_read_entries": 52,
       "M4_replay_decisions_match": true,
       "M4_replay_receipt_match": true,
       "M5_state_ledger_identical": true,
@@ -214,12 +214,12 @@
       "decisions": 12,
       "decisions_without_diagnostic": 0,
       "fault_family": null,
-      "ledger_sha256": "aab82ba2adb807f7e14502cf6520477e1f30d8a1b0d3c2c2fd04135123107b94",
+      "ledger_sha256": "75dee94e2fcc3e904018c433c073600b15270ba8f75d81470d6436521a7ff44a",
       "ok": true,
-      "persist_seconds": 0.3106259769992903,
+      "persist_seconds": 0.613523610001721,
       "seed": 6,
-      "state_sha256": "03acb523409eb6cdb2e72d6638ec255ae1156b27e5dccd14a081e6d0fbed281a",
-      "store_bytes": 284143
+      "state_sha256": "80d165cb85d3b1d83b54bd1164700ce75f356fc9af46b095d711138780641adc",
+      "store_bytes": 284192
     },
     "ep-007": {
       "M1_roundtrip_mismatches": 0,
@@ -234,7 +234,7 @@
         "not_found_code": "E_NOT_FOUND",
         "reader": "ep-008"
       },
-      "M3_read_entries": 50,
+      "M3_read_entries": 124,
       "M4_replay_decisions_match": true,
       "M4_replay_receipt_match": true,
       "M5_state_ledger_identical": true,
@@ -243,15 +243,15 @@
         "VELOCITY_OFFSET",
         "SPEED_STEP"
       ],
-      "decisions": 24,
+      "decisions": 30,
       "decisions_without_diagnostic": 0,
       "fault_family": null,
-      "ledger_sha256": "c8f507ac46c4b5eb785d3d8ae13d99194ea0ff295fd615f24d73599e0a20769c",
+      "ledger_sha256": "b7f1c91e3d13e33fad5fef415e82071c0b11f992cb02a9287083733ba96104f6",
       "ok": true,
-      "persist_seconds": 0.314628852000169,
+      "persist_seconds": 0.37163496900029713,
       "seed": 7,
-      "state_sha256": "9212d99e442d000c7926fb959ba14a85c510519f1450ecca12aff562340e9026",
-      "store_bytes": 762530
+      "state_sha256": "17570d139d0dc2b2e1ec38000707a2f6a633d462b9c4ecb46cc4b3f1d3cd5e64",
+      "store_bytes": 1205944
     },
     "ep-008": {
       "M1_roundtrip_mismatches": 0,
@@ -266,7 +266,7 @@
         "not_found_code": "E_NOT_FOUND",
         "reader": "ep-009"
       },
-      "M3_read_entries": 32,
+      "M3_read_entries": 64,
       "M4_replay_decisions_match": true,
       "M4_replay_receipt_match": true,
       "M5_state_ledger_identical": true,
@@ -278,12 +278,12 @@
       "decisions": 15,
       "decisions_without_diagnostic": 0,
       "fault_family": null,
-      "ledger_sha256": "43820693b53f789cee7c44fa67f0f9e6c61d06f2b4229742ff24ebf41ac7d16d",
+      "ledger_sha256": "48a5f57cb766c64aaaf5034f21751dd1ceb465f697eff0d2332956ebb9512876",
       "ok": true,
-      "persist_seconds": 0.3273684400046477,
+      "persist_seconds": 0.47343126100167865,
       "seed": 8,
-      "state_sha256": "46c4f84bfb8afd057d1bc469e463309a263757d50aab176c3d928598972d3af7",
-      "store_bytes": 339949
+      "state_sha256": "3bad03acfd1b2ee93ea0f8168d0e3b31360843b6ae9f97f511074f13a93913d6",
+      "store_bytes": 340003
     },
     "ep-009": {
       "M1_roundtrip_mismatches": 0,
@@ -298,7 +298,7 @@
         "not_found_code": "E_NOT_FOUND",
         "reader": "ep-010"
       },
-      "M3_read_entries": 32,
+      "M3_read_entries": 64,
       "M4_replay_decisions_match": true,
       "M4_replay_receipt_match": true,
       "M5_state_ledger_identical": true,
@@ -310,12 +310,12 @@
       "decisions": 15,
       "decisions_without_diagnostic": 0,
       "fault_family": null,
-      "ledger_sha256": "ffeed5807a04f4d4abe586ef20dc35d5d4a666d344edf2a96bb09bf987a4203e",
+      "ledger_sha256": "33610e566d1828cbbf2d80db550802864dc38dae05ca4f06b5ccb0765faf12ad",
       "ok": true,
-      "persist_seconds": 0.33395328700134996,
+      "persist_seconds": 0.5756948650014238,
       "seed": 9,
-      "state_sha256": "963f12c44f0ea9cdcd1da0d68c847afae673a86f78e7d973972eacb8a686539b",
-      "store_bytes": 375043
+      "state_sha256": "32f6192dbf7b4aa07b9933d8873e288be4353f106472df9e99a1d26014cbdd83",
+      "store_bytes": 375144
     },
     "ep-010": {
       "M1_roundtrip_mismatches": 0,
@@ -330,7 +330,7 @@
         "not_found_code": "E_NOT_FOUND",
         "reader": "ep-011"
       },
-      "M3_read_entries": 46,
+      "M3_read_entries": 92,
       "M4_replay_decisions_match": true,
       "M4_replay_receipt_match": true,
       "M5_state_ledger_identical": true,
@@ -343,12 +343,12 @@
       "decisions": 22,
       "decisions_without_diagnostic": 0,
       "fault_family": null,
-      "ledger_sha256": "e5c726053480f3b186bbb89cc9f4e78f4e1c53fd779943047abda89ca2e030ea",
+      "ledger_sha256": "0003662534b6966f38f2c1f0e68c5c837f1bc0b3bc89e0d6a979232cfa44673f",
       "ok": true,
-      "persist_seconds": 0.4274617550036055,
+      "persist_seconds": 0.3761611120062298,
       "seed": 10,
-      "state_sha256": "b3594db92804c51c9c56d5ef8c808de8ddc6cde99adcd011c5f2e521c359b225",
-      "store_bytes": 1217000
+      "state_sha256": "eaa30e93c80f229e2afc8273454841a667997c5e953223cc225cfebf49b3c0dc",
+      "store_bytes": 1217166
     },
     "ep-011": {
       "M1_roundtrip_mismatches": 0,
@@ -363,7 +363,7 @@
         "not_found_code": "E_NOT_FOUND",
         "reader": "ep-012"
       },
-      "M3_read_entries": 42,
+      "M3_read_entries": 84,
       "M4_replay_decisions_match": true,
       "M4_replay_receipt_match": true,
       "M5_state_ledger_identical": true,
@@ -376,12 +376,12 @@
       "decisions": 20,
       "decisions_without_diagnostic": 0,
       "fault_family": null,
-      "ledger_sha256": "747cc56bd45c704a29e12fc63e9120d97ade53a6688ada26636b31347c0e33fa",
+      "ledger_sha256": "7a950fa535d159330eaed2bedc6f310f574f9163abaf06330ef10d2a0c93466f",
       "ok": true,
-      "persist_seconds": 0.3532448299956741,
+      "persist_seconds": 0.35017100700497394,
       "seed": 11,
-      "state_sha256": "4afb4dcd3237e1b3bd233ea0135c4706219adfe26df43df9aaa33857360d91f6",
-      "store_bytes": 479970
+      "state_sha256": "09c5a216b3e7dc006a5a8b3b7adb81c21d8b5c7ff6ecb1acadbccdcc3fa0c7f4",
+      "store_bytes": 480121
     },
     "ep-012": {
       "M1_roundtrip_mismatches": 0,
@@ -396,7 +396,7 @@
         "not_found_code": "E_NOT_FOUND",
         "reader": "ep-013"
       },
-      "M3_read_entries": 32,
+      "M3_read_entries": 64,
       "M4_replay_decisions_match": true,
       "M4_replay_receipt_match": true,
       "M5_state_ledger_identical": true,
@@ -409,12 +409,12 @@
       "decisions": 15,
       "decisions_without_diagnostic": 0,
       "fault_family": null,
-      "ledger_sha256": "311088ad9ebfd54da079eb2506aa4cf32f58413698c30a61210882dc348d3733",
+      "ledger_sha256": "9a5f0eb752cb3a453b56470429ead2fd0cd2bf9dbf8b88fe1224fd9c098b2841",
       "ok": true,
-      "persist_seconds": 0.29051673699723324,
+      "persist_seconds": 0.47658296099689323,
       "seed": 12,
-      "state_sha256": "1959275db293e2298d8c046ffbe28660789d1a3b5619a16c0cdd4bdc200d516a",
-      "store_bytes": 329485
+      "state_sha256": "5b9b5f7d473bb13c684b15597a96f95c0e46c79647a4f426ca8fd28f946c56ea",
+      "store_bytes": 329588
     },
     "ep-013": {
       "M1_roundtrip_mismatches": 0,
@@ -429,7 +429,7 @@
         "not_found_code": "E_NOT_FOUND",
         "reader": "ep-014"
       },
-      "M3_read_entries": 46,
+      "M3_read_entries": 100,
       "M4_replay_decisions_match": true,
       "M4_replay_receipt_match": true,
       "M5_state_ledger_identical": true,
@@ -439,15 +439,15 @@
         "SPEED_STEP",
         "ACTUATOR_DELAY"
       ],
-      "decisions": 22,
+      "decisions": 24,
       "decisions_without_diagnostic": 0,
       "fault_family": null,
-      "ledger_sha256": "0190393adf5f248ceb40da69ca51cc06aa984a754e9d33d44f51b7114794539b",
+      "ledger_sha256": "80791cfac09fbccae513a5ec17eaa5df49b76331a496a7f7cc04466cd98fc4cc",
       "ok": true,
-      "persist_seconds": 0.3460133980042883,
+      "persist_seconds": 0.5094959209964145,
       "seed": 13,
-      "state_sha256": "965984e42c5f9f3d62d4179d7260481d93ccfe6c8bc1ebb83632f7db01c20bdb",
-      "store_bytes": 669279
+      "state_sha256": "eb434d23b2e0b2182266786c15593659f57314a82570a6ee454e7f4afda272ab",
+      "store_bytes": 789969
     },
     "ep-014": {
       "M1_roundtrip_mismatches": 0,
@@ -462,21 +462,21 @@
         "not_found_code": "E_NOT_FOUND",
         "reader": "ep-015"
       },
-      "M3_read_entries": 28,
+      "M3_read_entries": 60,
       "M4_replay_decisions_match": true,
       "M4_replay_receipt_match": true,
       "M5_state_ledger_identical": true,
       "M8_hidden_key_hits": 0,
       "case": [],
-      "decisions": 13,
-      "decisions_without_diagnostic": 0,
+      "decisions": 14,
+      "decisions_without_diagnostic": 5,
       "fault_family": "SENSOR_STUCK",
-      "ledger_sha256": "d30232893b077be247e804ae19b7bc2ba920096995b7cbabeb9d3fa4bcc4ff9f",
+      "ledger_sha256": "ef54d7e068865075a090d5524f600c5bdf86d245f7e60ea92380bbdf574f28da",
       "ok": true,
-      "persist_seconds": 0.32391330099926563,
+      "persist_seconds": 0.5747422659987933,
       "seed": 14,
-      "state_sha256": "f37f9f96bc7195ceadfefa2580f5a203772b606b946caf689fd5803212047e54",
-      "store_bytes": 339773
+      "state_sha256": "2323559e65383088d75f30991f959a6512d52146387038882b80ed306319a547",
+      "store_bytes": 271533
     },
     "ep-015": {
       "M1_roundtrip_mismatches": 0,
@@ -491,7 +491,7 @@
         "not_found_code": "E_NOT_FOUND",
         "reader": "ep-016"
       },
-      "M3_read_entries": 26,
+      "M3_read_entries": 52,
       "M4_replay_decisions_match": true,
       "M4_replay_receipt_match": true,
       "M5_state_ledger_identical": true,
@@ -500,12 +500,12 @@
       "decisions": 12,
       "decisions_without_diagnostic": 0,
       "fault_family": "SENSOR_SPIKE_BURST",
-      "ledger_sha256": "1cf37526838e4d91785df0062c3e1d237ff537648c4ea586cb3b5ac0f67fed93",
+      "ledger_sha256": "5db3b000321f4e25defcac499f8e29000051c75d3ba7fae95db53ff03c24db2d",
       "ok": true,
-      "persist_seconds": 0.3137967189977644,
+      "persist_seconds": 0.4835926380037563,
       "seed": 15,
-      "state_sha256": "bc311279491a09b48c523bb8a4b58f40c42a7f9a3a2bfc0c3e5e7dccb4329d60",
-      "store_bytes": 272759
+      "state_sha256": "a6695143c7333100cd07fe4c317247ae601173ea91b2a009c34266a30d0da8a7",
+      "store_bytes": 272833
     },
     "ep-016": {
       "M1_roundtrip_mismatches": 0,
@@ -520,7 +520,7 @@
         "not_found_code": "E_NOT_FOUND",
         "reader": "ep-017"
       },
-      "M3_read_entries": 28,
+      "M3_read_entries": 56,
       "M4_replay_decisions_match": true,
       "M4_replay_receipt_match": true,
       "M5_state_ledger_identical": true,
@@ -529,12 +529,12 @@
       "decisions": 13,
       "decisions_without_diagnostic": 10,
       "fault_family": "OBJECT_MISSING",
-      "ledger_sha256": "737421967acceec5c92f93e38dd3a2e5aedef8dcce3cf3781036fbe07f5705e4",
+      "ledger_sha256": "3dead3cd5f473fc52c0c6caf43fd9901b422f3a3c971066fcc47d8c6d36f5b82",
       "ok": true,
-      "persist_seconds": 0.33149947900528787,
+      "persist_seconds": 0.4460300390055636,
       "seed": 16,
-      "state_sha256": "7828b2f03f2f6c7bef11f9c267f435114a0e4984f111b02018523f0ed633a108",
-      "store_bytes": 103166
+      "state_sha256": "b6b10e94b51ccdc29d73137a40dbe7c481aa1c10c3fb319c5c0465755e4d18ef",
+      "store_bytes": 103236
     },
     "ep-017": {
       "M1_roundtrip_mismatches": 0,
@@ -549,21 +549,21 @@
         "not_found_code": "E_NOT_FOUND",
         "reader": "ep-018"
       },
-      "M3_read_entries": 46,
+      "M3_read_entries": 96,
       "M4_replay_decisions_match": true,
       "M4_replay_receipt_match": true,
       "M5_state_ledger_identical": true,
       "M8_hidden_key_hits": 0,
       "case": [],
-      "decisions": 22,
+      "decisions": 23,
       "decisions_without_diagnostic": 0,
       "fault_family": "SECOND_DYNAMICS_CHANGE",
-      "ledger_sha256": "35e90cdd38f9a47b47db9a7f6eae832eb1ff5d4a8dd9fc4e4adf9fb8c6d52f27",
+      "ledger_sha256": "5ba8733a0197a80fb800cfa965983eb93d1f6c5b82d4124a4b2f044bb614a3dc",
       "ok": true,
-      "persist_seconds": 0.32818223600042984,
+      "persist_seconds": 0.36071774999436457,
       "seed": 17,
-      "state_sha256": "66fcf8481930dd1db2614aee3c701c621d739c407bc321e700d57d534cd46b1a",
-      "store_bytes": 1119942
+      "state_sha256": "dac045ce0a9e876a4827e4fa8308c5c20480a02b0e4fdac822f862637861664a",
+      "store_bytes": 1232692
     },
     "ep-018": {
       "M1_roundtrip_mismatches": 0,
@@ -578,7 +578,7 @@
         "not_found_code": "E_NOT_FOUND",
         "reader": "ep-019"
       },
-      "M3_read_entries": 28,
+      "M3_read_entries": 56,
       "M4_replay_decisions_match": true,
       "M4_replay_receipt_match": true,
       "M5_state_ledger_identical": true,
@@ -587,12 +587,12 @@
       "decisions": 13,
       "decisions_without_diagnostic": 10,
       "fault_family": "BELT_STOP",
-      "ledger_sha256": "8d444818994c5785a5edaa32e66074d59afaf7567304841ab16c9ecc7a3da307",
+      "ledger_sha256": "81fa143d4d17efb5f82fb2afde3141c1820317f77a1d587b9ce3dcbfc5fd970f",
       "ok": true,
-      "persist_seconds": 0.326429212000221,
+      "persist_seconds": 0.4572164569981396,
       "seed": 18,
-      "state_sha256": "567fffb56db371aec16891a79b1d698f32f4a3393d24dd2ebd720af4de205f7b",
-      "store_bytes": 118403
+      "state_sha256": "3d25dc80f7d4a7c242c73bac7a8976c0af2349b5f1294df086550626168c5238",
+      "store_bytes": 118469
     },
     "ep-019": {
       "M1_roundtrip_mismatches": 0,
@@ -607,7 +607,7 @@
         "not_found_code": "E_NOT_FOUND",
         "reader": "ep-000"
       },
-      "M3_read_entries": 26,
+      "M3_read_entries": 52,
       "M4_replay_decisions_match": true,
       "M4_replay_receipt_match": true,
       "M5_state_ledger_identical": true,
@@ -618,21 +618,21 @@
       "decisions": 12,
       "decisions_without_diagnostic": 0,
       "fault_family": null,
-      "ledger_sha256": "b62808b39abb0f437685fa0dc67e380f5da5998affbe1839f26ec23e26202ed4",
+      "ledger_sha256": "f76cb7854e0bcd308f9e38595bc8cb1e1be3ec99305b7f340ad037be681746bf",
       "ok": true,
-      "persist_seconds": 0.2968814769992605,
+      "persist_seconds": 0.351654015998065,
       "seed": 19,
-      "state_sha256": "d43fa8a9cf3f13e78c70f5aea93fd482d652e255cc640b6edc9d8efbddc78e72",
-      "store_bytes": 296996
+      "state_sha256": "447ad5c8df3b952ab9da80a69c74bd43a2a430abc724722d7c182ef993ca9a95",
+      "store_bytes": 297027
     }
   },
   "meterless_sha": "1742dec56a66e58eef9dda2d2b865823758ca8cd",
   "node": "v22.22.1",
   "python": "3.12.3",
-  "run_tag": "l5a-phasea",
+  "run_tag": "l6-e942024-b3",
   "schema": "rra.l6.meterless_persistence.v1",
   "summary": {
-    "B4": "PASS: B4_TIEBREAK meterless off/on decisions 20/20, receipt hashes 20/20",
+    "B4": "STALE: previous B4 section preserved; refresh deferred to FRZ-2 (requires NIM).",
     "M1_roundtrip_mismatches": 0,
     "M2_equal": 20,
     "M2_production_decisions_equal": 20,
@@ -646,239 +646,5 @@
     "all_ok": true,
     "episodes": 20
   },
-  "tsx": "tsx v4.23.0",
-  "B4": {
-    "status": "PASS",
-    "provider": "ReplayProvider",
-    "cache_dir": "artifacts/llm_cache",
-    "s2_variant": "B4_TIEBREAK",
-    "text_variant": "NO_TEXT_CONTEXT",
-    "seed_source": "artifacts/s2/diag-d1g.json:first-20",
-    "episode_count": 20,
-    "decisions_equal": 20,
-    "receipt_equal": 20,
-    "live_llm_calls": 0,
-    "episodes": [
-      {
-        "episode_id": "ep-001",
-        "seed": 1,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 15,
-        "off_receipt_sha256": "509b34f0a3272e70d987f359ac2f5fe06562b563ff3605cbd560f160f199abe5",
-        "on_receipt_sha256": "509b34f0a3272e70d987f359ac2f5fe06562b563ff3605cbd560f160f199abe5",
-        "persisted_decision_records": 15,
-        "manifest_sha256": "42fd40dc7226d283004853605ea09e544190a02f21f601d90b84dbc133b71372"
-      },
-      {
-        "episode_id": "ep-002",
-        "seed": 2,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 12,
-        "off_receipt_sha256": "01d4ad7b05426a460f282e1087106271dcae805e93a3820b53e80560d7dbc0e4",
-        "on_receipt_sha256": "01d4ad7b05426a460f282e1087106271dcae805e93a3820b53e80560d7dbc0e4",
-        "persisted_decision_records": 12,
-        "manifest_sha256": "ad9a7cbb9f102f18fd27348bd73fb8b4639d2ea6067b6cb70891704a2d3c8f1d"
-      },
-      {
-        "episode_id": "ep-003",
-        "seed": 3,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 12,
-        "off_receipt_sha256": "d0ba12ed9c845693c79c0a7c8c3550e0e239eedfd94dd0ae4524879b08b5da44",
-        "on_receipt_sha256": "d0ba12ed9c845693c79c0a7c8c3550e0e239eedfd94dd0ae4524879b08b5da44",
-        "persisted_decision_records": 12,
-        "manifest_sha256": "6b86644169ef2362495aa513b899060bd9cfed8aadff5f7799dc25f9c3ad3e5c"
-      },
-      {
-        "episode_id": "ep-020",
-        "seed": 20,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 15,
-        "off_receipt_sha256": "d2402b83dc16fd1ef6c2937999d7e829da6baf959089841b1e1d49513b2e4799",
-        "on_receipt_sha256": "d2402b83dc16fd1ef6c2937999d7e829da6baf959089841b1e1d49513b2e4799",
-        "persisted_decision_records": 15,
-        "manifest_sha256": "6952fe3139f11ccb31fc3f0b1b7ce9c88cdeefb1961a988a5c46cc982e252e00"
-      },
-      {
-        "episode_id": "ep-021",
-        "seed": 21,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 21,
-        "off_receipt_sha256": "e2093befb0970f8ac4daa05c273d9b148197340d25c4e48c08482c3b1ab166a1",
-        "on_receipt_sha256": "e2093befb0970f8ac4daa05c273d9b148197340d25c4e48c08482c3b1ab166a1",
-        "persisted_decision_records": 21,
-        "manifest_sha256": "dfb16a96205aeed38ea635c18660cb1b2644a0d4d49b3d3dae369319817f84c7"
-      },
-      {
-        "episode_id": "ep-022",
-        "seed": 22,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 12,
-        "off_receipt_sha256": "8f10c878a387f50955778e5d3b3d4dc2fad2e0e4a4b351921a9d4080a1d5e1d9",
-        "on_receipt_sha256": "8f10c878a387f50955778e5d3b3d4dc2fad2e0e4a4b351921a9d4080a1d5e1d9",
-        "persisted_decision_records": 12,
-        "manifest_sha256": "1b92ed824a6525121b2577b501279f3df6c214f8df077c6b5831b7165e374c43"
-      },
-      {
-        "episode_id": "ep-024",
-        "seed": 24,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 12,
-        "off_receipt_sha256": "a1ae34beb3cdde3da346db7c498c1bee44acdc3fe9f05a075fe81bde2706a3a1",
-        "on_receipt_sha256": "a1ae34beb3cdde3da346db7c498c1bee44acdc3fe9f05a075fe81bde2706a3a1",
-        "persisted_decision_records": 12,
-        "manifest_sha256": "201e4abfaf55bd54c55e6d3c6d697ed34a986fcf3e40e96dda24f105f5e734af"
-      },
-      {
-        "episode_id": "ep-026",
-        "seed": 26,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 12,
-        "off_receipt_sha256": "071dcb75e9fa6af611a23b52c860c76fb3acbdcea8e170f7d007b2d7374d5f48",
-        "on_receipt_sha256": "071dcb75e9fa6af611a23b52c860c76fb3acbdcea8e170f7d007b2d7374d5f48",
-        "persisted_decision_records": 12,
-        "manifest_sha256": "d85c6dc1cd5515dc5595f04bff8ab38bdcd98444091701b8bb08cd0a557dc82f"
-      },
-      {
-        "episode_id": "ep-030",
-        "seed": 30,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 15,
-        "off_receipt_sha256": "1ce8374c2026bad666e05a1f247c8635f07783267bdfda4a35f6cc15a7719b15",
-        "on_receipt_sha256": "1ce8374c2026bad666e05a1f247c8635f07783267bdfda4a35f6cc15a7719b15",
-        "persisted_decision_records": 15,
-        "manifest_sha256": "50049cf0352522768e117dc47747231f89e919defc5360b83a5ea728a4db76a9"
-      },
-      {
-        "episode_id": "ep-039",
-        "seed": 39,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 24,
-        "off_receipt_sha256": "f5317b93a4f3a581e084bf7e3219cf94650d6a4d288d22591ccc5de8909bf9dd",
-        "on_receipt_sha256": "f5317b93a4f3a581e084bf7e3219cf94650d6a4d288d22591ccc5de8909bf9dd",
-        "persisted_decision_records": 24,
-        "manifest_sha256": "c0b4dc32465fec6590f191d7168bd43c814924ab2b5b0cc251c9c80c9ee3d40c"
-      },
-      {
-        "episode_id": "ep-040",
-        "seed": 40,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 12,
-        "off_receipt_sha256": "c3749b7794093e829fd961076c9f607040ede981091db5bef6c4adde7978155e",
-        "on_receipt_sha256": "c3749b7794093e829fd961076c9f607040ede981091db5bef6c4adde7978155e",
-        "persisted_decision_records": 12,
-        "manifest_sha256": "5d49a33d7341c4fadfc83bfc4aec15ec9d2c210db7eee59a4a678952dc65f922"
-      },
-      {
-        "episode_id": "ep-041",
-        "seed": 41,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 15,
-        "off_receipt_sha256": "d16b7879ef24d7055dcf98f7fde65acf26ab4064a5d70439f7e6886d3aeaed4f",
-        "on_receipt_sha256": "d16b7879ef24d7055dcf98f7fde65acf26ab4064a5d70439f7e6886d3aeaed4f",
-        "persisted_decision_records": 15,
-        "manifest_sha256": "a000e677fb191dc2aa0c389e1868ef19d441a1f62741832c437034bb2de9dab7"
-      },
-      {
-        "episode_id": "ep-046",
-        "seed": 46,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 23,
-        "off_receipt_sha256": "09ffc32a4e9857d5bb6d6fb34e5e52f790a25f0d4f11427c665ebe6a39ba9756",
-        "on_receipt_sha256": "09ffc32a4e9857d5bb6d6fb34e5e52f790a25f0d4f11427c665ebe6a39ba9756",
-        "persisted_decision_records": 23,
-        "manifest_sha256": "d4575ac27da446f86c062e08e48ab1ef672b032cbc7eb472eb48012d2dedfb09"
-      },
-      {
-        "episode_id": "ep-048",
-        "seed": 48,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 18,
-        "off_receipt_sha256": "410c2cc5eb46ae808e3fe51ae0681d6f3e639b706dde847cc0ef39620e241069",
-        "on_receipt_sha256": "410c2cc5eb46ae808e3fe51ae0681d6f3e639b706dde847cc0ef39620e241069",
-        "persisted_decision_records": 18,
-        "manifest_sha256": "d33b03b52d4eb3a3b6d6cede5b08e3f8ef6311d31e9998a12a9b706d795f36b6"
-      },
-      {
-        "episode_id": "ep-051",
-        "seed": 51,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 15,
-        "off_receipt_sha256": "51e11878b59307e11b9b7fe6f772578ed21b6796730fc1c971abcf3951edf738",
-        "on_receipt_sha256": "51e11878b59307e11b9b7fe6f772578ed21b6796730fc1c971abcf3951edf738",
-        "persisted_decision_records": 15,
-        "manifest_sha256": "8bafcb1fab07ca17610e0c3571cd2a9cd8abad27f8f3610de010c762879757a5"
-      },
-      {
-        "episode_id": "ep-052",
-        "seed": 52,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 13,
-        "off_receipt_sha256": "1d2cb9f3f0d9b6b2331ed1190029412e0e523690de6843b878d46de45b5fe6ed",
-        "on_receipt_sha256": "1d2cb9f3f0d9b6b2331ed1190029412e0e523690de6843b878d46de45b5fe6ed",
-        "persisted_decision_records": 13,
-        "manifest_sha256": "8325afaea919336898943dfc6fade7f659380366f8221c5ebc2235ca6bd2ebb6"
-      },
-      {
-        "episode_id": "ep-058",
-        "seed": 58,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 12,
-        "off_receipt_sha256": "64371fafb937fcd3cff9b88e1eb848b9a7bc6753fc16b115bab9418e505f3e73",
-        "on_receipt_sha256": "64371fafb937fcd3cff9b88e1eb848b9a7bc6753fc16b115bab9418e505f3e73",
-        "persisted_decision_records": 12,
-        "manifest_sha256": "f99a67b181bab2318727c50fbc3491210b6940a22929330b8de02da3a146e19c"
-      },
-      {
-        "episode_id": "ep-059",
-        "seed": 59,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 12,
-        "off_receipt_sha256": "8e8f09635be4efd4e08d9077adf8b9cae307d4b356b0e18ca4ffbfd54b22a823",
-        "on_receipt_sha256": "8e8f09635be4efd4e08d9077adf8b9cae307d4b356b0e18ca4ffbfd54b22a823",
-        "persisted_decision_records": 12,
-        "manifest_sha256": "d59dfecac0e5a917f390fd0d827b3b8319ca3256b53fca53f763a4231c46edf1"
-      },
-      {
-        "episode_id": "ep-060",
-        "seed": 60,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 15,
-        "off_receipt_sha256": "b9c7153766d40fd36638514ca679cabe9997687a6763df309b0b48074abfd0e1",
-        "on_receipt_sha256": "b9c7153766d40fd36638514ca679cabe9997687a6763df309b0b48074abfd0e1",
-        "persisted_decision_records": 15,
-        "manifest_sha256": "b8a40ebe4843f03dd490e2bf176f759a1780e1634f9f8dbdcef3db61a6345b9a"
-      },
-      {
-        "episode_id": "ep-067",
-        "seed": 67,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 12,
-        "off_receipt_sha256": "4b25880305e3c95a950b7863794d29bdc1f1126ac8e446a0bdffd6eb76ea6ba7",
-        "on_receipt_sha256": "4b25880305e3c95a950b7863794d29bdc1f1126ac8e446a0bdffd6eb76ea6ba7",
-        "persisted_decision_records": 12,
-        "manifest_sha256": "8db683c8700125eef15f112e5ff0244181e20bbb8f4fea918b18c396441e289b"
-      }
-    ]
-  }
+  "tsx": "tsx v4.23.0"
 }

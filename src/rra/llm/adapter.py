@@ -7,6 +7,7 @@ from typing import Any, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
+from rra.llm.providers import ReplayCacheMiss
 from rra.s2.dsl import STRUCTURE_IDS, FaultHypothesis
 
 FAULT_HYPOTHESIS_IDS = tuple(item.value for item in FaultHypothesis)
@@ -104,5 +105,7 @@ class HypothesisProposer:
                     item.rationale = _NUMERIC.sub("[numeric value omitted]", item.rationale)
                 valid_items.append(item)
             return Proposal(items=valid_items, receipt=receipt)
+        except ReplayCacheMiss:
+            raise
         except (ValueError, TypeError, json.JSONDecodeError, ValidationError, RuntimeError, OSError) as exc:
             return Proposal(items=[], error=f"{type(exc).__name__}: {exc}", receipt=receipt)
