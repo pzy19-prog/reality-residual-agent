@@ -689,6 +689,244 @@ def test_eval_cli_output_does_not_contain_a_seed_value(tmp_path, capsys):
     assert str(seed) not in visible
 
 
+def _seed_document(root: Path) -> dict:
+    return {
+        "schema_version": "rra.eval-seeds.v3", "role": "eval_v3", "count": 100,
+        "range": [10000, 2147483647], "generator": "secrets.SystemRandom().sample",
+        "freeze_tag": "freeze", "freeze_commit": git(root, "rev-parse", "HEAD"),
+        "seeds": list(range(10000, 10100)),
+    }
+
+
+def _commit_seed_file(root: Path) -> Path:
+    path = root / "config/eval_seeds_v3.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(_seed_document(root)) + "\n")
+    git(root, "add", "config/eval_seeds_v3.json")
+    git(root, "commit", "-qm", "seed file")
+    return path
+
+
+def test_eval_guard_rejects_a_worktree_edit_of_the_seed_file(tmp_path):
+    seed_path = _freeze_seed_file(tmp_path)
+    seed_path.write_text(seed_path.read_text().replace("sample", "sample-edited", 1))
+    with pytest.raises(ValueError, match="working tree changes the eval seed file"):
+        final_v3.load_seed_file(seed_path, "eval_v3", freeze_tag="freeze", root=tmp_path)
+
+
+def test_eval_guard_rejects_a_later_commit_that_changes_the_seed_file(tmp_path):
+    seed_path = _freeze_seed_file(tmp_path)
+    document = json.loads(seed_path.read_text())
+    document["generator"] = "secrets.SystemRandom().sample-later"
+    seed_path.write_text(json.dumps(document) + "\n")
+    git(tmp_path, "add", "config/eval_seeds_v3.json")
+    git(tmp_path, "commit", "-qm", "edit seed file")
+    with pytest.raises(ValueError, match="exactly one commit"):
+        final_v3.load_seed_file(seed_path, "eval_v3", freeze_tag="freeze", root=tmp_path)
+
+
+def test_eval_guard_rejects_a_seed_commit_that_changes_another_file(tmp_path):
+    init_repo(tmp_path)
+    git(tmp_path, "tag", "freeze")
+    cache = tmp_path / "artifacts/llm_cache/extra.json"
+    cache.parent.mkdir(parents=True)
+    cache.write_text("{}\n")
+    seed_path = tmp_path / "config/eval_seeds_v3.json"
+    seed_path.parent.mkdir()
+    seed_path.write_text(json.dumps(_seed_document(tmp_path)) + "\n")
+    git(tmp_path, "add", "config/eval_seeds_v3.json", "artifacts/llm_cache/extra.json")
+    git(tmp_path, "commit", "-qm", "seed file and cache")
+    with pytest.raises(ValueError, match="only the seed file"):
+        final_v3.load_seed_file(seed_path, "eval_v3", freeze_tag="freeze", root=tmp_path)
+
+
+def test_eval_guard_rejects_a_seed_commit_whose_parent_is_not_the_tag(tmp_path):
+    init_repo(tmp_path)
+    git(tmp_path, "tag", "freeze")
+    cache = tmp_path / "artifacts/llm_cache/between.json"
+    cache.parent.mkdir(parents=True)
+    cache.write_text("{}\n")
+    git(tmp_path, "add", "artifacts/llm_cache/between.json")
+    git(tmp_path, "commit", "-qm", "cache between tag and seed")
+    seed_path = _commit_seed_file(tmp_path)
+    with pytest.raises(ValueError, match="parent must be the freeze tag"):
+        final_v3.load_seed_file(seed_path, "eval_v3", freeze_tag="freeze", root=tmp_path)
+
+
+def test_eval_guard_rejects_a_branch_when_the_freeze_tag_is_absent(tmp_path):
+    init_repo(tmp_path)
+    git(tmp_path, "branch", "freeze")
+    seed_path = _commit_seed_file(tmp_path)
+    with pytest.raises(subprocess.CalledProcessError):
+        git(tmp_path, "rev-parse", "--verify", "refs/tags/freeze")
+    with pytest.raises(ValueError, match="freeze tag"):
+        final_v3.load_seed_file(seed_path, "eval_v3", freeze_tag="freeze", root=tmp_path)
+
+
+def test_eval_guard_uses_the_tag_when_a_branch_has_the_same_name(tmp_path, monkeypatch):
+    seed_path = _freeze_seed_file(tmp_path)
+    git(tmp_path, "branch", "freeze", "HEAD")
+    assert git(tmp_path, "rev-parse", "refs/tags/freeze") != git(tmp_path, "rev-parse", "refs/heads/freeze")
+    seen: list[tuple[str, ...]] = []
+    real_git = final_v3._git
+
+    def spy(root: Path, *args: str) -> str:
+        seen.append(args)
+        return real_git(root, *args)
+
+    monkeypatch.setattr(final_v3, "_git", spy)
+    final_v3.load_seed_file(seed_path, "eval_v3", freeze_tag="freeze", root=tmp_path)
+    arguments = [arg for args in seen for arg in args]
+    assert any(arg == "refs/tags/freeze" or arg.startswith("refs/tags/freeze^") for arg in arguments)
+    assert "freeze" not in arguments
+
+
+def _cache_payload(content: str) -> tuple[str, dict]:
+    from rra.llm.providers import DEFAULT_FORMAT_MODE, NIM_MODEL, finalize_payload, request_sha256
+
+    settings = {
+        "model": NIM_MODEL, "max_tokens": 1800,
+        "chat_template_kwargs": {"enable_thinking": False},
+        "no_think": False, "format_mode": DEFAULT_FORMAT_MODE,
+    }
+    payload = finalize_payload({"messages": [{"role": "user", "content": content}]}, settings)
+    return request_sha256(payload), payload
+
+
+def _write_cache(root: Path, content: str) -> str:
+    sha, payload = _cache_payload(content)
+    path = root / "artifacts/llm_cache" / f"{sha}.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    record = {"request": payload, "response": {"choices": [{"message": {"content": "{\"items\": []}"}}]}}
+    path.write_text(json.dumps(record) + "\n")
+    return sha
+
+
+def _replay_reads_every_cache(*args, **kwargs):
+    from rra.llm.providers import ReplayProvider
+
+    cache = final_v3.ROOT / "artifacts/llm_cache"
+    provider = ReplayProvider(cache)
+    for path in sorted(cache.glob("*.json")):
+        record = json.loads(path.read_text(encoding="utf-8"))
+        provider.complete({"messages": record["request"]["messages"]})
+    return {"metrics": {}, "episodes": [], "llm_calls": 0, "llm_request_spec": {}, "served_models": {}}
+
+
+def _prepare_eval_replay(monkeypatch, root: Path):
+    monkeypatch.setattr(final_v3, "ROOT", root)
+    monkeypatch.setattr(b4_dev, "run_b4_dev", _replay_reads_every_cache)
+
+
+def test_eval_replay_rejects_a_cache_record_missing_from_the_tag_and_ledger(monkeypatch, tmp_path, capsys):
+    _freeze_seed_file(tmp_path)
+    sha = _write_cache(tmp_path, "not-in-ledger")
+    _prepare_eval_replay(monkeypatch, tmp_path)
+    code = final_v3.main(["b4", "--replay", "--freeze-tag", "freeze",
+                          "--output-dir", str(tmp_path / "artifacts/eval_v3")])
+    assert code == 2
+    assert sha in capsys.readouterr().err
+    assert not (tmp_path / "artifacts/eval_v3/b4.json").exists()
+
+
+def test_eval_replay_accepts_a_cache_record_listed_in_the_ledger(monkeypatch, tmp_path):
+    _freeze_seed_file(tmp_path)
+    sha = _write_cache(tmp_path, "in-ledger")
+    ledger = tmp_path / "artifacts/eval_v3/live_ledger.jsonl"
+    ledger.parent.mkdir(parents=True, exist_ok=True)
+    ledger.write_text(json.dumps({"request_sha256": sha}) + "\n")
+    _prepare_eval_replay(monkeypatch, tmp_path)
+    code = final_v3.main(["b4", "--replay", "--freeze-tag", "freeze"])
+    assert code == 0
+    saved = json.loads((tmp_path / "artifacts/eval_v3/b4.json").read_text())
+    assert saved["cache_provenance"] == {"at_tag": 0, "ledger": 1}
+
+
+def test_eval_replay_accepts_a_cache_record_tracked_at_the_freeze_tag(monkeypatch, tmp_path):
+    init_repo(tmp_path)
+    sha = _write_cache(tmp_path, "at-tag")
+    git(tmp_path, "add", f"artifacts/llm_cache/{sha}.json")
+    git(tmp_path, "commit", "-qm", "cache at tag")
+    git(tmp_path, "tag", "freeze")
+    seed_path = _commit_seed_file(tmp_path)
+    assert seed_path.is_file()
+    _prepare_eval_replay(monkeypatch, tmp_path)
+    code = final_v3.main(["b4", "--replay", "--freeze-tag", "freeze"])
+    assert code == 0
+    saved = json.loads((tmp_path / "artifacts/eval_v3/b4.json").read_text())
+    assert saved["cache_provenance"] == {"at_tag": 1, "ledger": 0}
+
+
+def test_replay_check_matches_outside_the_repository_and_fails_on_a_changed_receipt(
+        monkeypatch, tmp_path, capsys):
+    import tempfile
+
+    _freeze_seed_file(tmp_path)
+    sha = _write_cache(tmp_path, "check-ledger")
+    ledger = tmp_path / "artifacts/eval_v3/live_ledger.jsonl"
+    ledger.parent.mkdir(parents=True, exist_ok=True)
+    ledger.write_text(json.dumps({"request_sha256": sha}) + "\n")
+    _prepare_eval_replay(monkeypatch, tmp_path)
+    inside = tmp_path / "artifacts/eval_v3"
+    refused = final_v3.main(["b4", "--replay", "--replay-check", "--freeze-tag", "freeze",
+                             "--output-dir", str(inside)])
+    assert refused == 2
+    assert "outside the repository" in capsys.readouterr().err
+    dev_refused = final_v3.main([
+        "b4", "--role", "dev", "--replay", "--replay-check", "--freeze-tag", "freeze",
+        "--seeds-file", str(tmp_path / "config/dev_seeds.json"),
+        "--output-dir", str(inside),
+    ])
+    assert dev_refused == 2
+
+    scored_code = final_v3.main(["b4", "--replay", "--freeze-tag", "freeze"])
+    assert scored_code == 0
+    scored = json.loads((inside / "b4.json").read_text())
+    with tempfile.TemporaryDirectory(prefix="replay-check-") as outside_name:
+        outside = Path(outside_name)
+        assert final_v3._path_outside_repo(tmp_path, outside)
+        code = final_v3.main(["b4", "--replay", "--replay-check", "--freeze-tag", "freeze",
+                              "--output-dir", str(outside)])
+        assert code == 0
+        check = json.loads((inside / "b4_replay_check.json").read_text())
+        outside_receipt = json.loads((outside / "b4.json").read_text())
+    assert check["equal"] is True
+    assert check["check_output_dir_outside_repo"] is True
+    assert check["scored_receipt_sha256"] == check["check_receipt_sha256"] == scored["receipt_sha256"]
+    assert outside_receipt["receipt_sha256"] == scored["receipt_sha256"]
+    hashed = {key: value for key, value in check.items() if key not in final_v3._UNHASHED_RECEIPT_KEYS}
+    assert check["receipt_sha256"] == final_v3._canonical_sha(hashed)
+
+    scored["receipt_sha256"] = "0" * 64
+    (inside / "b4.json").write_text(json.dumps(scored) + "\n")
+    with tempfile.TemporaryDirectory(prefix="replay-check-") as outside_name:
+        code = final_v3.main(["b4", "--replay", "--replay-check", "--freeze-tag", "freeze",
+                              "--output-dir", outside_name])
+    assert code == 1
+    check = json.loads((inside / "b4_replay_check.json").read_text())
+    assert check["equal"] is False
+    assert check["scored_receipt_sha256"] == "0" * 64
+    assert check["check_receipt_sha256"] == outside_receipt["receipt_sha256"]
+
+
+def test_live_outage_writes_interrupted_not_incomplete(monkeypatch, tmp_path):
+    from rra.llm.providers import LiveOutageStop
+
+    def stop(*args, **kwargs):
+        raise LiveOutageStop("ten consecutive live requests ended in error records")
+
+    monkeypatch.setattr(b4_dev, "run_b4_dev", stop)
+    monkeypatch.setattr(final_v3, "load_seed_file", lambda *args, **kwargs: ([1], "abc"))
+    output = tmp_path / "out"
+    code = final_v3.main(["b4", "--live", "--freeze-tag", "freeze", "--output-dir", str(output)])
+    saved = json.loads((output / "b4_live.json").read_text())
+    assert code == 4
+    assert saved["status"] == "interrupted"
+    assert saved["reason"] == "live_outage"
+    assert "a04_counts" not in saved
+    assert not (output / "b4.json").exists()
+
+
 def test_eval_live_fill_writes_b4_live_not_the_scored_name(monkeypatch, tmp_path):
     def run(*args, **kwargs):
         return {"metrics": {}, "episodes": [], "llm_calls": 0,

@@ -35,6 +35,16 @@ class LiveBudgetExceeded(Exception):
     """Raised before a new distinct live request would pass the run cap."""
 
 
+class CacheProvenanceError(Exception):
+    """Replay read a cache record that is neither at the freeze tag nor in the ledger."""
+
+    def __init__(self, shas: list[str]):
+        self.shas = sorted(set(shas))
+        super().__init__(
+            "cache records are not at the freeze tag or in the live ledger: "
+            + " ".join(self.shas))
+
+
 def _canonical_sha(value: dict[str, Any]) -> str:
     body = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     return hashlib.sha256(body.encode("utf-8")).hexdigest()
@@ -193,34 +203,83 @@ def _reject_disallowed(status: str, paths: list[str]) -> None:
         raise ValueError("existing llm cache files may only be added")
 
 
+def _freeze_tag_ref(freeze_tag: str) -> str:
+    """Resolve a freeze tag only as refs/tags/<name>, never as a same-named branch."""
+    name = freeze_tag.strip()
+    prefix = "refs/tags/"
+    if name.startswith(prefix):
+        name = name[len(prefix):]
+    if (not name or name.startswith(("-", "/")) or name.endswith("/")
+            or ".." in name.split("/") or any(char.isspace() or char == "\\" for char in name)):
+        raise ValueError("eval freeze tag validation failed")
+    return prefix + name
+
+
+def _validate_seed_lock(root: Path, tag_ref: str, porcelain: str) -> None:
+    """The seed file is added once, by itself, in the commit whose parent is the tag."""
+    seed_diff = _git(root, "diff", "--name-status", "--find-renames", tag_ref, "HEAD",
+                     "--", _EVAL_ALLOW_FILE)
+    if _name_status_rows(seed_diff) != [("A", [_EVAL_ALLOW_FILE])]:
+        raise ValueError("eval seed file must be added after the freeze tag and then left unchanged")
+    log = _git(root, "log", "--format=%H", f"{tag_ref}..HEAD", "--", _EVAL_ALLOW_FILE)
+    commits = [line for line in log.splitlines() if line.strip()]
+    if len(commits) != 1:
+        raise ValueError("eval seed file must be introduced by exactly one commit")
+    seed_commit = commits[0]
+    try:
+        parent = _git(root, "rev-parse", "--verify", f"{seed_commit}^")
+        tag_commit = _git(root, "rev-parse", "--verify", f"{tag_ref}^{{commit}}")
+    except (OSError, subprocess.CalledProcessError):
+        raise ValueError("eval seed commit parent must be the freeze tag") from None
+    if parent != tag_commit:
+        raise ValueError("eval seed commit parent must be the freeze tag")
+    changed = _git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", seed_commit)
+    files = [line for line in changed.splitlines() if line.strip()]
+    if files != [_EVAL_ALLOW_FILE]:
+        raise ValueError("eval seed commit must change only the seed file")
+    seed_work = _git(root, "diff", "--name-status", "--find-renames", "HEAD", "--", _EVAL_ALLOW_FILE)
+    if seed_work.strip():
+        raise ValueError("working tree changes the eval seed file")
+    for line in porcelain.splitlines():
+        if line.startswith("??") and line[3:] == _EVAL_ALLOW_FILE:
+            raise ValueError("working tree changes the eval seed file")
+
+
 def _validate_eval_guard(root: Path, freeze_tag: str) -> None:
     """Allow only seed, eval artifact, and new cache paths after the freeze tag.
 
     Tracked history, tracked worktree edits, and untracked files all use that
     allowlist. Cache paths may be added, never modified, deleted, or renamed.
+    The seed file itself must be the single file in the one commit whose parent
+    is refs/tags/<freeze-tag>, and the worktree must not change it again.
     """
     if not freeze_tag:
         raise ValueError("--freeze-tag is required for eval_v3")
+    tag_ref = _freeze_tag_ref(freeze_tag)
     try:
-        committed = _git(root, "diff", "--name-status", "--find-renames", freeze_tag, "HEAD")
+        _git(root, "rev-parse", "--verify", f"{tag_ref}^{{commit}}")
+        committed = _git(root, "diff", "--name-status", "--find-renames", tag_ref, "HEAD")
         tracked = _git(root, "diff", "--name-status", "--find-renames", "HEAD")
         status = _git(root, "status", "--porcelain", "--untracked-files=all")
+        for row_status, paths in _name_status_rows(committed):
+            _reject_disallowed(row_status, paths)
+        for row_status, paths in _name_status_rows(tracked):
+            _reject_disallowed(row_status, paths)
+        for line in status.splitlines():
+            if not line.startswith("??"):
+                continue
+            path = line[3:]
+            if not _allowed_eval_path(path):
+                raise ValueError("changes since freeze tag include a path outside the eval allowlist")
+        _validate_seed_lock(root, tag_ref, status)
     except (OSError, subprocess.CalledProcessError):
         raise ValueError("eval freeze tag validation failed") from None
-    for row_status, paths in _name_status_rows(committed):
-        _reject_disallowed(row_status, paths)
-    for row_status, paths in _name_status_rows(tracked):
-        _reject_disallowed(row_status, paths)
-    for line in status.splitlines():
-        if not line.startswith("??"):
-            continue
-        path = line[3:]
-        if not _allowed_eval_path(path):
-            raise ValueError("changes since freeze tag include a path outside the eval allowlist")
 
 
 def load_seed_file(path: Path, role: str, *, freeze_tag: str | None = None,
-                   root: Path = ROOT) -> tuple[list[int], str]:
+                   root: Path | None = None) -> tuple[list[int], str]:
+    if root is None:
+        root = ROOT
     if role not in ("dev", "eval_v3"):
         raise ValueError("role must be dev or eval_v3")
     if role == "eval_v3":
@@ -251,7 +310,8 @@ def load_seed_file(path: Path, role: str, *, freeze_tag: str | None = None,
         if data.get("freeze_tag") != freeze_tag:
             raise ValueError("seed file freeze tag does not match --freeze-tag")
         try:
-            tagged_commit = _git(root, "rev-parse", "--verify", f"{freeze_tag}^{{commit}}")
+            tag_ref = _freeze_tag_ref(freeze_tag or "")
+            tagged_commit = _git(root, "rev-parse", "--verify", f"{tag_ref}^{{commit}}")
         except (OSError, subprocess.CalledProcessError):
             raise ValueError("eval freeze tag validation failed") from None
         if data.get("freeze_commit") != tagged_commit:
@@ -507,62 +567,148 @@ def _b4_result_fields(result: dict[str, Any], *, subset: bool, max_live_calls: i
     }
 
 
+class _CacheProvenance:
+    """Count distinct replay cache records by source. A sha at the tag is not also ledger."""
+
+    def __init__(self, at_tag: set[str], ledger: set[str]):
+        self.at_tag = at_tag
+        self.ledger = ledger
+        self.used_at_tag: set[str] = set()
+        self.used_ledger: set[str] = set()
+        self.bad: set[str] = set()
+        self._lock = threading.Lock()
+
+    def note(self, sha: str) -> None:
+        with self._lock:
+            if sha in self.at_tag:
+                self.used_at_tag.add(sha)
+            elif sha in self.ledger:
+                self.used_ledger.add(sha)
+            else:
+                self.bad.add(sha)
+
+    def counts(self) -> dict[str, int]:
+        return {"at_tag": len(self.used_at_tag), "ledger": len(self.used_ledger)}
+
+
+def _cache_shas_at_tag(root: Path, tag_ref: str) -> set[str]:
+    listing = _git(root, "ls-tree", "-r", "--name-only", tag_ref, "--", "artifacts/llm_cache")
+    prefix = "artifacts/llm_cache/"
+    found: set[str] = set()
+    for line in listing.splitlines():
+        if line.startswith(prefix) and line.endswith(".json"):
+            found.add(line[len(prefix):-len(".json")])
+    return found
+
+
+def _open_provenance(root: Path, freeze_tag: str | None) -> _CacheProvenance:
+    if not freeze_tag:
+        raise ValueError("--freeze-tag is required for eval_v3")
+    tag_ref = _freeze_tag_ref(freeze_tag)
+    try:
+        at_tag = _cache_shas_at_tag(root, tag_ref)
+    except (OSError, subprocess.CalledProcessError):
+        raise ValueError("eval freeze tag validation failed") from None
+    ledger = set(_ledger_shas(root / "artifacts/eval_v3/live_ledger.jsonl"))
+    return _CacheProvenance(at_tag, ledger)
+
+
+def _path_outside_repo(root: Path, path: Path) -> bool:
+    root_resolved = root.resolve()
+    candidate = path.resolve()
+    if candidate == root_resolved:
+        return False
+    try:
+        candidate.relative_to(root_resolved)
+    except ValueError:
+        return True
+    return False
+
+
 def _run_b4(seeds_path: Path, output_dir: Path, *, replay: bool, live: bool,
             subset: bool, max_live_calls: int, nproc: int | None,
             role: str = "dev", format_mode: str | None = None,
-            deadline: datetime | None = None, cache_dir: Path | None = None) -> dict[str, Any]:
+            deadline: datetime | None = None, cache_dir: Path | None = None,
+            freeze_tag: str | None = None, root: Path | None = None) -> dict[str, Any]:
     from rra.eval import b4_dev
-    from rra.llm.providers import DEFAULT_FORMAT_MODE, LiveDeadlineExceeded, LiveOutageStop, set_live_deadline
+    from rra.llm.providers import (DEFAULT_FORMAT_MODE, LiveDeadlineExceeded, LiveOutageStop,
+                                   set_cache_read_hook, set_live_deadline)
 
+    repo = ROOT if root is None else root
     selected_mode = DEFAULT_FORMAT_MODE if format_mode is None else format_mode
-    cache_root = cache_dir or (ROOT / "artifacts" / "llm_cache")
+    cache_root = cache_dir or (repo / "artifacts" / "llm_cache")
     # subset=True reads the registered diag file and keeps each seed's dev index.
     # The canonical dev file likewise keeps the historical path string.
     recorded = None if subset or _same_file(seeds_path, DEV_SEEDS_PATH) else seeds_path
-    if not live:
-        result = b4_dev.run_b4_dev(output_dir, nproc=nproc, subset=subset, replay_only=replay,
-                                   seeds_path=recorded, format_mode=selected_mode)
-        return _b4_result_fields(result, subset=subset, max_live_calls=max_live_calls, distinct=0)
-    # eval-v3 counts from the append-only ledger. Dev keeps the prior receipt total.
-    ledger_path = output_dir / "live_ledger.jsonl" if role == "eval_v3" else None
-    if ledger_path is not None:
-        seen = set(_ledger_shas(ledger_path))
-        already = len(seen)
-    else:
-        seen = set()
-        already = _prior_distinct_live_requests(output_dir)
-    started = _utc_stamp()
-    set_live_deadline(deadline)
+    provenance: _CacheProvenance | None = None
+    try:
+        if role == "eval_v3" and replay and not live:
+            provenance = _open_provenance(repo, freeze_tag)
+            set_cache_read_hook(provenance.note)
+        if not live:
+            run_error: Exception | None = None
+            result: dict[str, Any] | None = None
+            try:
+                result = b4_dev.run_b4_dev(output_dir, nproc=nproc, subset=subset,
+                                           replay_only=replay, seeds_path=recorded,
+                                           format_mode=selected_mode)
+            except Exception as exc:
+                run_error = exc
+            if provenance is not None and provenance.bad:
+                raise CacheProvenanceError(sorted(provenance.bad))
+            if run_error is not None:
+                raise run_error
+            if result is None:
+                raise RuntimeError("b4 replay returned no result")
+            fields = _b4_result_fields(result, subset=subset, max_live_calls=max_live_calls,
+                                       distinct=0)
+            if provenance is not None:
+                fields["cache_provenance"] = provenance.counts()
+            return fields
+        # eval-v3 counts from the append-only ledger. Dev keeps the prior receipt total.
+        ledger_path = output_dir / "live_ledger.jsonl" if role == "eval_v3" else None
+        if ledger_path is not None:
+            seen = set(_ledger_shas(ledger_path))
+            already = len(seen)
+        else:
+            seen = set()
+            already = _prior_distinct_live_requests(output_dir)
+        started = _utc_stamp()
+        set_live_deadline(deadline)
 
-    def incomplete(reason: str, budget: _LiveBudget) -> dict[str, Any]:
-        body = {"status": "incomplete", "reason": reason,
+        def stopped(status: str, reason: str, budget: _LiveBudget) -> dict[str, Any]:
+            body: dict[str, Any] = {
+                "status": status, "reason": reason,
                 "max_live_calls": max_live_calls,
                 "distinct_live_requests": budget.distinct_total(),
                 "completed_text_condition_pairs": budget.completed_pairs,
                 "live_fill_started_utc": started}
-        if ledger_path is not None:
-            body["a04_counts"] = a04_counts_from_ledger(ledger_path, cache_root)
-        return body
+            # A07 §4.5 counts belong to the cap and the deadline, not to an outage.
+            if ledger_path is not None and status == "incomplete":
+                body["a04_counts"] = a04_counts_from_ledger(ledger_path, cache_root)
+            return body
 
-    try:
         with _LiveBudgetScope(max_live_calls, already, seen, ledger_path) as budget:
             try:
                 result = b4_dev.run_b4_dev(output_dir, nproc=nproc, subset=subset,
                                            replay_only=False, seeds_path=recorded,
                                            format_mode=selected_mode)
             except LiveBudgetExceeded:
-                return incomplete("max_live_calls_reached", budget)
+                return stopped("incomplete", "max_live_calls_reached", budget)
             except LiveDeadlineExceeded:
-                return incomplete("deadline", budget)
+                return stopped("incomplete", "deadline", budget)
             except LiveOutageStop:
-                return incomplete("live_outage", budget)
+                return stopped("interrupted", "live_outage", budget)
         body = _b4_result_fields(result, subset=subset, max_live_calls=max_live_calls,
                                  distinct=budget.distinct_total())
         body["live_fill_started_utc"] = started
         body["live_fill_completed_utc"] = _utc_stamp()
         return body
     finally:
-        set_live_deadline(None)
+        if provenance is not None:
+            set_cache_read_hook(None)
+        if live:
+            set_live_deadline(None)
 
 
 def estimate_b4(seeds: list[int], indices: list[int] | None = None) -> int:
@@ -583,12 +729,42 @@ def estimate_b4(seeds: list[int], indices: list[int] | None = None) -> int:
     return len(fingerprints)
 
 
+def _write_replay_check(root: Path, check_receipt: dict[str, Any]) -> dict[str, Any]:
+    scored_path = root / "artifacts/eval_v3/b4.json"
+    try:
+        scored = json.loads(scored_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        raise ValueError("scored artifacts/eval_v3/b4.json could not be read") from None
+    scored_sha = scored.get("receipt_sha256") if isinstance(scored, dict) else None
+    check_sha = check_receipt.get("receipt_sha256")
+    if not isinstance(scored_sha, str) or not isinstance(check_sha, str):
+        raise ValueError("replay check requires receipt_sha256 on both artifacts")
+    body: dict[str, Any] = {
+        "schema_version": "rra.eval-v3.replay-check.v1",
+        "scored_receipt_sha256": scored_sha,
+        "check_receipt_sha256": check_sha,
+        "equal": scored_sha == check_sha,
+        "check_output_dir_outside_repo": True,
+        "runtime_versions": runtime_versions(),
+        "git_sha": _git(root, "rev-parse", "HEAD"),
+    }
+    body["receipt_sha256"] = _canonical_sha({
+        key: value for key, value in body.items() if key not in _UNHASHED_RECEIPT_KEYS
+    })
+    path = root / "artifacts/eval_v3/b4_replay_check.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(body, indent=2, ensure_ascii=False) + "\n")
+    return body
+
+
 def run_row(row: str, *, seeds: list[int], seed_path: Path, seed_sha256: str,
             output_dir: Path, role: str, nproc: int | None = None, replay: bool = False,
             live: bool = False, subset: bool = False,
             max_live_calls: int = DEFAULT_MAX_LIVE_CALLS,
             indices: list[int] | None = None, format_mode: str | None = None,
-            deadline: datetime | None = None) -> dict[str, Any]:
+            deadline: datetime | None = None, freeze_tag: str | None = None,
+            root: Path | None = None) -> dict[str, Any]:
+    repo = ROOT if root is None else root
     if row == "b1b3":
         result, auxiliary = _run_b1b3(seed_path, output_dir, nproc)
     elif row == "b2":
@@ -599,7 +775,7 @@ def run_row(row: str, *, seeds: list[int], seed_path: Path, seed_sha256: str,
         result, auxiliary = _run_b4(seed_path, output_dir, replay=replay, live=live,
                                     subset=subset, max_live_calls=max_live_calls,
                                     nproc=nproc, role=role, format_mode=format_mode,
-                                    deadline=deadline), {}
+                                    deadline=deadline, freeze_tag=freeze_tag, root=repo), {}
     else:
         raise ValueError(f"unknown row: {row}")
     receipt: dict[str, Any] = {
@@ -608,7 +784,7 @@ def run_row(row: str, *, seeds: list[int], seed_path: Path, seed_sha256: str,
         "case_episode_counts": _case_counts(seeds, indices),
         "status": result.get("status", "complete"),
         **result, "runtime_versions": auxiliary.get("runtime_versions", runtime_versions()),
-        "git_sha": _git(ROOT, "rev-parse", "HEAD"),
+        "git_sha": _git(repo, "rev-parse", "HEAD"),
     }
     receipt["receipt_sha256"] = _canonical_sha({
         key: value for key, value in receipt.items()
@@ -653,6 +829,7 @@ def main(argv: list[str] | None = None) -> int:
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--replay", action="store_true")
     mode.add_argument("--live", action="store_true")
+    parser.add_argument("--replay-check", action="store_true")
     parser.add_argument("--subset", action="store_true")
     parser.add_argument("--max-live-calls", type=int, default=DEFAULT_MAX_LIVE_CALLS)
     parser.add_argument("--estimate", action="store_true")
@@ -663,7 +840,12 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.max_live_calls < 0:
             raise ValueError("--max-live-calls must be non-negative")
-        if args.estimate and (args.row != "b4" or args.role != "dev" or args.live or args.replay):
+        if args.replay_check and (args.role != "eval_v3" or args.row != "b4" or not args.replay):
+            raise ValueError("--replay-check is only for eval_v3 b4 --replay")
+        if args.replay_check and not _path_outside_repo(ROOT, args.output_dir):
+            raise ValueError("--output-dir must be outside the repository")
+        if args.estimate and (args.row != "b4" or args.role != "dev" or args.live or args.replay
+                              or args.replay_check):
             raise ValueError("--estimate is available only for b4 in role dev")
         if args.subset and (args.role != "dev" or args.row != "b4"):
             raise ValueError("--subset is only available for b4 in role dev")
@@ -700,10 +882,27 @@ def main(argv: list[str] | None = None) -> int:
                           replay=args.replay, live=args.live, subset=args.subset,
                           max_live_calls=args.max_live_calls, indices=indices,
                           format_mode=args.format_mode,
-                          deadline=_parse_deadline(args.deadline_utc))
+                          deadline=_parse_deadline(args.deadline_utc),
+                          freeze_tag=args.freeze_tag)
+        if args.replay_check:
+            check = _write_replay_check(ROOT, receipt)
+            print(json.dumps({
+                "row": args.row, "equal": check["equal"],
+                "scored_receipt_sha256": check["scored_receipt_sha256"],
+                "check_receipt_sha256": check["check_receipt_sha256"],
+                "receipt_sha256": check["receipt_sha256"],
+            }, sort_keys=True))
+            return 0 if check["equal"] else 1
         print(json.dumps({"row": args.row, "status": receipt["status"],
                           "receipt_sha256": receipt["receipt_sha256"]}, sort_keys=True))
-        return 3 if receipt["status"] == "incomplete" else 0
+        if receipt["status"] == "incomplete":
+            return 3
+        if receipt["status"] == "interrupted":
+            return 4
+        return 0
+    except CacheProvenanceError as exc:
+        print(f"eval-v3 error: {exc}", file=sys.stderr)
+        return 2
     except LiveBudgetExceeded as exc:
         print(f"eval-v3 error: {exc}", file=sys.stderr)
         return 3
