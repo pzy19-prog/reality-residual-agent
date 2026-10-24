@@ -683,7 +683,6 @@ def run_episode(
                 tolerance=known_config.tolerance, error=prediction_error,
                 presence_events=[e for e in policy_target_presence_events if e["target_id"]==observation.target_id],
             )
-            s2_action = b3["action"]
             if (s2_variant in ("B4_STRICT", "B4_TIEBREAK")
                     and not b3["faults"] and b3["gate_reason"] == "AMBIGUOUS"):
                 evidence_packet = {
@@ -701,21 +700,17 @@ def run_episode(
                     "horizon": (config.episode_steps - 1) * config.dt,
                     "tolerance": known_config.tolerance,
                 }
-                if proposer is None:
-                    proposal = None
-                    proposal_error = "NO_PROPOSER"
-                else:
-                    proposal = proposer.propose(evidence_packet, text_context)
-                    provider_status = getattr(getattr(proposer, "provider", None), "last_http_status", None)
-                    if provider_status in (401, 403):
-                        raise SystemExit(f"NVIDIA NIM HTTP {provider_status}; stop Phase B")
-                    # Keep receipts free of provider error bodies or other raw text.
-                    raw_error_type = proposal.error.split(":", 1)[0] if proposal.error else None
-                    proposal_error = (
-                        "INVALID_PROPOSAL"
-                        if raw_error_type in {"ValueError", "TypeError", "ValidationError", "JSONDecodeError"}
-                        else "PROVIDER_ERROR" if raw_error_type else None
-                    )
+                proposal = proposer.propose(evidence_packet, text_context)
+                provider_status = getattr(getattr(proposer, "provider", None), "last_http_status", None)
+                if provider_status in (401, 403):
+                    raise SystemExit(f"NVIDIA NIM HTTP {provider_status}; stop Phase B")
+                # Keep receipts free of provider error bodies or other raw text.
+                raw_error_type = proposal.error.split(":", 1)[0] if proposal.error else None
+                proposal_error = (
+                    "INVALID_PROPOSAL"
+                    if raw_error_type in {"ValueError", "TypeError", "ValidationError", "JSONDecodeError"}
+                    else "PROVIDER_ERROR" if raw_error_type else None
+                )
                 ranked_ids = [] if proposal is None else [item.hypothesis_id for item in proposal.items]
                 s2_proposal_rank.append({
                     "time": observation.time, "target_id": observation.target_id,
@@ -757,6 +752,7 @@ def run_episode(
                                 b3["tiebreak_selected"] = selected
                             else:
                                 b3["gate_reason"] = f"TIEBREAK_FALLBACK:{tie_reason}"
+            s2_action = b3["action"]
             system2_wall_latency_seconds += perf_counter()-pause_started
             system2_calls += 1
             system2_verifier_calls += len(b3["verifications"])
