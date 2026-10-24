@@ -236,3 +236,190 @@ def test_estimate_refuses_eval_role_without_reading_seeds(capsys):
     assert "role dev" in capsys.readouterr().err
     assert not (ROOT / "config/eval_seeds_v3.json").exists()
 
+
+def _freeze_seed_file(root: Path) -> Path:
+    init_repo(root)
+    git(root, "tag", "freeze")
+    path = root / "config/eval_seeds_v3.json"
+    path.parent.mkdir()
+    path.write_text(json.dumps({
+        "schema_version": "rra.eval-seeds.v3", "role": "eval_v3", "count": 100,
+        "range": [10000, 2147483647], "generator": "secrets.SystemRandom().sample",
+        "freeze_tag": "freeze", "freeze_commit": git(root, "rev-parse", "HEAD"),
+        "seeds": list(range(10000, 10100)),
+    }) + "\n")
+    git(root, "add", "config/eval_seeds_v3.json")
+    git(root, "commit", "-qm", "seed file")
+    return path
+
+
+def test_eval_guard_allows_untracked_and_committed_cache_additions(tmp_path):
+    seed_path = _freeze_seed_file(tmp_path)
+    cache = tmp_path / "artifacts/llm_cache/new-untracked.json"
+    cache.parent.mkdir(parents=True)
+    cache.write_text("{}\n")
+    final_v3.load_seed_file(seed_path, "eval_v3", freeze_tag="freeze", root=tmp_path)
+    git(tmp_path, "add", "artifacts/llm_cache/new-untracked.json")
+    git(tmp_path, "commit", "-qm", "cache addition")
+    final_v3.load_seed_file(seed_path, "eval_v3", freeze_tag="freeze", root=tmp_path)
+
+
+def _freeze_with_existing_cache(root: Path) -> Path:
+    init_repo(root)
+    cache = root / "artifacts/llm_cache/kept.json"
+    cache.parent.mkdir(parents=True)
+    cache.write_text("original\n")
+    git(root, "add", "artifacts/llm_cache/kept.json")
+    git(root, "commit", "-qm", "cache baseline")
+    git(root, "tag", "freeze")
+    path = root / "config/eval_seeds_v3.json"
+    path.parent.mkdir()
+    path.write_text(json.dumps({
+        "schema_version": "rra.eval-seeds.v3", "role": "eval_v3", "count": 100,
+        "range": [10000, 2147483647], "generator": "secrets.SystemRandom().sample",
+        "freeze_tag": "freeze", "freeze_commit": git(root, "rev-parse", "HEAD"),
+        "seeds": list(range(10000, 10100)),
+    }) + "\n")
+    git(root, "add", "config/eval_seeds_v3.json")
+    git(root, "commit", "-qm", "seed file")
+    return path
+
+
+def test_eval_guard_rejects_uncommitted_source_and_cache_edits(tmp_path):
+    seed_path = _freeze_seed_file(tmp_path)
+    source = tmp_path / "src.py"
+    source.write_text("dirty\n")
+    with pytest.raises(ValueError, match="outside the eval allowlist"):
+        final_v3.load_seed_file(seed_path, "eval_v3", freeze_tag="freeze", root=tmp_path)
+
+
+def test_eval_guard_rejects_cache_modification_and_deletion(tmp_path):
+    seed_path = _freeze_with_existing_cache(tmp_path)
+    cache = tmp_path / "artifacts/llm_cache/kept.json"
+    cache.write_text("modified\n")
+    with pytest.raises(ValueError, match="may only be added"):
+        final_v3.load_seed_file(seed_path, "eval_v3", freeze_tag="freeze", root=tmp_path)
+    git(tmp_path, "checkout", "--", "artifacts/llm_cache/kept.json")
+    cache.unlink()
+    with pytest.raises(ValueError, match="may only be added"):
+        final_v3.load_seed_file(seed_path, "eval_v3", freeze_tag="freeze", root=tmp_path)
+    git(tmp_path, "checkout", "--", "artifacts/llm_cache/kept.json")
+    cache.write_text("modified\n")
+    git(tmp_path, "add", "artifacts/llm_cache/kept.json")
+    git(tmp_path, "commit", "-qm", "modify cache")
+    with pytest.raises(ValueError, match="may only be added"):
+        final_v3.load_seed_file(seed_path, "eval_v3", freeze_tag="freeze", root=tmp_path)
+    git(tmp_path, "rm", "-q", "artifacts/llm_cache/kept.json")
+    git(tmp_path, "commit", "-qm", "delete cache")
+    with pytest.raises(ValueError, match="may only be added"):
+        final_v3.load_seed_file(seed_path, "eval_v3", freeze_tag="freeze", root=tmp_path)
+
+
+class _RecordingLive:
+    model = "test-model"
+    max_tokens = 1800
+    chat_template_kwargs = {"enable_thinking": False}
+    no_think = False
+    last_http_status = None
+    calls: list[str] = []
+    fail_on: set[str] = set()
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def complete(self, request_body):
+        content = request_body["messages"][0]["content"]
+        _RecordingLive.calls.append(content)
+        if content in _RecordingLive.fail_on:
+            raise RuntimeError("interrupted")
+        return {"choices": [{"message": {"content": "{\"items\": []}"}}]}
+
+
+def test_eval_live_ledger_resumes_after_a_crash_and_stays_append_only(monkeypatch, tmp_path):
+    _RecordingLive.calls = []
+    _RecordingLive.fail_on = {"boom"}
+    monkeypatch.setattr(b4_dev, "NvidiaNimProvider", _RecordingLive)
+    output = tmp_path / "out"
+    output.mkdir()
+    fsyncs = {"n": 0}
+    real_fsync = os.fsync
+
+    def counting_fsync(fd):
+        fsyncs["n"] += 1
+        return real_fsync(fd)
+
+    monkeypatch.setattr(final_v3.os, "fsync", counting_fsync)
+
+    def crash_run(*args, **kwargs):
+        b4_dev.NvidiaNimProvider().complete({"messages": [{"role": "user", "content": "boom"}]})
+        return {"metrics": {}, "episodes": [], "llm_calls": 0}
+
+    monkeypatch.setattr(b4_dev, "run_b4_dev", crash_run)
+    with pytest.raises(RuntimeError, match="interrupted"):
+        final_v3._run_b4(tmp_path / "seeds.json", output, replay=False, live=True, subset=False,
+                         max_live_calls=2, nproc=1, role="eval_v3")
+    ledger_path = output / "live_ledger.jsonl"
+    original = ledger_path.read_bytes()
+    assert original.count(b"\n") == 1
+    assert b"boom" not in original
+    assert json.loads(original.decode())["request_sha256"]
+    assert fsyncs["n"] == 1
+
+    def resume_run(*args, **kwargs):
+        _RecordingLive.fail_on = set()
+        provider = b4_dev.NvidiaNimProvider()
+        provider.complete({"messages": [{"role": "user", "content": "boom"}]})
+        provider.complete({"messages": [{"role": "user", "content": "next"}]})
+        provider.complete({"messages": [{"role": "user", "content": "overflow"}]})
+        return {"metrics": {}, "episodes": [], "llm_calls": 0}
+
+    monkeypatch.setattr(b4_dev, "run_b4_dev", resume_run)
+    result = final_v3._run_b4(tmp_path / "seeds.json", output, replay=False, live=True, subset=False,
+                              max_live_calls=2, nproc=1, role="eval_v3")
+    updated = ledger_path.read_bytes()
+    assert result["status"] == "incomplete"
+    assert result["reason"] == "max_live_calls_reached"
+    assert result["distinct_live_requests"] == 2
+    assert _RecordingLive.calls == ["boom", "boom", "next"]
+    assert updated.startswith(original)
+    assert updated.count(b"\n") == 2
+    assert b"overflow" not in updated
+
+
+def test_ledger_cap_blocks_a_new_request_before_any_http_attempt(monkeypatch, tmp_path):
+    output = tmp_path / "out"
+    output.mkdir()
+    lines = [json.dumps({"request_sha256": f"{index:064x}"}) + "\n" for index in range(2500)]
+    (output / "live_ledger.jsonl").write_text("".join(lines))
+    attempts = {"n": 0}
+
+    class Live:
+        model = "test-model"
+        max_tokens = 1800
+        chat_template_kwargs = {"enable_thinking": False}
+        no_think = False
+        last_http_status = None
+
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def complete(self, request_body):
+            attempts["n"] += 1
+            raise AssertionError("http attempt")
+
+    monkeypatch.setattr(b4_dev, "NvidiaNimProvider", Live)
+
+    def one_new(*args, **kwargs):
+        b4_dev.NvidiaNimProvider().complete(
+            {"messages": [{"role": "user", "content": "request-2501"}]})
+        return {"metrics": {}, "episodes": [], "llm_calls": 0}
+
+    monkeypatch.setattr(b4_dev, "run_b4_dev", one_new)
+    result = final_v3._run_b4(tmp_path / "seeds.json", output, replay=False, live=True, subset=False,
+                              max_live_calls=2500, nproc=1, role="eval_v3")
+    assert result["status"] == "incomplete"
+    assert result["reason"] == "max_live_calls_reached"
+    assert result["distinct_live_requests"] == 2500
+    assert attempts["n"] == 0
+    assert (output / "live_ledger.jsonl").read_text() == "".join(lines)
+

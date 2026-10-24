@@ -42,17 +42,49 @@ def _git(root: Path, *args: str) -> str:
                           text=True).stdout.strip()
 
 
+def _ledger_shas(path: Path) -> list[str]:
+    """Distinct request hashes in ledger order. The file is never rewritten."""
+    if not path.is_file():
+        return []
+    found: list[str] = []
+    seen: set[str] = set()
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            item = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        sha = item.get("request_sha256") if isinstance(item, dict) else None
+        if isinstance(sha, str) and sha not in seen:
+            seen.add(sha)
+            found.append(sha)
+    return found
+
+
+def _append_ledger(path: Path, sha: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    line = json.dumps({"request_sha256": sha}, sort_keys=True, separators=(",", ":")) + "\n"
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(line)
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
 class _LiveBudget:
     """Count distinct finalized request payloads and completed B4 text conditions.
 
-    `already` is the number of distinct live requests recorded by an earlier
-    attempt in the same output directory. Cache hits are not reserved, so a
-    rerun spends the remaining cap only on requests that still miss.
+    `already` is the number of distinct live requests already recorded. For an
+    eval-v3 live run that record is the append-only ledger. Cache hits are not
+    reserved, so a rerun spends the remaining cap only on requests that still miss.
     """
 
-    def __init__(self, limit: int, already: int = 0):
+    def __init__(self, limit: int, already: int = 0, seen: set[str] | None = None,
+                 ledger_path: Path | None = None):
         self.limit = limit
         self.already = already
+        self.seen = set(seen or ())
+        self.ledger_path = ledger_path
         self.keys: set[str] = set()
         self.completed_pairs = 0
         self._lock = threading.Lock()
@@ -60,10 +92,12 @@ class _LiveBudget:
 
     def reserve(self, key: str) -> None:
         with self._lock:
-            if key in self.keys:
+            if key in self.seen or key in self.keys:
                 return
             if self.already + len(self.keys) >= self.limit:
                 raise LiveBudgetExceeded("maximum distinct live request count reached")
+            if self.ledger_path is not None:
+                _append_ledger(self.ledger_path, key)
             self.keys.add(key)
 
     def distinct_total(self) -> int:
@@ -80,8 +114,9 @@ class _LiveBudget:
 
 
 class _LiveBudgetScope:
-    def __init__(self, limit: int, already: int = 0):
-        self.budget = _LiveBudget(limit, already)
+    def __init__(self, limit: int, already: int = 0, seen: set[str] | None = None,
+                 ledger_path: Path | None = None):
+        self.budget = _LiveBudget(limit, already, seen, ledger_path)
         self._provider = None
         self._episode = None
 
@@ -120,19 +155,57 @@ class _LiveBudgetScope:
         return False
 
 
+_EVAL_ALLOW_FILE = "config/eval_seeds_v3.json"
+_EVAL_ALLOW_PREFIXES = ("artifacts/eval_v3/", "artifacts/llm_cache/")
+_CACHE_PREFIX = "artifacts/llm_cache/"
+
+
+def _allowed_eval_path(path: str) -> bool:
+    return path == _EVAL_ALLOW_FILE or path.startswith(_EVAL_ALLOW_PREFIXES)
+
+
+def _name_status_rows(text: str) -> list[tuple[str, list[str]]]:
+    rows: list[tuple[str, list[str]]] = []
+    for line in text.splitlines():
+        if not line.strip():
+            continue
+        parts = line.split("\t")
+        rows.append((parts[0], parts[1:]))
+    return rows
+
+
+def _reject_disallowed(status: str, paths: list[str]) -> None:
+    for path in paths:
+        if not _allowed_eval_path(path):
+            raise ValueError("changes since freeze tag include a path outside the eval allowlist")
+    if any(path.startswith(_CACHE_PREFIX) for path in paths) and status != "A":
+        raise ValueError("existing llm cache files may only be added")
+
+
 def _validate_eval_guard(root: Path, freeze_tag: str) -> None:
+    """Allow only seed, eval artifact, and new cache paths after the freeze tag.
+
+    Tracked history, tracked worktree edits, and untracked files all use that
+    allowlist. Cache paths may be added, never modified, deleted, or renamed.
+    """
     if not freeze_tag:
         raise ValueError("--freeze-tag is required for eval_v3")
     try:
+        committed = _git(root, "diff", "--name-status", "--find-renames", freeze_tag, "HEAD")
+        tracked = _git(root, "diff", "--name-status", "--find-renames", "HEAD")
         status = _git(root, "status", "--porcelain", "--untracked-files=all")
-        changed = _git(root, "diff", "--name-only", freeze_tag, "HEAD").splitlines()
     except (OSError, subprocess.CalledProcessError):
         raise ValueError("eval freeze tag validation failed") from None
-    if status:
-        raise ValueError("working tree must be clean for eval_v3")
-    allowed_file = "config/eval_seeds_v3.json"
-    if any(name != allowed_file and not name.startswith("artifacts/eval_v3/") for name in changed):
-        raise ValueError("changes since freeze tag include a path outside the eval allowlist")
+    for row_status, paths in _name_status_rows(committed):
+        _reject_disallowed(row_status, paths)
+    for row_status, paths in _name_status_rows(tracked):
+        _reject_disallowed(row_status, paths)
+    for line in status.splitlines():
+        if not line.startswith("??"):
+            continue
+        path = line[3:]
+        if not _allowed_eval_path(path):
+            raise ValueError("changes since freeze tag include a path outside the eval allowlist")
 
 
 def load_seed_file(path: Path, role: str, *, freeze_tag: str | None = None,
@@ -314,7 +387,8 @@ def _prior_distinct_live_requests(output_dir: Path) -> int:
 
 
 def _run_b4(seeds_path: Path, output_dir: Path, *, replay: bool, live: bool,
-            subset: bool, max_live_calls: int, nproc: int | None) -> dict[str, Any]:
+            subset: bool, max_live_calls: int, nproc: int | None,
+            role: str = "dev") -> dict[str, Any]:
     from rra.eval import b4_dev
 
     # subset=True reads the registered diag file and keeps each seed's dev index.
@@ -327,8 +401,15 @@ def _run_b4(seeds_path: Path, output_dir: Path, *, replay: bool, live: bool,
                 "episodes": result["episodes"], "llm_calls": result["llm_calls"],
                 "subset": subset, "max_live_calls": max_live_calls,
                 "distinct_live_requests": 0}
-    already = _prior_distinct_live_requests(output_dir)
-    with _LiveBudgetScope(max_live_calls, already) as budget:
+    # eval-v3 counts from the append-only ledger. Dev keeps the prior receipt total.
+    ledger_path = output_dir / "live_ledger.jsonl" if role == "eval_v3" else None
+    if ledger_path is not None:
+        seen = set(_ledger_shas(ledger_path))
+        already = len(seen)
+    else:
+        seen = set()
+        already = _prior_distinct_live_requests(output_dir)
+    with _LiveBudgetScope(max_live_calls, already, seen, ledger_path) as budget:
         try:
             result = b4_dev.run_b4_dev(output_dir, nproc=nproc, subset=subset,
                                        replay_only=False, seeds_path=recorded)
@@ -375,7 +456,7 @@ def run_row(row: str, *, seeds: list[int], seed_path: Path, seed_sha256: str,
     elif row == "b4":
         result, auxiliary = _run_b4(seed_path, output_dir, replay=replay, live=live,
                                     subset=subset, max_live_calls=max_live_calls,
-                                    nproc=nproc), {}
+                                    nproc=nproc, role=role), {}
     else:
         raise ValueError(f"unknown row: {row}")
     receipt: dict[str, Any] = {
