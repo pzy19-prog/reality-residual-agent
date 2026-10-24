@@ -22,6 +22,7 @@ from rra.evidence.policy import (
     sanitize_observation,
     target_presence_event,
 )
+from rra.evidence.packet import build_packet, project_c1_known_config
 from rra.s2.b3 import run_b3
 from rra.s2.dsl import Action, FaultHypothesis, structure_id as registered_structure_id
 from rra.s2.fitter import Observation as S2Observation, CommandFeedback as S2Feedback, fit as fit_hypothesis
@@ -89,7 +90,9 @@ def run_episode(
     trace_by_target: dict[int, dict[str, Any]] = {}
     object_grab_end_times: dict[int, float] = {}
     policy_feedbacks: list[dict[str, Any]] = []
+    policy_observation_samples: list[dict[str, Any]] = []
     policy_target_presence_events: list[dict[str, Any]] = []
+    canonical_presence_events: list[dict[str, Any]] = []
     system2_observations: dict[int, list[S2Observation]] = {}
     system2_overrides: dict[int, float] = {}
     system2_execution_etas: dict[int, float] = {}
@@ -111,6 +114,8 @@ def run_episode(
     system2_verifier_calls = 0
     system2_hypotheses_proposed = 0
     system2_calls = 0
+    strict_proposer_invocations = 0
+    tiebreak_proposer_invocations = 0
     system2_infeasible_attempted: set[int] = set()
     system2_escalation_active: set[int] = set()
     system2_fault_vetoes: dict[int, dict[str, Any]] = {}
@@ -520,12 +525,15 @@ def run_episode(
         })
         # One registered detector event is emitted for every expected sample,
         # including samples where no positional observation is available.
-        policy_target_presence_events.append(asdict(target_presence_event(
+        presence_event = asdict(target_presence_event(
             target_id=plant_observation.target_id,
             step=plant_observation.step,
             time=plant_observation.time,
             target_observed=plant_observation.target_present,
-        )))
+        ))
+        seq = plant_observation.target_id * config.episode_steps + plant_observation.step
+        policy_target_presence_events.append(presence_event)
+        canonical_presence_events.append({"episode_id": str(seed), "seq": seq, **presence_event})
         if system2_enabled and not plant_observation.target_present:
             latch_hard_fault(
                 FaultHypothesis.OBJECT_MISSING_OR_DROPPED.value,
@@ -545,6 +553,7 @@ def run_episode(
             world.advance()
             continue
         observation = sanitize_observation(plant_observation)
+        policy_observation_samples.append({"episode_id": str(seed), "seq": seq, **asdict(observation)})
         if active_target != observation.target_id:
             if active_target in system2_reobserve_holds:
                 finish_reobserve_hold(active_target, observation.step, 0.0, "target_switch")
@@ -693,22 +702,34 @@ def run_episode(
             )
             if (s2_variant in ("B4_STRICT", "B4_TIEBREAK")
                     and not b3["faults"] and b3["gate_reason"] == "AMBIGUOUS"):
-                evidence_packet = {
-                    "observations": [{"time": item.time, "observed_x": item.observed_x,
-                                      "nominal_x": item.nominal_x}
-                                     for item in s2obs],
-                    "feedback": [{"issued_time": item["issued_time"],
-                                  "execution_time": item["execution_time"],
-                                  "accepted": item["accepted"], "success": item["success"]}
-                                 for item in policy_feedbacks],
+                evidence_packet = build_packet(
+                    episode_id=str(seed), target_id=observation.target_id, step=observation.step,
+                    time=observation.time, observations=policy_observation_samples,
+                    presence_events=canonical_presence_events,
+                    command_feedback=[
+                        {"episode_id": str(seed),
+                         "seq": int(item["target_id"]) * config.episode_steps
+                                + int(str(item["command_id"]).rsplit(":", 1)[1]),
+                         "step": int(str(item["command_id"]).rsplit(":", 1)[1]), **item}
+                        for item in policy_feedbacks
+                    ],
+                    known_config=project_c1_known_config(asdict(known_config)),
+                    context={"text": text_context,
+                             "content_sha256": sha256(text_context.encode("utf-8")).hexdigest()},
+                    episode_steps=config.episode_steps,
+                )
+                s2_summary = {
                     "passing": [{"structure_id": _verification_structure_id(item),
-                                 "rmse": item.rmse, "n_usable": item.n_usable}
+                                 "rmse": float(item.rmse), "n_usable": int(item.n_usable)}
                                 for item in b3["passing"]],
-                    "current_time": observation.time, "dt": known_config.dt,
-                    "horizon": (config.episode_steps - 1) * config.dt,
-                    "tolerance": known_config.tolerance,
+                    "current_time": float(observation.time),
+                    "horizon": float((config.episode_steps - 1) * config.dt),
                 }
-                proposal = proposer.propose(evidence_packet, text_context)
+                if s2_variant == "B4_STRICT":
+                    strict_proposer_invocations += 1
+                else:
+                    tiebreak_proposer_invocations += 1
+                proposal = proposer.propose(evidence_packet, "", s2_summary=s2_summary)
                 provider_status = getattr(getattr(proposer, "provider", None), "last_http_status", None)
                 if provider_status in (401, 403):
                     raise SystemExit(f"NVIDIA NIM HTTP {provider_status}; stop Phase B")
@@ -1158,6 +1179,9 @@ def run_episode(
         receipt["system2_verifier_calls"] = system2_verifier_calls
         receipt["system2_hypotheses_proposed"] = system2_hypotheses_proposed
         receipt["system2_calls"] = system2_calls
+        if s2_variant in ("B4_STRICT", "B4_TIEBREAK"):
+            receipt["strict_proposer_invocations"] = strict_proposer_invocations
+            receipt["tiebreak_proposer_invocations"] = tiebreak_proposer_invocations
     if s2_variant in ("B4_STRICT", "B4_TIEBREAK"):
         receipt["s2_variant"] = s2_variant
         receipt["system2_proposal_rank"] = s2_proposal_rank

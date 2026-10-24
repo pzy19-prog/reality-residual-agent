@@ -6,6 +6,14 @@ import json
 from typing import Any, Iterable
 
 
+C1_KNOWN_CONFIG_FIELDS = ("dt", "tolerance", "x_pick", "y_pick", "belt_speed")
+
+
+def project_c1_known_config(known_config: dict[str, Any]) -> dict[str, Any]:
+    """Project L3's stored config row to the five policy-visible C1 fields."""
+    return {key: known_config[key] for key in C1_KNOWN_CONFIG_FIELDS}
+
+
 def build_packet(*, episode_id: str, target_id: int, step: int, time: float,
                  observations: Iterable[dict[str, Any]], presence_events: Iterable[dict[str, Any]],
                  command_feedback: Iterable[dict[str, Any]], known_config: dict[str, Any],
