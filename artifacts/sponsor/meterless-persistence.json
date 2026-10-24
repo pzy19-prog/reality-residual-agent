@@ -1,5 +1,241 @@
 {
-  "base_git_sha": "d54faa7ec5b61af7c5c2204c0895228ef9fb9adc",
+  "B4": {
+    "cache_dir": "artifacts/llm_cache",
+    "decisions_equal": 20,
+    "episode_count": 20,
+    "episodes": [
+      {
+        "decision_count": 15,
+        "decisions_equal": true,
+        "episode_id": "ep-001",
+        "manifest_sha256": "42fd40dc7226d283004853605ea09e544190a02f21f601d90b84dbc133b71372",
+        "off_receipt_sha256": "509b34f0a3272e70d987f359ac2f5fe06562b563ff3605cbd560f160f199abe5",
+        "on_receipt_sha256": "509b34f0a3272e70d987f359ac2f5fe06562b563ff3605cbd560f160f199abe5",
+        "persisted_decision_records": 15,
+        "receipt_equal": true,
+        "seed": 1
+      },
+      {
+        "decision_count": 12,
+        "decisions_equal": true,
+        "episode_id": "ep-002",
+        "manifest_sha256": "ad9a7cbb9f102f18fd27348bd73fb8b4639d2ea6067b6cb70891704a2d3c8f1d",
+        "off_receipt_sha256": "01d4ad7b05426a460f282e1087106271dcae805e93a3820b53e80560d7dbc0e4",
+        "on_receipt_sha256": "01d4ad7b05426a460f282e1087106271dcae805e93a3820b53e80560d7dbc0e4",
+        "persisted_decision_records": 12,
+        "receipt_equal": true,
+        "seed": 2
+      },
+      {
+        "decision_count": 12,
+        "decisions_equal": true,
+        "episode_id": "ep-003",
+        "manifest_sha256": "6b86644169ef2362495aa513b899060bd9cfed8aadff5f7799dc25f9c3ad3e5c",
+        "off_receipt_sha256": "d0ba12ed9c845693c79c0a7c8c3550e0e239eedfd94dd0ae4524879b08b5da44",
+        "on_receipt_sha256": "d0ba12ed9c845693c79c0a7c8c3550e0e239eedfd94dd0ae4524879b08b5da44",
+        "persisted_decision_records": 12,
+        "receipt_equal": true,
+        "seed": 3
+      },
+      {
+        "decision_count": 15,
+        "decisions_equal": true,
+        "episode_id": "ep-020",
+        "manifest_sha256": "6952fe3139f11ccb31fc3f0b1b7ce9c88cdeefb1961a988a5c46cc982e252e00",
+        "off_receipt_sha256": "d2402b83dc16fd1ef6c2937999d7e829da6baf959089841b1e1d49513b2e4799",
+        "on_receipt_sha256": "d2402b83dc16fd1ef6c2937999d7e829da6baf959089841b1e1d49513b2e4799",
+        "persisted_decision_records": 15,
+        "receipt_equal": true,
+        "seed": 20
+      },
+      {
+        "decision_count": 21,
+        "decisions_equal": true,
+        "episode_id": "ep-021",
+        "manifest_sha256": "dfb16a96205aeed38ea635c18660cb1b2644a0d4d49b3d3dae369319817f84c7",
+        "off_receipt_sha256": "e2093befb0970f8ac4daa05c273d9b148197340d25c4e48c08482c3b1ab166a1",
+        "on_receipt_sha256": "e2093befb0970f8ac4daa05c273d9b148197340d25c4e48c08482c3b1ab166a1",
+        "persisted_decision_records": 21,
+        "receipt_equal": true,
+        "seed": 21
+      },
+      {
+        "decision_count": 12,
+        "decisions_equal": true,
+        "episode_id": "ep-022",
+        "manifest_sha256": "1b92ed824a6525121b2577b501279f3df6c214f8df077c6b5831b7165e374c43",
+        "off_receipt_sha256": "8f10c878a387f50955778e5d3b3d4dc2fad2e0e4a4b351921a9d4080a1d5e1d9",
+        "on_receipt_sha256": "8f10c878a387f50955778e5d3b3d4dc2fad2e0e4a4b351921a9d4080a1d5e1d9",
+        "persisted_decision_records": 12,
+        "receipt_equal": true,
+        "seed": 22
+      },
+      {
+        "decision_count": 12,
+        "decisions_equal": true,
+        "episode_id": "ep-024",
+        "manifest_sha256": "201e4abfaf55bd54c55e6d3c6d697ed34a986fcf3e40e96dda24f105f5e734af",
+        "off_receipt_sha256": "a1ae34beb3cdde3da346db7c498c1bee44acdc3fe9f05a075fe81bde2706a3a1",
+        "on_receipt_sha256": "a1ae34beb3cdde3da346db7c498c1bee44acdc3fe9f05a075fe81bde2706a3a1",
+        "persisted_decision_records": 12,
+        "receipt_equal": true,
+        "seed": 24
+      },
+      {
+        "decision_count": 12,
+        "decisions_equal": true,
+        "episode_id": "ep-026",
+        "manifest_sha256": "d85c6dc1cd5515dc5595f04bff8ab38bdcd98444091701b8bb08cd0a557dc82f",
+        "off_receipt_sha256": "071dcb75e9fa6af611a23b52c860c76fb3acbdcea8e170f7d007b2d7374d5f48",
+        "on_receipt_sha256": "071dcb75e9fa6af611a23b52c860c76fb3acbdcea8e170f7d007b2d7374d5f48",
+        "persisted_decision_records": 12,
+        "receipt_equal": true,
+        "seed": 26
+      },
+      {
+        "decision_count": 15,
+        "decisions_equal": true,
+        "episode_id": "ep-030",
+        "manifest_sha256": "50049cf0352522768e117dc47747231f89e919defc5360b83a5ea728a4db76a9",
+        "off_receipt_sha256": "1ce8374c2026bad666e05a1f247c8635f07783267bdfda4a35f6cc15a7719b15",
+        "on_receipt_sha256": "1ce8374c2026bad666e05a1f247c8635f07783267bdfda4a35f6cc15a7719b15",
+        "persisted_decision_records": 15,
+        "receipt_equal": true,
+        "seed": 30
+      },
+      {
+        "decision_count": 24,
+        "decisions_equal": true,
+        "episode_id": "ep-039",
+        "manifest_sha256": "c0b4dc32465fec6590f191d7168bd43c814924ab2b5b0cc251c9c80c9ee3d40c",
+        "off_receipt_sha256": "f5317b93a4f3a581e084bf7e3219cf94650d6a4d288d22591ccc5de8909bf9dd",
+        "on_receipt_sha256": "f5317b93a4f3a581e084bf7e3219cf94650d6a4d288d22591ccc5de8909bf9dd",
+        "persisted_decision_records": 24,
+        "receipt_equal": true,
+        "seed": 39
+      },
+      {
+        "decision_count": 12,
+        "decisions_equal": true,
+        "episode_id": "ep-040",
+        "manifest_sha256": "5d49a33d7341c4fadfc83bfc4aec15ec9d2c210db7eee59a4a678952dc65f922",
+        "off_receipt_sha256": "c3749b7794093e829fd961076c9f607040ede981091db5bef6c4adde7978155e",
+        "on_receipt_sha256": "c3749b7794093e829fd961076c9f607040ede981091db5bef6c4adde7978155e",
+        "persisted_decision_records": 12,
+        "receipt_equal": true,
+        "seed": 40
+      },
+      {
+        "decision_count": 15,
+        "decisions_equal": true,
+        "episode_id": "ep-041",
+        "manifest_sha256": "a000e677fb191dc2aa0c389e1868ef19d441a1f62741832c437034bb2de9dab7",
+        "off_receipt_sha256": "d16b7879ef24d7055dcf98f7fde65acf26ab4064a5d70439f7e6886d3aeaed4f",
+        "on_receipt_sha256": "d16b7879ef24d7055dcf98f7fde65acf26ab4064a5d70439f7e6886d3aeaed4f",
+        "persisted_decision_records": 15,
+        "receipt_equal": true,
+        "seed": 41
+      },
+      {
+        "decision_count": 23,
+        "decisions_equal": true,
+        "episode_id": "ep-046",
+        "manifest_sha256": "d4575ac27da446f86c062e08e48ab1ef672b032cbc7eb472eb48012d2dedfb09",
+        "off_receipt_sha256": "09ffc32a4e9857d5bb6d6fb34e5e52f790a25f0d4f11427c665ebe6a39ba9756",
+        "on_receipt_sha256": "09ffc32a4e9857d5bb6d6fb34e5e52f790a25f0d4f11427c665ebe6a39ba9756",
+        "persisted_decision_records": 23,
+        "receipt_equal": true,
+        "seed": 46
+      },
+      {
+        "decision_count": 18,
+        "decisions_equal": true,
+        "episode_id": "ep-048",
+        "manifest_sha256": "d33b03b52d4eb3a3b6d6cede5b08e3f8ef6311d31e9998a12a9b706d795f36b6",
+        "off_receipt_sha256": "410c2cc5eb46ae808e3fe51ae0681d6f3e639b706dde847cc0ef39620e241069",
+        "on_receipt_sha256": "410c2cc5eb46ae808e3fe51ae0681d6f3e639b706dde847cc0ef39620e241069",
+        "persisted_decision_records": 18,
+        "receipt_equal": true,
+        "seed": 48
+      },
+      {
+        "decision_count": 15,
+        "decisions_equal": true,
+        "episode_id": "ep-051",
+        "manifest_sha256": "8bafcb1fab07ca17610e0c3571cd2a9cd8abad27f8f3610de010c762879757a5",
+        "off_receipt_sha256": "51e11878b59307e11b9b7fe6f772578ed21b6796730fc1c971abcf3951edf738",
+        "on_receipt_sha256": "51e11878b59307e11b9b7fe6f772578ed21b6796730fc1c971abcf3951edf738",
+        "persisted_decision_records": 15,
+        "receipt_equal": true,
+        "seed": 51
+      },
+      {
+        "decision_count": 13,
+        "decisions_equal": true,
+        "episode_id": "ep-052",
+        "manifest_sha256": "8325afaea919336898943dfc6fade7f659380366f8221c5ebc2235ca6bd2ebb6",
+        "off_receipt_sha256": "1d2cb9f3f0d9b6b2331ed1190029412e0e523690de6843b878d46de45b5fe6ed",
+        "on_receipt_sha256": "1d2cb9f3f0d9b6b2331ed1190029412e0e523690de6843b878d46de45b5fe6ed",
+        "persisted_decision_records": 13,
+        "receipt_equal": true,
+        "seed": 52
+      },
+      {
+        "decision_count": 12,
+        "decisions_equal": true,
+        "episode_id": "ep-058",
+        "manifest_sha256": "f99a67b181bab2318727c50fbc3491210b6940a22929330b8de02da3a146e19c",
+        "off_receipt_sha256": "64371fafb937fcd3cff9b88e1eb848b9a7bc6753fc16b115bab9418e505f3e73",
+        "on_receipt_sha256": "64371fafb937fcd3cff9b88e1eb848b9a7bc6753fc16b115bab9418e505f3e73",
+        "persisted_decision_records": 12,
+        "receipt_equal": true,
+        "seed": 58
+      },
+      {
+        "decision_count": 12,
+        "decisions_equal": true,
+        "episode_id": "ep-059",
+        "manifest_sha256": "d59dfecac0e5a917f390fd0d827b3b8319ca3256b53fca53f763a4231c46edf1",
+        "off_receipt_sha256": "8e8f09635be4efd4e08d9077adf8b9cae307d4b356b0e18ca4ffbfd54b22a823",
+        "on_receipt_sha256": "8e8f09635be4efd4e08d9077adf8b9cae307d4b356b0e18ca4ffbfd54b22a823",
+        "persisted_decision_records": 12,
+        "receipt_equal": true,
+        "seed": 59
+      },
+      {
+        "decision_count": 15,
+        "decisions_equal": true,
+        "episode_id": "ep-060",
+        "manifest_sha256": "b8a40ebe4843f03dd490e2bf176f759a1780e1634f9f8dbdcef3db61a6345b9a",
+        "off_receipt_sha256": "b9c7153766d40fd36638514ca679cabe9997687a6763df309b0b48074abfd0e1",
+        "on_receipt_sha256": "b9c7153766d40fd36638514ca679cabe9997687a6763df309b0b48074abfd0e1",
+        "persisted_decision_records": 15,
+        "receipt_equal": true,
+        "seed": 60
+      },
+      {
+        "decision_count": 12,
+        "decisions_equal": true,
+        "episode_id": "ep-067",
+        "manifest_sha256": "8db683c8700125eef15f112e5ff0244181e20bbb8f4fea918b18c396441e289b",
+        "off_receipt_sha256": "4b25880305e3c95a950b7863794d29bdc1f1126ac8e446a0bdffd6eb76ea6ba7",
+        "on_receipt_sha256": "4b25880305e3c95a950b7863794d29bdc1f1126ac8e446a0bdffd6eb76ea6ba7",
+        "persisted_decision_records": 12,
+        "receipt_equal": true,
+        "seed": 67
+      }
+    ],
+    "live_llm_calls": 0,
+    "provider": "ReplayProvider",
+    "receipt_equal": 20,
+    "s2_variant": "B4_TIEBREAK",
+    "seed_source": "artifacts/s2/diag-d1g.json:first-20",
+    "stale": true,
+    "stale_reason": "Stale after FRZ-1 F1 changed B4 call points; refresh deferred to FRZ-2 (requires NIM).",
+    "status": "PASS",
+    "text_variant": "NO_TEXT_CONTEXT"
+  },
+  "base_git_sha": "9fe17301c899abd9b2bf715ea7e62f0b47643e3d",
   "episodes": {
     "ep-000": {
       "M1_roundtrip_mismatches": 0,
@@ -25,12 +261,12 @@
       "decisions": 12,
       "decisions_without_diagnostic": 0,
       "fault_family": null,
-      "ledger_sha256": "ea86bc1b70ce88d513b4ddb6a920693b09566b090e2f3a9b6edb2abcab67c9b1",
+      "ledger_sha256": "a725b1ba3eefae65253b74ee08c024a76b0bc35d31df6eaf07106a55f2eff996",
       "ok": true,
-      "persist_seconds": 0.3141246380037046,
+      "persist_seconds": 0.9274338219984202,
       "seed": 0,
-      "state_sha256": "7cf9b948e8222d9a376d9e85aa8ceca52f61bf60796ff24b9c6d35d59ee02220",
-      "store_bytes": 298869
+      "state_sha256": "22370282ea591117ec2192e0371db3169ab7529d1ca74c3e5e9bed4850a0bc9f",
+      "store_bytes": 298848
     },
     "ep-001": {
       "M1_roundtrip_mismatches": 0,
@@ -56,12 +292,12 @@
       "decisions": 15,
       "decisions_without_diagnostic": 0,
       "fault_family": null,
-      "ledger_sha256": "32149ee4ab9691abf15dc21b865ae6af2741331f8bbda869f8e29dc2730c999e",
+      "ledger_sha256": "a1b62b7cf4b4fb966500cc728ebe58be86086391176d03f0cadd98a590ac0ff5",
       "ok": true,
-      "persist_seconds": 0.31330952099960996,
+      "persist_seconds": 1.059356129997468,
       "seed": 1,
-      "state_sha256": "72b1e79b18f32dd950c88eb75fcdfb5f7bbbf8a7b1a8f21a05b84d8d787e63a4",
-      "store_bytes": 338735
+      "state_sha256": "5d59275a0b6d8e3b5742544e62d3c77fd5054b3f9827f6e28a1bade677b3ce1e",
+      "store_bytes": 338729
     },
     "ep-002": {
       "M1_roundtrip_mismatches": 0,
@@ -87,12 +323,12 @@
       "decisions": 12,
       "decisions_without_diagnostic": 0,
       "fault_family": null,
-      "ledger_sha256": "71e1aac5b342fc3c0cf9e5469e624b7c05ab2e59ba59404584f4ef5b21e03ffa",
+      "ledger_sha256": "d3e91da07181f0f5bd197c90fb3a9a03155931b508aa922d63e7aebeeae9659e",
       "ok": true,
-      "persist_seconds": 0.3538838059976115,
+      "persist_seconds": 1.2227155990040046,
       "seed": 2,
-      "state_sha256": "c6d22fee3225a3b99e81f873d8ece7848c6eaae8bce9736f8bc0087ec9cf1cad",
-      "store_bytes": 273029
+      "state_sha256": "381e0a9784e5abff8b1a2d9ee46fcee6d6d6f46c50c5477d31e9b3119eac8490",
+      "store_bytes": 273001
     },
     "ep-003": {
       "M1_roundtrip_mismatches": 0,
@@ -118,12 +354,12 @@
       "decisions": 12,
       "decisions_without_diagnostic": 0,
       "fault_family": null,
-      "ledger_sha256": "56e3ce44b32bc78f38faf96f2c1a6dd5c625fbd8b0bb6c5417b53f75bc2decfb",
+      "ledger_sha256": "e2633483bba2e685ef1640bedd1623b9f0ae4f3e8ed26b352d993242f5a317ca",
       "ok": true,
-      "persist_seconds": 0.3228034620042308,
+      "persist_seconds": 0.9948574340014602,
       "seed": 3,
-      "state_sha256": "81246a1a511bbbf1b74e60fd6529b98975540781c3fd97537d68f505456111a8",
-      "store_bytes": 299811
+      "state_sha256": "18bc031c7c6f2a33cb34f4d22d501c97e3a69c7aa6cb96460bac5421f20d19d9",
+      "store_bytes": 299819
     },
     "ep-004": {
       "M1_roundtrip_mismatches": 0,
@@ -150,12 +386,12 @@
       "decisions": 12,
       "decisions_without_diagnostic": 0,
       "fault_family": null,
-      "ledger_sha256": "eea749805afdc18087bf40754e3c5426ef25f6d1591f8032a44022ed5af30906",
+      "ledger_sha256": "bfdba820b929b11434f284a79d9236119a4404e3b9244b92df245ab1fcaee702",
       "ok": true,
-      "persist_seconds": 0.28759763199923327,
+      "persist_seconds": 1.18569571399712,
       "seed": 4,
-      "state_sha256": "bca62496b3ed5f2487bb7db37c52561d3534a491713804f717016345ece3ae00",
-      "store_bytes": 279762
+      "state_sha256": "bca4155b7131014c842aeca0f364b7761e83217b2ed0cda76b2cf859c09dc1f6",
+      "store_bytes": 279754
     },
     "ep-005": {
       "M1_roundtrip_mismatches": 0,
@@ -182,12 +418,12 @@
       "decisions": 12,
       "decisions_without_diagnostic": 0,
       "fault_family": null,
-      "ledger_sha256": "5dfb53a1b5ee82f2eefc375a6fda45b658187514e010d26f846db7e6c5bfdb27",
+      "ledger_sha256": "40d18f49ac81bfc6770e8a1a2a6147f8bccd24798d76d1de6dac68a8e96522cd",
       "ok": true,
-      "persist_seconds": 0.3212006640023901,
+      "persist_seconds": 0.9262119519989938,
       "seed": 5,
-      "state_sha256": "f5e982e99174b2153e4e01c2ac267993118f2c37c9048fc0ae389e8f0759f8d2",
-      "store_bytes": 290350
+      "state_sha256": "26840990218fd57c028320004c973bc9e5ce06629d42f4e23315ba0e946fd44a",
+      "store_bytes": 290349
     },
     "ep-006": {
       "M1_roundtrip_mismatches": 0,
@@ -214,12 +450,12 @@
       "decisions": 12,
       "decisions_without_diagnostic": 0,
       "fault_family": null,
-      "ledger_sha256": "aab82ba2adb807f7e14502cf6520477e1f30d8a1b0d3c2c2fd04135123107b94",
+      "ledger_sha256": "c769ae98963ee54072711dfd2ef3d454cae7034ad2adb6098417194b1e39e400",
       "ok": true,
-      "persist_seconds": 0.3106259769992903,
+      "persist_seconds": 1.0102501709989156,
       "seed": 6,
-      "state_sha256": "03acb523409eb6cdb2e72d6638ec255ae1156b27e5dccd14a081e6d0fbed281a",
-      "store_bytes": 284143
+      "state_sha256": "3174ba81a091a30615c0d026ac1d5172dfbfb7096a8794651895a3d84a3c759f",
+      "store_bytes": 284141
     },
     "ep-007": {
       "M1_roundtrip_mismatches": 0,
@@ -246,12 +482,12 @@
       "decisions": 24,
       "decisions_without_diagnostic": 0,
       "fault_family": null,
-      "ledger_sha256": "c8f507ac46c4b5eb785d3d8ae13d99194ea0ff295fd615f24d73599e0a20769c",
+      "ledger_sha256": "5fde48cd15ec9b5b3321f0609013fefbbed6bb2ec87ff6365e455221753965ae",
       "ok": true,
-      "persist_seconds": 0.314628852000169,
+      "persist_seconds": 0.6003947509962018,
       "seed": 7,
-      "state_sha256": "9212d99e442d000c7926fb959ba14a85c510519f1450ecca12aff562340e9026",
-      "store_bytes": 762530
+      "state_sha256": "e0df2336b3980c5661ece51a83bae9419258338319398d97f359eafa810c287e",
+      "store_bytes": 762543
     },
     "ep-008": {
       "M1_roundtrip_mismatches": 0,
@@ -278,12 +514,12 @@
       "decisions": 15,
       "decisions_without_diagnostic": 0,
       "fault_family": null,
-      "ledger_sha256": "43820693b53f789cee7c44fa67f0f9e6c61d06f2b4229742ff24ebf41ac7d16d",
+      "ledger_sha256": "6f66bb5f19acee2b8af7f3a8c7889aa55585038962ccb0f7aeb5412f5bb55b68",
       "ok": true,
-      "persist_seconds": 0.3273684400046477,
+      "persist_seconds": 1.0136854970041895,
       "seed": 8,
-      "state_sha256": "46c4f84bfb8afd057d1bc469e463309a263757d50aab176c3d928598972d3af7",
-      "store_bytes": 339949
+      "state_sha256": "3fa97a0a79d5948f5630670d311f4ac8afd21fbb2307f3237a79f081ce951fdb",
+      "store_bytes": 339927
     },
     "ep-009": {
       "M1_roundtrip_mismatches": 0,
@@ -310,12 +546,12 @@
       "decisions": 15,
       "decisions_without_diagnostic": 0,
       "fault_family": null,
-      "ledger_sha256": "ffeed5807a04f4d4abe586ef20dc35d5d4a666d344edf2a96bb09bf987a4203e",
+      "ledger_sha256": "1c6f82356070b0635994c5946a1b9fec417e695758b1ca2e3d9890430b669319",
       "ok": true,
-      "persist_seconds": 0.33395328700134996,
+      "persist_seconds": 1.2506363569991663,
       "seed": 9,
-      "state_sha256": "963f12c44f0ea9cdcd1da0d68c847afae673a86f78e7d973972eacb8a686539b",
-      "store_bytes": 375043
+      "state_sha256": "ab891a5655ca9db783e002605cee9eb0aa615ccd73965078bd644ca024ce7edd",
+      "store_bytes": 375047
     },
     "ep-010": {
       "M1_roundtrip_mismatches": 0,
@@ -343,12 +579,12 @@
       "decisions": 22,
       "decisions_without_diagnostic": 0,
       "fault_family": null,
-      "ledger_sha256": "e5c726053480f3b186bbb89cc9f4e78f4e1c53fd779943047abda89ca2e030ea",
+      "ledger_sha256": "276b42ebb8798456edd6870e99b5ea4d4ff9bc151033345a6636bc790d110c21",
       "ok": true,
-      "persist_seconds": 0.4274617550036055,
+      "persist_seconds": 0.600171156002034,
       "seed": 10,
-      "state_sha256": "b3594db92804c51c9c56d5ef8c808de8ddc6cde99adcd011c5f2e521c359b225",
-      "store_bytes": 1217000
+      "state_sha256": "7eea909289491df39c32496ea480eedd731531085290d5926d9b5532d7895ddc",
+      "store_bytes": 1217007
     },
     "ep-011": {
       "M1_roundtrip_mismatches": 0,
@@ -376,12 +612,12 @@
       "decisions": 20,
       "decisions_without_diagnostic": 0,
       "fault_family": null,
-      "ledger_sha256": "747cc56bd45c704a29e12fc63e9120d97ade53a6688ada26636b31347c0e33fa",
+      "ledger_sha256": "29fd81d9341ada7447285af53fb10e4330991c8c7adb73b1037de58c503b6f0f",
       "ok": true,
-      "persist_seconds": 0.3532448299956741,
+      "persist_seconds": 0.5721142339971266,
       "seed": 11,
-      "state_sha256": "4afb4dcd3237e1b3bd233ea0135c4706219adfe26df43df9aaa33857360d91f6",
-      "store_bytes": 479970
+      "state_sha256": "58d91f0ca7b7d9a2bc50ec7b7b6a87687de6cc1452d04cfb643987dd0ac871d8",
+      "store_bytes": 479995
     },
     "ep-012": {
       "M1_roundtrip_mismatches": 0,
@@ -409,12 +645,12 @@
       "decisions": 15,
       "decisions_without_diagnostic": 0,
       "fault_family": null,
-      "ledger_sha256": "311088ad9ebfd54da079eb2506aa4cf32f58413698c30a61210882dc348d3733",
+      "ledger_sha256": "5357bd83032e8bf55fa7c42f2913c51063fc21d9bc64149f7f0e33c346562c87",
       "ok": true,
-      "persist_seconds": 0.29051673699723324,
+      "persist_seconds": 0.8790682499966351,
       "seed": 12,
-      "state_sha256": "1959275db293e2298d8c046ffbe28660789d1a3b5619a16c0cdd4bdc200d516a",
-      "store_bytes": 329485
+      "state_sha256": "5e0d97a2e2a5cdb0f0f0552b0d902e0bf57cbc953d896f0fe1de38acb75158b9",
+      "store_bytes": 329477
     },
     "ep-013": {
       "M1_roundtrip_mismatches": 0,
@@ -442,12 +678,12 @@
       "decisions": 22,
       "decisions_without_diagnostic": 0,
       "fault_family": null,
-      "ledger_sha256": "0190393adf5f248ceb40da69ca51cc06aa984a754e9d33d44f51b7114794539b",
+      "ledger_sha256": "beb09b62802468ec0361b78608cbbb44cffa886c81572ce74f6feb8235e35b5a",
       "ok": true,
-      "persist_seconds": 0.3460133980042883,
+      "persist_seconds": 1.1081568230001722,
       "seed": 13,
-      "state_sha256": "965984e42c5f9f3d62d4179d7260481d93ccfe6c8bc1ebb83632f7db01c20bdb",
-      "store_bytes": 669279
+      "state_sha256": "bfa1fd79a145b6e5b18b7cab2d07504a243426e777305d26a603e5434011bd47",
+      "store_bytes": 669275
     },
     "ep-014": {
       "M1_roundtrip_mismatches": 0,
@@ -462,21 +698,21 @@
         "not_found_code": "E_NOT_FOUND",
         "reader": "ep-015"
       },
-      "M3_read_entries": 28,
+      "M3_read_entries": 30,
       "M4_replay_decisions_match": true,
       "M4_replay_receipt_match": true,
       "M5_state_ledger_identical": true,
       "M8_hidden_key_hits": 0,
       "case": [],
-      "decisions": 13,
-      "decisions_without_diagnostic": 0,
+      "decisions": 14,
+      "decisions_without_diagnostic": 5,
       "fault_family": "SENSOR_STUCK",
-      "ledger_sha256": "d30232893b077be247e804ae19b7bc2ba920096995b7cbabeb9d3fa4bcc4ff9f",
+      "ledger_sha256": "068dedb79c306747c54a393fdb85d2bf6b97ee22d9982b10f3b1225e3238cc41",
       "ok": true,
-      "persist_seconds": 0.32391330099926563,
+      "persist_seconds": 1.0994254670004011,
       "seed": 14,
-      "state_sha256": "f37f9f96bc7195ceadfefa2580f5a203772b606b946caf689fd5803212047e54",
-      "store_bytes": 339773
+      "state_sha256": "053a4537076202e4f52e2550add093a611567fb7e729ec2cc2674d83940f6b76",
+      "store_bytes": 271433
     },
     "ep-015": {
       "M1_roundtrip_mismatches": 0,
@@ -500,11 +736,11 @@
       "decisions": 12,
       "decisions_without_diagnostic": 0,
       "fault_family": "SENSOR_SPIKE_BURST",
-      "ledger_sha256": "1cf37526838e4d91785df0062c3e1d237ff537648c4ea586cb3b5ac0f67fed93",
+      "ledger_sha256": "d0eb279327d73d5046757176e2ff2edf8e1c6958621f67f04d251b823e1cc514",
       "ok": true,
-      "persist_seconds": 0.3137967189977644,
+      "persist_seconds": 1.0902574060019106,
       "seed": 15,
-      "state_sha256": "bc311279491a09b48c523bb8a4b58f40c42a7f9a3a2bfc0c3e5e7dccb4329d60",
+      "state_sha256": "2a8a30761cc7d003e1a395d42253438cca98823f1ac0819eed0e24897063b01d",
       "store_bytes": 272759
     },
     "ep-016": {
@@ -529,12 +765,12 @@
       "decisions": 13,
       "decisions_without_diagnostic": 10,
       "fault_family": "OBJECT_MISSING",
-      "ledger_sha256": "737421967acceec5c92f93e38dd3a2e5aedef8dcce3cf3781036fbe07f5705e4",
+      "ledger_sha256": "32c255d895d7a9ed49d78a1a25c496dc8655d295a28e97072b7f870d55a6e054",
       "ok": true,
-      "persist_seconds": 0.33149947900528787,
+      "persist_seconds": 0.8400532819941873,
       "seed": 16,
-      "state_sha256": "7828b2f03f2f6c7bef11f9c267f435114a0e4984f111b02018523f0ed633a108",
-      "store_bytes": 103166
+      "state_sha256": "fd5e3df8b24b733743f24d01545f7073992e26452d2d517af72a185d09799c47",
+      "store_bytes": 103143
     },
     "ep-017": {
       "M1_roundtrip_mismatches": 0,
@@ -558,12 +794,12 @@
       "decisions": 22,
       "decisions_without_diagnostic": 0,
       "fault_family": "SECOND_DYNAMICS_CHANGE",
-      "ledger_sha256": "35e90cdd38f9a47b47db9a7f6eae832eb1ff5d4a8dd9fc4e4adf9fb8c6d52f27",
+      "ledger_sha256": "e88c13f78eb3acf65df9420b3f54f0ffa98ef152646470dd4800282855b82bcf",
       "ok": true,
-      "persist_seconds": 0.32818223600042984,
+      "persist_seconds": 0.6111469140014378,
       "seed": 17,
-      "state_sha256": "66fcf8481930dd1db2614aee3c701c621d739c407bc321e700d57d534cd46b1a",
-      "store_bytes": 1119942
+      "state_sha256": "a3e7c334c1901e6a79dcf805ec08744bd1e333e4ccd25521cc2782a7e5a94bde",
+      "store_bytes": 1119932
     },
     "ep-018": {
       "M1_roundtrip_mismatches": 0,
@@ -587,12 +823,12 @@
       "decisions": 13,
       "decisions_without_diagnostic": 10,
       "fault_family": "BELT_STOP",
-      "ledger_sha256": "8d444818994c5785a5edaa32e66074d59afaf7567304841ab16c9ecc7a3da307",
+      "ledger_sha256": "48d2c335b4c38b7d8945242e18fd054970f360cd5915d28b2af3322f6d0e823d",
       "ok": true,
-      "persist_seconds": 0.326429212000221,
+      "persist_seconds": 1.1036440129973926,
       "seed": 18,
-      "state_sha256": "567fffb56db371aec16891a79b1d698f32f4a3393d24dd2ebd720af4de205f7b",
-      "store_bytes": 118403
+      "state_sha256": "24bf5ffd29a41a1d4325d90164e57cfaa07021620c81245dfd2e8fe293408eb5",
+      "store_bytes": 118367
     },
     "ep-019": {
       "M1_roundtrip_mismatches": 0,
@@ -618,21 +854,21 @@
       "decisions": 12,
       "decisions_without_diagnostic": 0,
       "fault_family": null,
-      "ledger_sha256": "b62808b39abb0f437685fa0dc67e380f5da5998affbe1839f26ec23e26202ed4",
+      "ledger_sha256": "04599c89c696ba3ff7f40d544ddc602c9dda9979a89285d706b4da5933452154",
       "ok": true,
-      "persist_seconds": 0.2968814769992605,
+      "persist_seconds": 0.5335678480041679,
       "seed": 19,
-      "state_sha256": "d43fa8a9cf3f13e78c70f5aea93fd482d652e255cc640b6edc9d8efbddc78e72",
-      "store_bytes": 296996
+      "state_sha256": "33101826188541974201e84c8b0e23531d59d0e1c6e7840e75185262c8eabd66",
+      "store_bytes": 296988
     }
   },
   "meterless_sha": "1742dec56a66e58eef9dda2d2b865823758ca8cd",
   "node": "v22.22.1",
   "python": "3.12.3",
-  "run_tag": "l5a-phasea",
+  "run_tag": "l6-afa2aa6",
   "schema": "rra.l6.meterless_persistence.v1",
   "summary": {
-    "B4": "PASS: B4_TIEBREAK meterless off/on decisions 20/20, receipt hashes 20/20",
+    "B4": "STALE: previous B4 section preserved; refresh deferred to FRZ-2 (requires NIM).",
     "M1_roundtrip_mismatches": 0,
     "M2_equal": 20,
     "M2_production_decisions_equal": 20,
@@ -646,239 +882,5 @@
     "all_ok": true,
     "episodes": 20
   },
-  "tsx": "tsx v4.23.0",
-  "B4": {
-    "status": "PASS",
-    "provider": "ReplayProvider",
-    "cache_dir": "artifacts/llm_cache",
-    "s2_variant": "B4_TIEBREAK",
-    "text_variant": "NO_TEXT_CONTEXT",
-    "seed_source": "artifacts/s2/diag-d1g.json:first-20",
-    "episode_count": 20,
-    "decisions_equal": 20,
-    "receipt_equal": 20,
-    "live_llm_calls": 0,
-    "episodes": [
-      {
-        "episode_id": "ep-001",
-        "seed": 1,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 15,
-        "off_receipt_sha256": "509b34f0a3272e70d987f359ac2f5fe06562b563ff3605cbd560f160f199abe5",
-        "on_receipt_sha256": "509b34f0a3272e70d987f359ac2f5fe06562b563ff3605cbd560f160f199abe5",
-        "persisted_decision_records": 15,
-        "manifest_sha256": "42fd40dc7226d283004853605ea09e544190a02f21f601d90b84dbc133b71372"
-      },
-      {
-        "episode_id": "ep-002",
-        "seed": 2,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 12,
-        "off_receipt_sha256": "01d4ad7b05426a460f282e1087106271dcae805e93a3820b53e80560d7dbc0e4",
-        "on_receipt_sha256": "01d4ad7b05426a460f282e1087106271dcae805e93a3820b53e80560d7dbc0e4",
-        "persisted_decision_records": 12,
-        "manifest_sha256": "ad9a7cbb9f102f18fd27348bd73fb8b4639d2ea6067b6cb70891704a2d3c8f1d"
-      },
-      {
-        "episode_id": "ep-003",
-        "seed": 3,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 12,
-        "off_receipt_sha256": "d0ba12ed9c845693c79c0a7c8c3550e0e239eedfd94dd0ae4524879b08b5da44",
-        "on_receipt_sha256": "d0ba12ed9c845693c79c0a7c8c3550e0e239eedfd94dd0ae4524879b08b5da44",
-        "persisted_decision_records": 12,
-        "manifest_sha256": "6b86644169ef2362495aa513b899060bd9cfed8aadff5f7799dc25f9c3ad3e5c"
-      },
-      {
-        "episode_id": "ep-020",
-        "seed": 20,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 15,
-        "off_receipt_sha256": "d2402b83dc16fd1ef6c2937999d7e829da6baf959089841b1e1d49513b2e4799",
-        "on_receipt_sha256": "d2402b83dc16fd1ef6c2937999d7e829da6baf959089841b1e1d49513b2e4799",
-        "persisted_decision_records": 15,
-        "manifest_sha256": "6952fe3139f11ccb31fc3f0b1b7ce9c88cdeefb1961a988a5c46cc982e252e00"
-      },
-      {
-        "episode_id": "ep-021",
-        "seed": 21,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 21,
-        "off_receipt_sha256": "e2093befb0970f8ac4daa05c273d9b148197340d25c4e48c08482c3b1ab166a1",
-        "on_receipt_sha256": "e2093befb0970f8ac4daa05c273d9b148197340d25c4e48c08482c3b1ab166a1",
-        "persisted_decision_records": 21,
-        "manifest_sha256": "dfb16a96205aeed38ea635c18660cb1b2644a0d4d49b3d3dae369319817f84c7"
-      },
-      {
-        "episode_id": "ep-022",
-        "seed": 22,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 12,
-        "off_receipt_sha256": "8f10c878a387f50955778e5d3b3d4dc2fad2e0e4a4b351921a9d4080a1d5e1d9",
-        "on_receipt_sha256": "8f10c878a387f50955778e5d3b3d4dc2fad2e0e4a4b351921a9d4080a1d5e1d9",
-        "persisted_decision_records": 12,
-        "manifest_sha256": "1b92ed824a6525121b2577b501279f3df6c214f8df077c6b5831b7165e374c43"
-      },
-      {
-        "episode_id": "ep-024",
-        "seed": 24,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 12,
-        "off_receipt_sha256": "a1ae34beb3cdde3da346db7c498c1bee44acdc3fe9f05a075fe81bde2706a3a1",
-        "on_receipt_sha256": "a1ae34beb3cdde3da346db7c498c1bee44acdc3fe9f05a075fe81bde2706a3a1",
-        "persisted_decision_records": 12,
-        "manifest_sha256": "201e4abfaf55bd54c55e6d3c6d697ed34a986fcf3e40e96dda24f105f5e734af"
-      },
-      {
-        "episode_id": "ep-026",
-        "seed": 26,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 12,
-        "off_receipt_sha256": "071dcb75e9fa6af611a23b52c860c76fb3acbdcea8e170f7d007b2d7374d5f48",
-        "on_receipt_sha256": "071dcb75e9fa6af611a23b52c860c76fb3acbdcea8e170f7d007b2d7374d5f48",
-        "persisted_decision_records": 12,
-        "manifest_sha256": "d85c6dc1cd5515dc5595f04bff8ab38bdcd98444091701b8bb08cd0a557dc82f"
-      },
-      {
-        "episode_id": "ep-030",
-        "seed": 30,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 15,
-        "off_receipt_sha256": "1ce8374c2026bad666e05a1f247c8635f07783267bdfda4a35f6cc15a7719b15",
-        "on_receipt_sha256": "1ce8374c2026bad666e05a1f247c8635f07783267bdfda4a35f6cc15a7719b15",
-        "persisted_decision_records": 15,
-        "manifest_sha256": "50049cf0352522768e117dc47747231f89e919defc5360b83a5ea728a4db76a9"
-      },
-      {
-        "episode_id": "ep-039",
-        "seed": 39,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 24,
-        "off_receipt_sha256": "f5317b93a4f3a581e084bf7e3219cf94650d6a4d288d22591ccc5de8909bf9dd",
-        "on_receipt_sha256": "f5317b93a4f3a581e084bf7e3219cf94650d6a4d288d22591ccc5de8909bf9dd",
-        "persisted_decision_records": 24,
-        "manifest_sha256": "c0b4dc32465fec6590f191d7168bd43c814924ab2b5b0cc251c9c80c9ee3d40c"
-      },
-      {
-        "episode_id": "ep-040",
-        "seed": 40,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 12,
-        "off_receipt_sha256": "c3749b7794093e829fd961076c9f607040ede981091db5bef6c4adde7978155e",
-        "on_receipt_sha256": "c3749b7794093e829fd961076c9f607040ede981091db5bef6c4adde7978155e",
-        "persisted_decision_records": 12,
-        "manifest_sha256": "5d49a33d7341c4fadfc83bfc4aec15ec9d2c210db7eee59a4a678952dc65f922"
-      },
-      {
-        "episode_id": "ep-041",
-        "seed": 41,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 15,
-        "off_receipt_sha256": "d16b7879ef24d7055dcf98f7fde65acf26ab4064a5d70439f7e6886d3aeaed4f",
-        "on_receipt_sha256": "d16b7879ef24d7055dcf98f7fde65acf26ab4064a5d70439f7e6886d3aeaed4f",
-        "persisted_decision_records": 15,
-        "manifest_sha256": "a000e677fb191dc2aa0c389e1868ef19d441a1f62741832c437034bb2de9dab7"
-      },
-      {
-        "episode_id": "ep-046",
-        "seed": 46,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 23,
-        "off_receipt_sha256": "09ffc32a4e9857d5bb6d6fb34e5e52f790a25f0d4f11427c665ebe6a39ba9756",
-        "on_receipt_sha256": "09ffc32a4e9857d5bb6d6fb34e5e52f790a25f0d4f11427c665ebe6a39ba9756",
-        "persisted_decision_records": 23,
-        "manifest_sha256": "d4575ac27da446f86c062e08e48ab1ef672b032cbc7eb472eb48012d2dedfb09"
-      },
-      {
-        "episode_id": "ep-048",
-        "seed": 48,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 18,
-        "off_receipt_sha256": "410c2cc5eb46ae808e3fe51ae0681d6f3e639b706dde847cc0ef39620e241069",
-        "on_receipt_sha256": "410c2cc5eb46ae808e3fe51ae0681d6f3e639b706dde847cc0ef39620e241069",
-        "persisted_decision_records": 18,
-        "manifest_sha256": "d33b03b52d4eb3a3b6d6cede5b08e3f8ef6311d31e9998a12a9b706d795f36b6"
-      },
-      {
-        "episode_id": "ep-051",
-        "seed": 51,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 15,
-        "off_receipt_sha256": "51e11878b59307e11b9b7fe6f772578ed21b6796730fc1c971abcf3951edf738",
-        "on_receipt_sha256": "51e11878b59307e11b9b7fe6f772578ed21b6796730fc1c971abcf3951edf738",
-        "persisted_decision_records": 15,
-        "manifest_sha256": "8bafcb1fab07ca17610e0c3571cd2a9cd8abad27f8f3610de010c762879757a5"
-      },
-      {
-        "episode_id": "ep-052",
-        "seed": 52,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 13,
-        "off_receipt_sha256": "1d2cb9f3f0d9b6b2331ed1190029412e0e523690de6843b878d46de45b5fe6ed",
-        "on_receipt_sha256": "1d2cb9f3f0d9b6b2331ed1190029412e0e523690de6843b878d46de45b5fe6ed",
-        "persisted_decision_records": 13,
-        "manifest_sha256": "8325afaea919336898943dfc6fade7f659380366f8221c5ebc2235ca6bd2ebb6"
-      },
-      {
-        "episode_id": "ep-058",
-        "seed": 58,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 12,
-        "off_receipt_sha256": "64371fafb937fcd3cff9b88e1eb848b9a7bc6753fc16b115bab9418e505f3e73",
-        "on_receipt_sha256": "64371fafb937fcd3cff9b88e1eb848b9a7bc6753fc16b115bab9418e505f3e73",
-        "persisted_decision_records": 12,
-        "manifest_sha256": "f99a67b181bab2318727c50fbc3491210b6940a22929330b8de02da3a146e19c"
-      },
-      {
-        "episode_id": "ep-059",
-        "seed": 59,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 12,
-        "off_receipt_sha256": "8e8f09635be4efd4e08d9077adf8b9cae307d4b356b0e18ca4ffbfd54b22a823",
-        "on_receipt_sha256": "8e8f09635be4efd4e08d9077adf8b9cae307d4b356b0e18ca4ffbfd54b22a823",
-        "persisted_decision_records": 12,
-        "manifest_sha256": "d59dfecac0e5a917f390fd0d827b3b8319ca3256b53fca53f763a4231c46edf1"
-      },
-      {
-        "episode_id": "ep-060",
-        "seed": 60,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 15,
-        "off_receipt_sha256": "b9c7153766d40fd36638514ca679cabe9997687a6763df309b0b48074abfd0e1",
-        "on_receipt_sha256": "b9c7153766d40fd36638514ca679cabe9997687a6763df309b0b48074abfd0e1",
-        "persisted_decision_records": 15,
-        "manifest_sha256": "b8a40ebe4843f03dd490e2bf176f759a1780e1634f9f8dbdcef3db61a6345b9a"
-      },
-      {
-        "episode_id": "ep-067",
-        "seed": 67,
-        "decisions_equal": true,
-        "receipt_equal": true,
-        "decision_count": 12,
-        "off_receipt_sha256": "4b25880305e3c95a950b7863794d29bdc1f1126ac8e446a0bdffd6eb76ea6ba7",
-        "on_receipt_sha256": "4b25880305e3c95a950b7863794d29bdc1f1126ac8e446a0bdffd6eb76ea6ba7",
-        "persisted_decision_records": 12,
-        "manifest_sha256": "8db683c8700125eef15f112e5ff0244181e20bbb8f4fea918b18c396441e289b"
-      }
-    ]
-  }
+  "tsx": "tsx v4.23.0"
 }
