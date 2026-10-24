@@ -51,7 +51,7 @@ Each step lists its precondition and how to check it. Do not skip ahead; most la
    - Check: full pytest; dev equivalence 130/130 vs `s2-b3-dev`; B3 receipt `bfda4d10…` on the registered runner;
      T9b test drafts (report appendix) pass; the A07 §6 stop conditions are testable.
 2. **Merge #28, then #29** (owner merges). A07 must be on `main` before the tag.
-3. **FRZ-2B** on the registered runner (A06 §3.2, A07 §3): probe the three format modes on the first 10 distinct
+3. **FRZ-2B** on the registered runner (A06 §3.2, A07 §3); the owner must unlock `NVIDIA_API_KEY` locally. Probe the three format modes on the first 10 distinct
    requests of the 33-seed dev subset, select by the registered rule, write the selected mode into the frozen code,
    rebuild the dev B4 cache live, regenerate `artifacts/s2/b4-dev.json`. If the selected mode's request template
    differs from the probe's recorded template SHA, the probe is void and repeated (A07 §3.3).
@@ -70,6 +70,8 @@ Each step lists its precondition and how to check it. Do not skip ahead; most la
    row is complete or declared incomplete. No existing cache file may change (A07 §4.7, §6).
 8. **Sponsor receipts on the frozen candidate**: Zetaris 20-episode equivalence (local Zetaris + `ZETARIS_TOKEN`),
    Meterless persistence/replay (`scripts/setup_meterless.sh`, `scripts/l6_persist_and_replay.py`).
+   Known blocker (local, 2026-10-24 18:10): the Zetaris ops container `rra-l3-ops` exits because its mount source
+   (the deleted `l3-zetaris` worktree) is gone; a small OPS fix is needed before the Zetaris receipt.
 9. **Submission** (by 10-27 23:45 UTC): fill results into the deck and documents; merge the post-freeze docs branches;
    record the 1–4 min video; fill the form. See §5.
 
