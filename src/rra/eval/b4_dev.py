@@ -179,10 +179,14 @@ def _misleading_audit(row: dict[str, Any], mode: str) -> dict[str, Any]:
 
 def run_b4_dev(output_dir: Path = ROOT / "artifacts" / "s2", *,
                nproc: int | None = None, subset: bool = False,
-               replay_only: bool = False) -> dict[str, Any]:
+               replay_only: bool = False,
+               seeds_path: Path | None = None) -> dict[str, Any]:
     """Run paired B4 modes for every dev episode and frozen text variant."""
     run_started = time.perf_counter()
-    all_seeds = json.loads((ROOT / "config" / "dev_seeds.json").read_text())["seeds"]
+    if seeds_path is not None and subset:
+        raise ValueError("subset cannot be combined with seeds_path")
+    seed_file = seeds_path if seeds_path is not None else ROOT / "config" / "dev_seeds.json"
+    all_seeds = json.loads(seed_file.read_text())["seeds"]
     if subset:
         seeds = json.loads((ROOT / "artifacts" / "s2" / "diag-d1g.json").read_text())["seeds"]
     else:
@@ -304,7 +308,8 @@ def run_b4_dev(output_dir: Path = ROOT / "artifacts" / "s2", *,
     } for row in rows]
     body = {
         "schema_version": "rra.s2.b4-dev.v1", "subset": subset,
-        "seed_identity": {"path": "artifacts/s2/diag-d1g.json" if subset else "config/dev_seeds.json",
+        "seed_identity": {"path": "artifacts/s2/diag-d1g.json" if subset else
+                          ("config/dev_seeds.json" if seeds_path is None else str(seeds_path)),
                           "values": seeds},
         "episode_count": len(seeds), "text_variants": list(VARIANTS),
         "N_amb": n_amb, "estimated_llm_calls": round(4 * n_amb * 1.3, 1),
