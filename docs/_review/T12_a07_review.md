@@ -270,3 +270,63 @@ A07 没有 A06 §4A 那样的"change no threshold, gate, scoring rule, or denomi
 - `git ls-remote origin docs/prereg-addendum-07 cloud/t12-a07-review main` → A07 head 仍为 `b656859`。
 - 读取 `artifacts/s2/diag-d1g.json`（dev 子集，非 eval 种子）并检查是否含种子 9、28、47、66、85、104、123 → 33 个种子，无交集。
 - 未打开 `config/eval_seeds*.json`。
+
+---
+
+# 复审（A07-R1，head `f1cef9309b2debf491361329fe36cd52bd79365b`）
+
+本节追加在原报告之后；第 0–6 节和附录没有改动，其中的行号仍指 head `b656859`。本节行号指 `f1cef93` 上的 A07（90 行）。
+
+- 复审对象：PR #29 新 head `f1cef93`，单个新提交 "register owner rulings R14-R16 and clarifications in addendum 07"，父提交 `b656859`。
+- 范围：`git diff --stat 349d1e6 f1cef93` 只有 `decisions.md`（+1）和 `docs/P3_PREREG_ADDENDUM_07.md`（+90）；`git diff b656859 f1cef93` 为 A07 15 增 13 删、`decisions.md` 1 行改动。P3、A01–A06、`EVAL_PROTOCOL.md`、`H1_EVAL_FOUNDATION.md` 未被编辑。merge-base 仍是 `349d1e6`。`decisions.md` 的改动只是在原来的 2026-10-24 那一行里追加 R14–R16 的描述，没有改其他行。
+- 代码状态：#27 已合并进 main（`edd54c0`，合并的是 `466bec6`）；#28 仍为 `52bdd47`。我没有重读代码，第 3 节的代码对照对 #28 未变；对 #27，A07-R1 新增的内容（R14 的 5 次尝试、Retry-After、最终错误记录、连续 10 条停止）在我读过的 `466bec6` 中没有实现。
+- 同样未运行任何代码，未打开 `config/eval_seeds*.json`，只读。
+
+## R.1 协调会话清单逐条核对
+
+| 项 | A07-R1 出处 | 判定 | 说明 |
+|---|---|---|---|
+| X-2 | §4.1:45-52（R14） | 一致（原冲突已消除） | 标题写明"conforming to Addendum 04 Section 3 rule 1"。瞬时错误最多 5 次尝试，仍失败则缓存错误记录，错误记录为最终，回放复现 `PROVIDER_ERROR` 并计入 A04 §6.2（:50）。不再有"持续失败即停止而不产生 `PROVIDER_ERROR`"的规则，与 A04 rule 1 的字面差异已不存在。新增的"连续 10 个错误记录则停止"见 R.3 的 N-1。 |
+| X-1 | §4.5:63（R15） | 一致（原冲突已消除） | 明写"For this case only, this amends Addendum 04 Section 6.1"；报告可由 ledger 与缓存算出的计数（LLM 调用、valid/`INVALID_PROPOSAL`/`PROVIDER_ERROR`/截断），`gate_reason` 分布写"not available (incomplete)"。不再是无声明的取消。新的歧义见 R.3 的 N-2。 |
+| X-4 | §2 R10:27 | 一致 | 增加一句，引用 `docs/H1_EVAL_FOUNDATION.md` line 17，说明只改变文本相对 H1 描述的位置，文本、生成器、泄漏校验不变。没有写"取代 H1:17"，但已明示关系。A02 §4.2 仍未引用（原先也只是建议级）。 |
+| Q-1 | §4.1:48-49 | 部分 | 408 与"200 + 非 JSON 体"归瞬时类；3xx、409 和"any other 4xx"归确定性类。原先的缺口已关闭。仍未覆盖：200 以外的 2xx（201、204 等）和 1xx。 |
+| Q-2 | §4.2:54 | 部分 | 写明"The cap is checked before a new entry is appended"，到达 2,500 条不同条目后不再尝试新请求，"the run ends as incomplete"，错误记录计数。关闭了"先追加后检查"的读法。仍有两点：①追加之后、HTTP 发出之前崩溃，则有条目而无尝试，与"至少一次 HTTP attempt"的定义不等（偏大，未处理）；②"2,500 条且之后全部命中缓存、无需新请求"时是否算 incomplete，见 R.3 的 N-3。 |
+| Q-5 | §4.4:61 | 一致 | 完成 = live 命令以 complete 状态退出，且每个 (seed, text condition) 的每个请求都有缓存的响应或错误记录；须在 2026-10-27 06:00 UTC 前完成，按运行机时钟、记入回执。关闭了 Q-5 的两种读法。残留见 R.3 的 N-4。 |
+| Q-6 | §2 R13:30 | 一致 | 明写"counts every response served in a generation, including cache hits; in the scored replay it therefore counts every response"。无 `model` 字段的响应和错误记录是否计入仍未写（原 Q-6 的次要部分）。 |
+| §5.1 措辞收窄 | §5.1:77 | 一致 | 改为"The B3 development runs since commit `7ea70ce` ... The read-only diagnostics built on them do the same"，不再写"All System-2 development runs"。 |
+| §5.1 B4 子集一句 | §5.1:77 | 部分 | 句子已加入："None of the 33 seeds of the B4 development subset (`artifacts/s2/diag-d1g.json`) belongs to case 9"，这一半我在原审查中已核对（33 个种子与七个种子无交集）。但后半"so the generator has not received this structure during development"是更宽的主张：我核对了 `diag-d1g.json`，没有核对所有开发期间发给生成器的请求都来自该子集。`scripts/nemotron_smoke.py`、`nemotron_reasoning_probe.py` 用的是手写合成 packet（不是 episode）；2026-10-23 历史 B4 开发运行（`92e2b89`，386 条缓存，历史 live 调用 376）所用种子范围我仍未查到，其数量级与 33 个种子的子集（T6 记录 444 个调用点）相符而不像全量 dev（约 1,400 个不同请求），这只是推断，不是核实。 |
+| R13、R14、R15、R16 编号 | §2:30；§4.1:45；§4.5:63；§5.2:79 | 一致 | 编号与 `decisions.md` 一行中的描述对得上。R16 写在 §5.2 末尾，并写了"Choosing a different holdout now would be a post hoc change and is not done"。 |
+
+## R.2 原 §6.2"必须"项是否都已解决
+
+| 原必须项 | 状态 |
+|---|---|
+| §5.1 缺 B4/LLM dev 子集说明 | 已加入（见 R.1）；其后半主张的覆盖范围见上，未完全核实。 |
+| X-1（与 A04 §6.1 字面冲突） | 已解决：明示修订，限于未完成情形。 |
+| X-2（与 A04 §3 rule 1 字面冲突） | 已解决：R14 改为遵守 rule 1。 |
+| §4.1、§4.2 对应的实现须在 `impl-freeze-v3` 前完成并审查 | **仍待办**，且范围扩大：R14 要求 5 次尝试、遵守 Retry-After、最终错误记录、连续 10 条停止、200 + 非 JSON 视为瞬时；R16 要求 case 9 单列；§4.4 要求截止检查与回执时钟记录；§4.2 要求 ledger 与"先检查后追加"。#27 已合并的 `b4_dev.py:54-70` 仍是 3 次尝试、429 不重试、失败后继续；#28 `52bdd47` 仍无 ledger、无截止检查、守卫仍拒绝缓存目录。均为待 EVAL-PATH-R1。 |
+
+原 §6.1 的"需所有者裁决"中，X-5（§5.2 与 P3 §19 依赖 holdout 判据的关系）、Q-9（§5.3 的 v2 事实含义）、Q-6 其余部分、Q-12（后退参数）A07-R1 没有涉及，仍是原状。
+
+## R.3 A07-R1 引入的新歧义
+
+| 编号 | 出处 | 内容与影响 | 检验设计 |
+|---|---|---|---|
+| N-1 | §4.1:51 | "ten consecutive requests end in error records, the run stops"。①"consecutive"在多线程下按完成顺序还是发出顺序不明（B4 用线程池）。②确定性错误记录（4xx）是否计入这 10 条：读法 1 计入——持续的 400 也会让运行停止，读法 2 只计瞬时耗尽后的记录。③续跑后计数是否清零。④"Those error records are kept"：停止前这 10 条是最终记录，续跑后不会重试，因此一次中断服务会留下至少 10 条永久 `PROVIDER_ERROR`，且 A07 写明它们计入 A04 §6.2 的 50% 判定。这是设计后果，列给所有者知晓，不是缺陷判断。 | mock provider 注入连续 N 次失败，检查停止时刻、记录数、续跑后同一请求是否重试、`PROVIDER_ERROR` 计数。 |
+| N-2 | §4.5:63 | 未完成时的 A04 §6.1 计数"computed from the ledger and the cache"。①A04 §6.1 是"for each B4 variant"的计数，而缓存按请求键存放，不带变体或文本条件，strict/tiebreak 共享请求（A04 §1.3）；"LLM calls"在 A04 §1.5 是每个 (seed, variant) 实际服务的请求数（含缓存命中），ledger 与缓存只能给出不同请求数——同名但不同量。②`INVALID_PROPOSAL`、`PROVIDER_ERROR` 在 A04 §3 里是 tiebreak 的回退原因，部分判定（rule 2–5）需要 verifier 状态，不能只从缓存响应得出；"classified by the adapter rules"只覆盖 rule 1 一类的可用性判断。③"the cache"是整个共享目录 `artifacts/llm_cache/`（含 dev 与旧条目）还是只含 ledger 内的 SHA。④已尝试但无响应也无错误记录的 ledger 条目归哪一类。 | 在含 dev 旧条目的混合缓存上按两种范围各数一遍，比较；对一条已登记但无响应的 ledger 条目看分类结果。 |
+| N-3 | §4.2:54 | "when the ledger already holds 2,500 distinct entries, no new request is attempted and the run ends as incomplete"。读法 1：只有当出现需要第 2,501 个新请求时才 incomplete；读法 2：ledger 达到 2,500 即 incomplete，即使 live 填充恰好在 2,500 条处完成。A06 §3.5 写"If the cap ... is reached"，A06 §5 写"more than 2,500"，这两处原先就不一致，A07-R1 没有消除。 | 构造恰好需要 2,500 个不同请求的运行，看状态是 complete 还是 incomplete。 |
+| N-4 | §4.4:61 | "by the runner clock, as recorded in the receipt"。①时钟来源（NTP 与否）未写。②回执里记录完成时刻，该字段若进入 `receipt_sha256`，两次回放的哈希会不同（§4.3 要求第二次与第一次 match）；若不进入，则该时刻不受哈希保护。原 Q-7 的"match 比什么"仍未答。③截止时刻在途请求的处理未写。 | 在 mock 运行里检查完成时刻字段是否在 `hash_input` 内。 |
+| N-5 | §1.1:13 与 §4.5:63 | :9 仍写"does not alter ... Addenda 01–06"，而 :63 明写"this amends Addendum 04 Section 6.1"。:9 第二句"governs only the items listed below"可兼容，但措辞上两处并置。属措辞张力，无操作影响（对应原 X-8）。 | — |
+| N-6 | §4.1:49 | "retried up to five attempts in total, with back-off and honouring Retry-After"：后退参数、`Retry-After` 上限（可能超过截止时间）仍未写，原 Q-12 的后半仍在。 | 注入 `Retry-After: 86400`，看运行是否越过截止时间。 |
+
+## R.4 新提交是否引入冲突
+
+- 与 P3、A01–A06 的字面冲突：**未发现新的冲突**；原 X-1、X-2 已消除。
+- 仍然悬而未决的上位关系：X-5（P3 §19 与 holdout）、Q-9（§5.3 对 v2 的事实陈述）。
+- 与任务卡所列所有者裁决：R14–R16 的内容与协调会话转述的所有者采纳内容一致；我只据协调会话的转述核对，没有读到所有者的原话（issue #26 17:15 那条我在原审查时尚未发布，本次也未重读）。
+
+## R.5 当前状态摘要
+
+- 原"必须"项里，两处字面冲突已解决，§5.1 缺失已补，但其后半主张的覆盖范围未完全核实；实现项仍待 EVAL-PATH-R1，且比原先多（R14 的细节）。
+- 新增歧义 N-1–N-6，其中 N-1、N-2、N-3 与实现行为直接相关。
+- 本次复审未运行代码，上述判定均来自读 A07、`decisions.md` 和已读过的代码。
