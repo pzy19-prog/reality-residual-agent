@@ -26,8 +26,8 @@ anything.** This file is a map; the registered documents (`docs/P3_*`) and the o
 | Piece | State | Head / commit |
 |---|---|---|
 | `main` | FRZ-1 (#24), A06 (#25), FRZ-2A (#27) merged | `edd54c0` |
-| PR #28 EVAL-PATH (`feat/eval-v3-path`) | **local review BLOCK** (X1, X2); EVAL-PATH-R1 being implemented by the local executor; not yet merged with `main` | `52bdd47` |
-| PR #29 A07 (`docs/prereg-addendum-07`) | A07-R1 and A07-R2 pushed; cloud review T12 re-reviewing | `ca1ff0e` |
+| PR #28 EVAL-PATH (`feat/eval-v3-path`) | EVAL-PATH-R1 pushed (`ce8b8a7` merge of `main`, `ae95d8f` guard + ledger, `6ae04b8` error records + stop after 10, `e4de964` live times + incomplete ledger). **Review owned by the local control session** (cloud review stopped). Check it against A07 §4 incl. the 18:20 clarifications (M-1 counter = live outcomes in this process only; M-3 `b4_live.json` / `b4.json` / out-of-repo second replay + `b4_replay_check.json`; M-4 count classes) and the T9b guard bypasses | `e4de964` |
+| PR #29 A07 (`docs/prereg-addendum-07`) | A07-R1/R2/R3 done; cloud T12 third re-review: **no must-fix items left**; local review PASS; waits for CI then the owner's merge | `4d3ee79` |
 | FRZ-2B (probe + dev live) | not started — needs #28 and #29 merged | — |
 | Freeze tag `impl-freeze-v3` | not created | — |
 | `config/eval_seeds_v3.json` | **must not exist yet** (`artifacts/h1/final-eval-v3-prohibition.json` flags all `false`) | — |
@@ -122,7 +122,7 @@ All on `cloud/*` branches (read with `git show origin/<branch>:<path>`); none is
 | `cloud/t6-prefreeze-check` | `docs/_review/T6_prefreeze_check.md` | **pre-freeze checklist C-01…C-16**, packet audits, phases 1–3 on FRZ-2A |
 | `cloud/t8-repro-check` | `docs/_review/T8_repro_check.md` | judge-view reproduction, README gaps |
 | `cloud/t9a-a06-review` | `docs/_review/T9a_a06_review.md` | A06 review (M/S items) |
-| `cloud/t9b-evalpath-review` | `docs/_review/T9b_evalpath_review.md` | **EVAL-PATH review: X1/X2, guard bypasses, test drafts** |
+| `cloud/t9b-evalpath-review` | `docs/_review/T9b_evalpath_review.md` | **EVAL-PATH review: X1/X2, guard bypasses (§2.2), test drafts.** Written on `52bdd47` (local commit `2d6b2ce`); pushed only if the owner approved it in the T9b session — check `git ls-remote` |
 | `cloud/t12-a07-review` | `docs/_review/T12_a07_review.md` | A07 review and re-reviews |
 | `cloud/t10-readme-docker` | README ×2, Dockerfile, `scripts/l6_b4_meterless_replay.py` | **post-freeze** docs/build changes (3 separable commits; the script commit only after results) |
 | `cloud/t11-submission-v4` | `docs/submission/DRAFT_SUBMISSION_v4.md`, `FAILURE_MODES_DRAFT_v2.md`, `DECLARATIONS_TEMPLATE.md` | submission drafts; add R10–R16 and S-8 before use |
@@ -136,5 +136,6 @@ empty. Fill it from `artifacts/eval_v3/*` after step 7, reporting case 9 separat
 - Local control-session cards and reviews (`_cards/*.md`, `_reviews/*.md`) live in the owner's WSL worktree unless
   pushed. Ask for them, or reconstruct the scope from issue #26.
 - Uncommitted local work: run `git status` / `git stash list` in the owner's worktree before starting.
-- The cloud review sessions (T6, T9b, T12) and the cloud watcher stop if the cloud session is limited; their reports
-  stay on the branches above.
+- From 2026-10-24 ~18:00 Beijing the cloud coordination session is **on standby to save quota**: its watcher and
+  hourly check are off. The local control session is primary. The owner can call the cloud session for a specific
+  review or for the deck/submission documents. Cloud reports stay on the branches above.
