@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import io
 import json
 import os
 from pathlib import Path
 import subprocess
 import sys
+from urllib.error import HTTPError
 
 import pytest
 
@@ -384,6 +386,84 @@ def test_eval_live_ledger_resumes_after_a_crash_and_stays_append_only(monkeypatc
     assert updated.startswith(original)
     assert updated.count(b"\n") == 2
     assert b"overflow" not in updated
+
+
+def test_a_provider_error_still_occupies_a_ledger_slot(monkeypatch, tmp_path):
+    from rra.llm.providers import CachedProviderError
+
+    class Live:
+        model = "test-model"
+        max_tokens = 1800
+        chat_template_kwargs = {"enable_thinking": False}
+        no_think = False
+        last_http_status = None
+
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def complete(self, request_body):
+            raise CachedProviderError("deterministic")
+
+    monkeypatch.setattr(b4_dev, "NvidiaNimProvider", Live)
+    output = tmp_path / "out"
+    output.mkdir()
+
+    def fail_once(*args, **kwargs):
+        b4_dev.NvidiaNimProvider().complete({"messages": [{"role": "user", "content": "bad"}]})
+        return {"metrics": {}, "episodes": [], "llm_calls": 0}
+
+    monkeypatch.setattr(b4_dev, "run_b4_dev", fail_once)
+    with pytest.raises(CachedProviderError):
+        final_v3._run_b4(tmp_path / "seeds.json", output, replay=False, live=True, subset=False,
+                         max_live_calls=1, nproc=1, role="eval_v3")
+    assert len((output / "live_ledger.jsonl").read_text().splitlines()) == 1
+
+    def another(*args, **kwargs):
+        b4_dev.NvidiaNimProvider().complete({"messages": [{"role": "user", "content": "other"}]})
+        return {"metrics": {}, "episodes": [], "llm_calls": 0}
+
+    monkeypatch.setattr(b4_dev, "run_b4_dev", another)
+    result = final_v3._run_b4(tmp_path / "seeds.json", output, replay=False, live=True, subset=False,
+                              max_live_calls=1, nproc=1, role="eval_v3")
+    assert result["status"] == "incomplete"
+    assert result["distinct_live_requests"] == 1
+    assert len((output / "live_ledger.jsonl").read_text().splitlines()) == 1
+
+
+def test_live_and_replay_error_records_share_decision_records(tmp_path, monkeypatch):
+    from rra.eval.framework import v3_world_config
+    from rra.eval.scenarios import composition_structures, realize_episode
+    from rra.evidence import run_episode
+    from rra.llm import providers
+    from rra.llm.adapter import HypothesisProposer
+
+    monkeypatch.setenv("NVIDIA_API_KEY", "test-secret")
+    monkeypatch.setattr(providers.time, "sleep", lambda seconds: None)
+
+    def urlopen(request, timeout):
+        raise HTTPError("https://example.invalid", 400, "err", None, io.BytesIO(b"hidden-body"))
+
+    monkeypatch.setattr(providers, "urlopen", urlopen)
+    providers.disable_live_outage()
+    cache = tmp_path / "cache"
+    config = v3_world_config("nominal")
+    realization = realize_episode(0, composition_structures()[0])
+
+    def run(replay_only):
+        provider = b4_dev._ReadThroughProvider(cache, replay_only=replay_only)
+        return run_episode(
+            config, 0, True, terminal_monitoring="corrected", realization=realization,
+            system2_enabled=True, s2_variant="B4_TIEBREAK",
+            proposer=HypothesisProposer(provider), text_context="note",
+        )
+
+    live = run(False)
+    replay = run(True)
+    assert live["system2_proposal_rank"]
+    assert all(row["error"] == "PROVIDER_ERROR" for row in live["system2_proposal_rank"])
+    assert live["system2_proposal_rank"] == replay["system2_proposal_rank"]
+    assert live["system2_decisions"] == replay["system2_decisions"]
+    assert "hidden-body" not in json.dumps(live["system2_proposal_rank"])
 
 
 def test_ledger_cap_blocks_a_new_request_before_any_http_attempt(monkeypatch, tmp_path):

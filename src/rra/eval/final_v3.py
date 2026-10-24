@@ -409,12 +409,16 @@ def _run_b4(seeds_path: Path, output_dir: Path, *, replay: bool, live: bool,
     else:
         seen = set()
         already = _prior_distinct_live_requests(output_dir)
+    from rra.llm.providers import LiveOutageStop
+
     with _LiveBudgetScope(max_live_calls, already, seen, ledger_path) as budget:
         try:
             result = b4_dev.run_b4_dev(output_dir, nproc=nproc, subset=subset,
                                        replay_only=False, seeds_path=recorded)
-        except LiveBudgetExceeded:
-            return {"status": "incomplete", "reason": "max_live_calls_reached",
+        except (LiveBudgetExceeded, LiveOutageStop) as exc:
+            reason = ("live_outage" if isinstance(exc, LiveOutageStop)
+                      else "max_live_calls_reached")
+            return {"status": "incomplete", "reason": reason,
                     "max_live_calls": max_live_calls,
                     "distinct_live_requests": budget.distinct_total(),
                     "completed_text_condition_pairs": budget.completed_pairs}

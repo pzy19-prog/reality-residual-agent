@@ -6,6 +6,7 @@ import argparse
 import json
 import os
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -161,8 +162,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "s2-b4-dev":
         from rra.eval.b4_dev import run_b4_dev
-        receipt = run_b4_dev(args.output_dir, nproc=args.nproc, subset=args.subset,
-                             replay_only=args.replay, format_mode=args.format_mode)
+        from rra.llm.providers import LiveOutageStop
+        try:
+            receipt = run_b4_dev(args.output_dir, nproc=args.nproc, subset=args.subset,
+                                 replay_only=args.replay, format_mode=args.format_mode)
+        except LiveOutageStop as exc:
+            print(f"s2-b4-dev error: {exc}", file=sys.stderr)
+            return 3
         print(json.dumps({"receipt_sha256": receipt["receipt_sha256"],
                           "llm_calls": receipt["llm_calls"],
                           "serial_parallel_check": receipt["serial_parallel_check"]}, indent=2))
