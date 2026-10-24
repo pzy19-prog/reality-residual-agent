@@ -133,8 +133,8 @@ empty. Fill it from `artifacts/eval_v3/*` after step 7, reporting case 9 separat
 
 ## 6. Things that are not in GitHub
 
-- Local control-session cards and reviews (`_cards/*.md`, `_reviews/*.md`) live in the owner's WSL worktree unless
-  pushed. Ask for them, or reconstruct the scope from issue #26.
+- Local control-session cards and reviews: a snapshot is on branch `local/control-docs` @ `6803118` (56 files,
+  pushed 2026-10-24 18:01). Later changes live in the owner's WSL worktree until pushed again.
 - Uncommitted local work: run `git status` / `git stash list` in the owner's worktree before starting.
 - From 2026-10-24 ~18:00 Beijing the cloud coordination session is **on standby to save quota**: its watcher and
   hourly check are off. The local control session is primary. The owner can call the cloud session for a specific
