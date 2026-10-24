@@ -388,3 +388,46 @@ A07 没有 A06 §4A 那样的"change no threshold, gate, scoring rule, or denomi
 - 原"必须"项里属于 A07 文本的都已处理；实现项仍待 EVAL-PATH-R1。
 - 新增或残留的问题 M-1–M-5，其中 M-1（续跑是否会因重放先前保留的错误记录而再次停止）和 M-3（回执路径与"match"比较对象）与实现行为直接相关。
 - 本次复审未运行代码，判定来自读 A07、`decisions.md`、main 上的 `artifacts/s2/b4-dev.json` 以及此前读过的代码。
+
+---
+
+# 第三次复审（A07-R3，head `4d3ee793e3dff3e05e0204d17c0289b997bd3938`）
+
+本节追加在"第二次复审"之后；前面各节没有改动。本节行号指 `4d3ee79` 上的 A07（91 行；§4.7 多了一条，其后各行比 `ca1ff0e` 后移 1 行）。
+
+- 复审对象：PR #29 新 head `4d3ee79`，单个新提交 "pin counter, replay paths and incomplete-count classes in addendum 07"，父提交 `ca1ff0e`。
+- 范围：`git diff --stat 349d1e6 4d3ee79` 只有 `decisions.md`（+1）和 `docs/P3_PREREG_ADDENDUM_07.md`（+91）。相对 `ca1ff0e`，只有 A07 变化（7 增 6 删，第 49、51、59、61、63、70、78 行）；`decisions.md` 无差异。已登记文件未被编辑。
+- #28 仍为 `52bdd47`，main 仍为 `edd54c0`；未重读代码，未运行任何代码，未打开 `config/eval_seeds*.json`。核对依据是 A07 文本和协调会话转述的清单（issue #26 18:20 那条我没有读到原文）。
+
+## R3.1 清单逐条核对
+
+| 项 | A07-R3 出处 | 判定 | 说明 |
+|---|---|---|---|
+| M-1 计数器 | §4.1:51 | 一致 | 现为"covers live HTTP outcomes in the current process only"；新写入的错误记录加一；作为响应缓存的 live 响应清零；缓存命中（含此前进程保留的错误记录）既不加也不清零；每进程从 0 开始。续跑因重读先前保留的错误记录而再次立即停止的读法已排除。 |
+| M-2 | §4.5:63 | 一致 | 现为"if the run would need a 2,501st distinct request, or the deadline passes"，与 §4.2:54 的定义相同。 |
+| M-3 路径 | §4.3:59；§4.4:61；§4.7:69-70 | 部分 | 三个文件写明：`b4_live.json`（状态、ledger 计数、起止时间）、`b4.json`（第一次回放，计分工件）、第二次回放写到仓库外，其 `receipt_sha256` 须等于第一次，比较结果记入 `b4_replay_check.json`；§4.7 已列出前两者之外的 `b4_live.json`、`b4_replay_check.json`，并仍写"committed in Z"。"match"的比较对象已定为 `receipt_sha256`。原 Q-7 与 M-3 的两个问题都已关闭。残留见 R3.2 的 P-1、P-3。 |
+| M-4 分类 | §4.5:63 | 部分 | 互斥且有序：truncated（`finish_reason = length`）→ `PROVIDER_ERROR`（错误记录，或 runtime/provider 类型的 adapter 错误）→ `INVALID_PROPOSAL`（value、type、validation、JSON 解码类型的 adapter 错误）→ valid（无错误）；ledger 中无缓存记录的条目报告为 `not_recorded`。互斥性与"合计等于 LLM calls"现在可以成立。我对照了 #27 的 `adapter.py:148` 的捕获列表（`ValueError`、`TypeError`、`JSONDecodeError`、`ValidationError`、`RuntimeError`、`OSError`），A07 的两类描述与该列表的分组相符。残留见 P-2。 |
+| M-5 | §5.1:78 | 一致 | 加了一句"The development B4 cache rebuilt before the freeze (FRZ-2B) uses only the 33-seed subset, so this remains true"。残留见 P-4。 |
+| 退避 | §4.1:49 | 一致 | 五次尝试之间等 2、4、8、16 秒；有 Retry-After 时等待取该值与 60 秒中较小者；每次尝试超时 90 秒（与我读过的 #27 `providers.py` 默认 90.0 相符）。 |
+| 时间 | §4.4:61 | 一致 | "Times are taken from the runner's system clock in UTC"，时钟来源问题已关闭（是否经 NTP 同步 A07 不再要求）。 |
+
+## R3.2 A07-R3 之后的残留与新问题
+
+| 编号 | 出处 | 内容与影响 | 检验设计 |
+|---|---|---|---|
+| P-1 | §4.3:59 与 §4.4:61 | §4.4 写"as recorded in the receipt"，§4.3 写起止时间记录在 `b4_live.json`。"the receipt"指哪一个未写。影响小。 | — |
+| P-2 | §4.5:63 与 §3.2:37 | "valid"有两种定义：§3.2（探针）要求去未知 ID 后至少一项；§4.5 为"no error"，因此空 `items` 列表、以及含未知 ID 但被 adapter 丢弃的响应，在 §4.5 里算 valid。A04 对这两类另有处理（rule 3 的 `UNKNOWN_ID`、rule 4 的 `NO_PROPOSED_PASSING_STRUCTURE`），不是 `INVALID_PROPOSAL`。同一个词在两处口径不同；§4.5 的 valid 与 A04 §6.1 的 "valid proposals" 的关系未写。 | 对一条 `{"items": []}` 的缓存响应和一条含未知 ID 的响应，分别按 §3.2 与 §4.5 分类，比较。 |
+| P-3 | §4.5:63；§4.3:59 | ①未完成时没有回放，"B4 rows"写在 `b4.json` 还是 `b4_live.json` 未写（§4.7 的 `b4.{json,md}` 在此情形下是否存在）。②`b4_live.json` 的"status"取值未列举（live 命令的 "complete"、停止后可续跑的状态、因上限或截止的 incomplete 彼此是否是不同取值）。③"runtime or provider type" 是异常类名还是类别，A07 没写；读 `adapter.py` 能对上，但换实现时有两种读法。 | 在 mock 中分别制造上限、截止、10 条连续错误后停止三种结局，检查写出的文件与状态字段。 |
+| P-4 | §5.1:78 | "FRZ-2B"是项目内的卡名，A07 与上位补遗都没有定义；"uses only the 33-seed subset"是对未来一次运行的陈述，没有对应的停止条件或检查。若重建时误用全量，§5.1 那句话会变成不实，A07 没有规定如何处理。 | 重建提交后核对 B4 开发工件的 `seed_identity`。 |
+
+## R3.3 其他核对
+
+- 只改了 A07：是（见上，`decisions.md` 与 `ca1ff0e` 相同）。
+- 已登记文件被编辑：否。
+- 与 P3、A01–A06 的字面冲突：未发现新的冲突。§4.2 的"≤ 2,500 条即完成"对 A06 §3.5 "reached" 的读法选择现在与 §4.5 的措辞一致（原 M-2 已关闭）。
+- 仍未涉及、仍属裁决或建议级：X-5（P3 §19 与 holdout）、Q-9（§5.3 对 eval v2 的事实陈述）、Q-3、Q-4、Q-8、Q-10、Q-11、Q-13，以及 §1.4 与 §4.7 中探针/dev 工件位置。
+- 实现项（EVAL-PATH-R1）不属于 A07 文本，仍待办，范围随 A07 细化而具体化（计数器口径、三个路径文件、第二次回放写到仓库外、分类与 `not_recorded`、退避与超时参数）。
+
+## R3.4 结论
+
+**A07 文本已无"必须"项。** 剩余的是建议级的 P-1 至 P-4，以及上面列出的此前未涉及的裁决/建议项。
