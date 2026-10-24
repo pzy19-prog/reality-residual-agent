@@ -128,6 +128,8 @@ _live_deadline: datetime | None = None
 _outage_lock = threading.Lock()
 _outage_streak = 0
 _outage_enabled = False
+# Eval replay installs this. Dev replay and live fills leave it unset.
+_cache_read_hook = None
 
 
 def set_live_deadline(deadline: datetime | None) -> None:
@@ -151,6 +153,12 @@ def disable_live_outage() -> None:
     global _outage_enabled
     with _outage_lock:
         _outage_enabled = False
+
+
+def set_cache_read_hook(hook) -> None:
+    """Notify `hook(request_sha256)` for each replay cache file that is read."""
+    global _cache_read_hook
+    _cache_read_hook = hook
 
 
 def note_live_success() -> None:
@@ -238,6 +246,9 @@ class ReplayProvider:
         path = self.cache_dir / f"{key}.json"
         if not path.is_file():
             raise ReplayCacheMiss(f"replay cache miss: {path}")
+        hook = _cache_read_hook
+        if hook is not None:
+            hook(key)
         record = json.loads(path.read_text(encoding="utf-8"))
         if record.get("request") != payload:
             raise ValueError(f"invalid replay cache record: {path}")
@@ -312,6 +323,9 @@ class NvidiaNimProvider:
             raise _TransientHTTP(None) from exc
         finally:
             self.last_latency_seconds = time.monotonic() - started
+        # urlopen returns every 2xx. Only HTTP 200 with a JSON body is a response.
+        if status != 200:
+            raise _TransientHTTP(status, headers)
         try:
             response_body = json.loads(raw.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:

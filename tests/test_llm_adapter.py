@@ -370,6 +370,38 @@ def test_a_deadline_blocks_the_next_http_attempt(tmp_path, monkeypatch):
         providers.set_live_deadline(None)
 
 
+def test_http_202_json_is_transient_and_not_cached_as_a_response(tmp_path, monkeypatch):
+    calls = {"n": 0}
+
+    def urlopen(request, timeout):
+        calls["n"] += 1
+        assert timeout == 90.0
+
+        class Response:
+            status = 202
+            headers = None
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def read(self):
+                return b'{"choices":[{"message":{"content":"{\\"items\\": []}"}}]}'
+
+        return Response()
+
+    providers, provider = _install_live(monkeypatch, tmp_path, urlopen)
+    with pytest.raises(providers.CachedProviderError, match="^transient_exhausted$"):
+        provider.complete({"messages": [{"role": "user", "content": "accepted"}]})
+    assert calls["n"] == 5
+    record = json.loads(next(tmp_path.glob("*.json")).read_text(encoding="utf-8"))
+    assert record["error"] == {"class": "transient_exhausted", "http_status": 202}
+    assert "response" not in record
+    assert "items" not in json.dumps(record)
+
+
 def test_non_200_success_status_uses_two_four_eight_sixteen(tmp_path, monkeypatch):
     sleeps = []
 
