@@ -263,8 +263,16 @@ def run_b3_dev(output_dir: Path = ROOT / "artifacts" / "s2", *, nproc: int | Non
             "preservation_count": preservation, "authorization_count": sum(ep["authorizations"] for ep in episodes),
         },
         "system2_reobserve": {
-            key: sum(ep["system2_reobserve"][key] for ep in episodes)
-            for key in ("hold_entries", "reobservations", "authorized_after_hold", "exhausted")
+            **{
+                key: sum(ep["system2_reobserve"][key] for ep in episodes)
+                for key in ("hold_entries", "reobservations", "authorized_after_hold", "exhausted")
+            },
+            "end_reasons": {
+                reason: sum(ep["system2_reobserve"].get("end_reasons", {}).get(reason, 0)
+                            for ep in episodes)
+                for reason in ("authorized", "window_end", "latch", "target_switch",
+                               "s2_non_pause", "episode_end")
+            },
         },
         "operational_cost": operational_cost,
         "episodes": episodes,
