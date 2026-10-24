@@ -1388,3 +1388,128 @@ for x, y in zip(a, b):
     diff = [k for k in sorted(set(x) | set(y)) if x.get(k) != y.get(k)]
     print(x["seed"], x["variant"], "rollup equal", x["packets_sha256_rollup"] == y["packets_sha256_rollup"], "| differing keys", diff)
 ```
+
+### P2.10 方案 (i) 条件核对
+
+所有者对 context 选了方案 (i)：保留 FRZ-2A 的结构，文本放在 `evidence_packet.context`，由 A07 登记。下面逐条给出实测，只陈述结果。
+
+**条件 1：L3 / Zetaris 路径的证据包哈希相对 `5a05f6d` 是否不变。**
+- `export_sources(out, 20)`：5 个表文件（`command_feedback`、`known_config`、`observation_samples`、`ops_context`、`presence_events`）的 sha256 在 `5a05f6d` 与 `a9fa6c3` 上完全相同。20 个 episode 的 `packets_sha256_rollup` 全部相同（A.P2-7）。
+- 包哈希没有变化，所以没有需要用 context 位置或 known_config 截取来解释的字段。审计中唯一不同的是 seed 7 的 `system2_decisions` 与 `s2_diagnostic_trace`（B3 决策记录，不是包），来源是 G0-c（P2.7）。
+- L3 侧代码：`packet.py` 的 `build_packet` 在 `5a05f6d` 上已经带 `context` 和 `decision`，PR 只新增了 `project_c1_known_config`；`sources.py` 未改动，L3 包的 `known_config` 仍是 7 个字段（`sources.py:94`、`:107`）。
+- live Zetaris 路径未运行。
+
+**条件 2：除 R6 批准的项外，`evidence_packet.context` 是否是唯一新增的白名单外键。**
+- 不是。350 个实际请求中，白名单外的键还有：`evidence_packet.schema`；`evidence_packet.decision.{episode_id, seq, step, target_id, time}`；三组行级的 `episode_id`、`seq`；反馈行的 `step`（P2.2）。
+- 其中行级 `episode_id`/`seq`/`step` 已写入 A06 §4.7。`schema`、`decision`、`context` 没有写入。
+- 这些键在 `5a05f6d` 上的 L3 包中都已存在；对 B4 请求来说，相对 `cb77107` 的旧包都是新增的。
+
+**条件 3：`context.text` 是否与冻结的 §12 文本一致，泄漏校验是否仍然作用于它。**
+- 脚本 `m3_context_check.py`（A.P2-9）：130 个 dev seed × 4 个文本变体，每个变体 350 个请求。`context.text == freeze_episode_contexts(...)[variant].text` 为 350/350，`context.content_sha256 == frozen.content_sha256` 为 350/350，四个变体都是如此。
+- 生成器：B4 包里的文本来自 `run_episode` 的 `text_context` 参数，`run_b4_dev` 传入的是 `freeze_episode_contexts(str(seed), seed, cause)` 的 `.text`（`b4_dev.py:221`）。L3 的 `ops_context` 也用 `freeze_context`，即同一个生成器。`content_sha256` 由 `episode.py` 自己用 `sha256(text)` 计算，算法与 `context_v3.content_sha256` 相同，实测值一致。
+- 泄漏校验：`generate_context` 在生成时调用 `validate_text_context(text, hidden_values)` 与 `_numeric_leak_check(text)`（`src/rra/eval/context_v3.py:171-172`）。`run_b4_dev` 在每个任务开始时调用 `verify_frozen_context(frozen)`（`b4_dev.py:228-229`），检查冻结文本与其哈希一致。
+- 请求构造阶段没有对 `evidence_packet.context` 再做一次泄漏校验或哈希比对；正因为文本与冻结版本逐字相同，生成时的校验结果适用于它。`run_b4_dev` 调用 `freeze_episode_contexts` 时没有传 `hidden_values`（使用默认空元组），这与 `5a05f6d` 相同。`context_v3.py` 在 PR 中没有改动。
+
+### P2.11 `decision.episode_id` 中的种子值（T9a M-3）
+
+脚本 `m3_context_check.py`（A.P2-9），只读，离线。
+
+**(a) dev 上实际 B4 请求中 `decision.episode_id` 是否等于 seed。**
+- 是。`NO_TEXT_CONTEXT` 下 350 个请求，`decision.episode_id == str(seed)` 为 350/350。例：`{'episode_id': '0', 'seq': 709, 'step': 9, 'target_id': 7, 'time': 0.9}`。
+- 同一个值还出现在其他位置：观测行 `episode_id` 16380/16380 等于 `str(seed)`；presence 和反馈行同样带 `episode_id`。C1 字段 `command_id` 的格式为 `f"{seed}:{target_id}:{step}"`（`episode.py` 的 `command_feedback(...)` 调用处，`cb77107` 上已是如此）；279 个请求的反馈非空，且全部以 seed 为前缀。
+- 来源：`episode.py:705-706` 用 `episode_id=str(seed)` 调 `build_packet`；`packet.py:34-35` 写入 `decision`。L3 侧 `sources.py:69` 也是 `episode_id = str(seed)`（`5a05f6d` 上已如此）。
+
+**(b) 缓存文件是否保存这个值。**
+- live provider 会把它写进缓存。`NvidiaNimProvider.complete` 把 `{"request": payload, "response": response_body}` 写到 `cache_dir/<sha>.json`（`providers.py` 中 `complete` 末尾），其中 `payload` 是 finalized 请求，含完整 user message。
+- 离线实测：不调用 `__init__`、不使用任何 key，构造一个 `NvidiaNimProvider` 对象，把 `urlopen` 换成本地假响应，然后发一个 dev 请求。结果写出 1 个缓存文件，文件中 `request.messages[1].content` 的 `decision` 为 `{'episode_id': '0', ...}`，等于 seed；记录中不含占位 key 字符串。临时文件放在 scratchpad。
+- 当前已提交的 `artifacts/llm_cache/`（386 条，`c852566` 的旧格式）中，含 `"episode_id` 的文件为 0 个。
+- `ReplayProvider` 只读不写。
+
+**(c) 模板 SHA 的占位符替换是否覆盖 `decision`。**
+- 覆盖。`request_template_sha256` 把整个 `evidence_packet`（含 `decision`）换成 `"<EVIDENCE_PACKET>"`。实测只改 `decision.episode_id`（`"0"` → `"999999"`）时，模板 SHA 相同，cache key 不同。
+
+**(d) `decision` 中除 R6 批准项之外的非 C1 键。**
+- `decision` 的键为 `episode_id`、`seq`、`step`、`target_id`、`time`。
+- R6 批准的 `current_time`、`horizon`、`passing[]` 都在 `s2_summary` 中，不在 `decision` 中。
+- `target_id`、`step`、`time` 是 C1 观测/在场事件中的字段名；`decision.time` 与 `s2_summary.current_time` 取值相同（同为 `observation.time`）。
+- `episode_id`、`seq` 不是 C1 字段。
+
+需所有者裁决（追加到 P2.9）：
+6. B4 请求和 live 缓存记录会带种子值：`decision.episode_id`、行级 `episode_id`，以及 C1 字段 `command_id` 的前缀。eval-v3 时这些位置会写入 eval 种子值，并发给 provider、落入 `artifacts/llm_cache/`。这与 P3 §18.1 / Addendum 01–03 中关于 eval 种子隔离的条文之间的关系，由所有者裁决。
+
+A.P2-9 `m3_context_check.py` 输出：
+
+```
+context vs frozen per variant: {'NO_TEXT_CONTEXT': {'requests': 350, 'text_eq': 350, 'sha_eq': 350}, 'HELPFUL_TEXT_CONTEXT': {'requests': 350, 'text_eq': 350, 'sha_eq': 350}, 'IRRELEVANT_TEXT_CONTEXT': {'requests': 350, 'text_eq': 350, 'sha_eq': 350}, 'MISLEADING_TEXT_CONTEXT': {'requests': 350, 'text_eq': 350, 'sha_eq': 350}}
+decision.episode_id / row episode_id / command_id prefix vs seed: {'requests': 350, 'eq_seed': 350, 'cmd_id_has_seed': 279, 'obs_rows_eq_seed': 16380, 'obs_rows': 16380}
+example decision {'episode_id': '0', 'seq': 709, 'step': 9, 'target_id': 7, 'time': 0.9}
+template equal when only decision.episode_id differs: True | cache key equal: False
+cache files written: 1 | stored request decision: {'episode_id': '0', 'seq': 709, 'step': 9, 'target_id': 7, 'time': 0.9} | episode_id == seed: True
+headers/key in record: False
+```
+
+```python
+"""T6 phase 2 add-on: context text vs frozen §12 text (4 variants), decision.episode_id vs seed,
+template-SHA coverage of decision, and whether the live provider writes the request body to disk.
+Offline: the live provider is created without __init__ (no API key) and urlopen is replaced by a fake."""
+import copy, io, json, sys, tempfile
+from pathlib import Path
+from rra.eval.b4_dev import _realization
+from rra.eval.context_v3 import VARIANTS, freeze_episode_contexts
+from rra.eval.framework import v3_world_config
+from rra.evidence import run_episode
+from rra.llm.adapter import HypothesisProposer, request_template_sha256
+import rra.llm.providers as P
+
+seeds_all = json.load(open("config/dev_seeds.json"))["seeds"]
+seeds = [int(x) for x in sys.argv[1:]] or seeds_all
+SET = P.ReplayProvider("unused").settings
+class Cap:
+    last_http_status = None
+    def __init__(s): s.b = []
+    def complete(s, body): s.b.append(body); return {"choices": [{"message": {"content": '{"items": []}'}}]}
+stats = {v: dict(requests=0, text_eq=0, sha_eq=0) for v in VARIANTS}
+ep = dict(requests=0, eq_seed=0, cmd_id_has_seed=0, obs_rows_eq_seed=0, obs_rows=0); first = None
+for seed in seeds:
+    real = _realization(seeds_all.index(seed), seed)
+    ctx = freeze_episode_contexts(str(seed), seed, real.fault_family or real.structure)
+    for v in VARIANTS:
+        cap = Cap()
+        run_episode(v3_world_config("nominal"), seed, True, terminal_monitoring="corrected", realization=real,
+                    text_context=ctx[v].text, system2_enabled=True, s2_variant="B4_STRICT", proposer=HypothesisProposer(cap))
+        for body in cap.b:
+            sent = P.finalize_payload(body, SET); p = json.loads(sent["messages"][1]["content"])["evidence_packet"]
+            st = stats[v]; st["requests"] += 1
+            st["text_eq"] += p["context"]["text"] == ctx[v].text
+            st["sha_eq"] += p["context"]["content_sha256"] == ctx[v].content_sha256
+            if v == "NO_TEXT_CONTEXT":
+                ep["requests"] += 1; ep["eq_seed"] += p["decision"]["episode_id"] == str(seed)
+                for r in p["observations"]: ep["obs_rows"] += 1; ep["obs_rows_eq_seed"] += r["episode_id"] == str(seed)
+                ep["cmd_id_has_seed"] += all(f["command_id"].split(":")[0] == str(seed) for f in p["command_feedback"]) and bool(p["command_feedback"])
+                if first is None: first = (seed, body)
+print("context vs frozen per variant:", stats)
+print("decision.episode_id / row episode_id / command_id prefix vs seed:", ep)
+seed0, body = first
+print("example decision", json.loads(P.finalize_payload(body, SET)["messages"][1]["content"])["evidence_packet"]["decision"])
+# (c) template SHA when only decision.episode_id differs
+alt = copy.deepcopy(body); u = json.loads(alt["messages"][1]["content"]); u["evidence_packet"]["decision"]["episode_id"] = "999999"
+alt["messages"][1]["content"] = json.dumps(u)
+print("template equal when only decision.episode_id differs:", request_template_sha256(SET, body) == request_template_sha256(SET, alt),
+      "| cache key equal:", P.request_sha256(P.finalize_payload(body, SET)) == P.request_sha256(P.finalize_payload(alt, SET)))
+# (b) does a live provider write the finalized request (with decision) to disk? fake HTTP, no key.
+tmp = Path(tempfile.mkdtemp(dir=sys.argv[0].rsplit("/", 1)[0]))
+prov = object.__new__(P.NvidiaNimProvider)
+prov.api_key = "UNUSED"; prov.cache_dir = tmp; prov.timeout = 1; prov.base_url = "http://invalid"; prov.model = P.NIM_MODEL
+prov.max_tokens = 1800; prov.chat_template_kwargs = {"enable_thinking": False}; prov.no_think = False; prov.format_mode = "json_object"
+prov.last_http_status = None; prov.last_latency_seconds = None; prov.last_response_body = None; prov.last_request_body = None
+class FakeResp(io.BytesIO):
+    status = 200
+    def __enter__(s): return s
+    def __exit__(s, *a): return False
+P.urlopen = lambda req, timeout=None: FakeResp(json.dumps({"model": "fake", "choices": [{"message": {"content": '{"items": []}'}}]}).encode())
+prov.complete(body)
+files = list(tmp.glob("*.json")); rec = json.loads(files[0].read_text())
+dec = json.loads(rec["request"]["messages"][1]["content"])["evidence_packet"]["decision"]
+print("cache files written:", len(files), "| stored request decision:", dec, "| episode_id == seed:", dec["episode_id"] == str(seed0))
+print("headers/key in record:", "UNUSED" in files[0].read_text())
+```
