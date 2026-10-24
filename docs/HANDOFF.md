@@ -55,6 +55,9 @@ Each step lists its precondition and how to check it. Do not skip ahead; most la
    requests of the 33-seed dev subset, select by the registered rule, write the selected mode into the frozen code,
    rebuild the dev B4 cache live, regenerate `artifacts/s2/b4-dev.json`. If the selected mode's request template
    differs from the probe's recorded template SHA, the probe is void and repeated (A07 §3.3).
+   **Run the dev B4 live rebuild on the 33-seed subset (`artifacts/s2/diag-d1g.json`) only.** It contains no case-9
+   seed; a full 130-seed dev B4 run would send the structural holdout (dev seeds 9, 28, 47, 66, 85, 104, 123) to the
+   generator and falsify A07 §5.1 (T12 M-5).
 4. **Pre-freeze checklist**: `docs/_review/T6_prefreeze_check.md` on `cloud/t6-prefreeze-check` §2 (C-01…C-16) on
    the candidate commit; every item measured on the registered runner. Then the owner creates tag `impl-freeze-v3`.
 5. **Seed generation** (A06 §1.1–1.3): `scripts/gen_eval_v3_seeds.py` at HEAD == tag with a clean tree, one process
