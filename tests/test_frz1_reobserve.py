@@ -4,7 +4,6 @@ from pathlib import Path
 
 from rra.evidence import episode as episode_module
 from rra.eval.b3_dev import _run_seed
-from rra.eval.framework import v3_world_config
 from rra.fast import Corrector
 from rra.s2.dsl import Action, FaultHypothesis
 from rra.sim import WorldConfig
@@ -73,21 +72,45 @@ def test_continuous_escalation_keeps_reobserving_until_window_end(monkeypatch):
     assert receipt["system2_reobserve"]["reobservations"] == len(calls) - 1
 
 
+def test_window_end_outcome_cannot_reenter_hold_on_same_step(monkeypatch):
+    original = Corrector.correct
+
+    def escalate_at_entry_and_window_end(self, plan, residual, disturbance, nominal_speed):
+        result = original(self, plan, residual, disturbance, nominal_speed)
+        if plan.observation_time == 0.0 or plan.observation_time >= 3.5:
+            return replace(result, reason="ESCALATE: repeated target")
+        return result
+
+    monkeypatch.setattr(Corrector, "correct", escalate_at_entry_and_window_end)
+    monkeypatch.setattr(episode_module, "run_b3", lambda *a, **k: _pause())
+    config = WorldConfig(scenario="nominal", object_count=1,
+                         initial_position_min=-3.0, initial_position_max=-3.0,
+                         episode_steps=40)
+    receipt = episode_module.run_episode(config, 9, True, system2_enabled=True)
+
+    reobserve = receipt["system2_reobserve"]
+    assert reobserve["hold_entries"] == 1
+    assert sum(reobserve["end_reasons"].values()) == 1
+    assert receipt["outcomes"][0]["status"] == "escalated"
+
+
 def test_diag_dev_seed_reobservations_stay_within_retry_interval():
     seed_path = Path(__file__).parents[1] / "config" / "dev_seeds.json"
     seeds = json.loads(seed_path.read_text())["seeds"]
-    dt = v3_world_config("nominal").dt
     checked_pairs = 0
 
-    # Indices 1, 2, and 3 are members of the registered diag-d1g subset.
-    for index in (1, 2, 3):
+    diag_path = Path(__file__).parents[1] / "artifacts" / "s2" / "diag-d1g.json"
+    diag_seeds = set(json.loads(diag_path.read_text())["seeds"])
+    for index, seed in enumerate(seeds):
+        if seed not in diag_seeds:
+            continue
         result = _run_seed((index, seeds[index]))
         decisions_by_target = {}
         for decision in result.get("system2_decisions", []):
             decisions_by_target.setdefault(decision["target_id"], []).append(decision["time"])
         for times in decisions_by_target.values():
             for previous, current in zip(times, times[1:]):
-                assert current - previous <= 0.5 + dt + 1e-9
+                assert current - previous <= 0.5 + 1e-9
                 checked_pairs += 1
 
     assert checked_pairs > 0

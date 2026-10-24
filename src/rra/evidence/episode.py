@@ -37,6 +37,8 @@ from rra.sim.v3_world import V3World
 
 TERMINAL_STATES = ("picked", "attempt_failed", "rejected", "escalated", "skipped")
 CONSECUTIVE_OUTCOME_FAILURE_THRESHOLD = 3
+# A05 §1.2: retry on the first observation at or after the 0.5 s deadline.
+REOBSERVE_RETRY_EPSILON = 1e-9
 
 
 def _verification_structure_id(value: Any) -> str | None:
@@ -650,7 +652,8 @@ def run_episode(
                 and current_global_time >= outcome_retry_at_global):
             run_outcome_escalation(observation)
         hold_due = (observation.target_id in system2_reobserve_holds
-                    and observation.time >= system2_next_retry.get(observation.target_id, float("inf")))
+                    and observation.time >= system2_next_retry.get(observation.target_id, float("inf"))
+                    - REOBSERVE_RETRY_EPSILON)
         if hold_due:
             window_end = (base_plan.expected_arrival_time + known_config.dt / 2)
             if window_end - observation.time <= 0:
@@ -665,7 +668,8 @@ def run_episode(
         s2_action = None
         if (system2_enabled and not hard_fault_latch["latched"] and (escalation_event or hold_due
                 or (correction.infeasible and observation.target_id not in system2_infeasible_attempted))
-                and observation.time >= system2_next_retry.get(observation.target_id, -1.0)):
+                and observation.time >= system2_next_retry.get(observation.target_id, -1.0)
+                - REOBSERVE_RETRY_EPSILON):
             if escalation_event:
                 system2_escalation_active.add(observation.target_id)
             if correction.infeasible:
@@ -885,6 +889,7 @@ def run_episode(
                     safe_stop = False
         if "ESCALATE:" in correction.reason and observation.target_id not in system2_authorized:
             if (system2_enabled and not hard_fault_latch["latched"]
+                    and observation.target_id not in outcomes_by_target
                     and s2_action is Action.PAUSE_AND_REOBSERVE):
                 if observation.target_id not in system2_reobserve_holds:
                     reobserve_hold_entries += 1
