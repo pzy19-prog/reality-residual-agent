@@ -9,6 +9,7 @@
   - 未创建、读取或推断 `config/eval_seeds_v3.json` 或任何 eval-v3 种子值；该文件在本分支不存在（钩子日志中无对它的打开记录）。
   - 测试中出现的种子值全部由测试自己构造：dev 种子 + 10000（落在 eval 区间内以通过 schema 校验），或 dev 种子本身。
   - 没有 live 调用，未设置 `NVIDIA_API_KEY` / `ZETARIS_TOKEN`。所有 rra 输出都写入 scratchpad 的 `--output-dir`。每次运行前后 `git status --porcelain` 在仓库与 worktree 中均为空。
+- 补充：§9 在收到协调会话 08:08Z 的消息（X1、X2、`command_id` 口径）之后加入，前文的 M-8 与 §5.1 的 `command_id` 行也是这时加的。
 - 措辞：只陈述事实与影响，不做成败判定，不提出预注册条文措辞。
 
 ---
@@ -180,6 +181,7 @@
 | 位置 | 内容 | head | 合并 #27 | 按今天裁决去掉 B4 请求中的 `episode_id` 之后 |
 |---|---|---|---|---|
 | B4 请求体 / 外部服务 | `decision.episode_id`、三组行级 `episode_id` = `str(seed)`（#27 `episode.py` 的 `build_packet` 调用处） | 无（旧请求体只有 time/observed_x/nominal_x/feedback/passing 等） | 有 | 无 `episode_id`。剩余与种子相关的只有：`context.text` 由 `seed % len(候选)` 选择模板与措辞（`context_v3.py:136-141`），即文本携带种子对小模数的余数；`context.content_sha256` 为该文本的哈希。仿真数值由种子决定但不是种子值 |
+| B4 请求体 `command_feedback[].command_id` | `f"{seed}:{target_id}:{step}"`（#28 `episode.py:1032`；#27 `episode.py:1058`） | 无（旧请求反馈行只有 4 个时间/布尔字段） | 有（§9.3 实测） | 仍有，除非按协调会话口径改写为 `"{target_id}:{step}"`；今天的所有者裁决条文只列出 `episode_id` |
 | 缓存文件 `artifacts/llm_cache/<sha>.json` | 文件名为最终请求 SHA-256；内容为请求与响应 | 无种子值 | 请求中有 `episode_id` | 同上一格；响应内容由服务端产生，若模型复述请求中的字段则随之写入（当前请求中已无种子） |
 | 行回执 `b1b3.json` | `episodes[].seed` | 有（实测构造值 3/3 命中） | 同 | 不受影响 |
 | 行回执 `b2.json` | `episodes[].seed` | 有（实测 3/3） | 同 | 不受影响 |
@@ -294,6 +296,7 @@ scratch 测试运行结果（head 树）：`25 passed in 3.63s`。这些测试�
 - **M-5** #27 与 #28 在 `cli.py`、`b4_dev.py` 冲突，须在 X 之前合并；合并后 b4 用默认 `json_object`，须与 §3.2 探针选定模式一致（§6）。
 - **M-6** FRZ-2A 去掉 `decision.episode_id` 与行级 `episode_id` 的提交尚未出现；该提交之后应重做 §4 合并行的请求键检查（附录 B.2 的 `episode_id_key_paths_in_user_content`）。
 - **M-7** 失败路径异常消息写出种子值（§5.2 七处），与 A06 §1.3"不检视"及 T9a A-3 交互。
+- **M-8** B4 请求 `command_feedback[].command_id` 含种子（§9.3）；按协调会话口径改写后，需重做 §9.3 检查（附录 B.4 最后一个用例）。
 
 ### 8.3 建议
 
@@ -304,6 +307,90 @@ scratch 测试运行结果（head 树）：`25 passed in 3.63s`。这些测试�
 - **S-5** 现有测试以子进程真实运行生成器（tmp 中产生 CSPRNG 值）；与"agent 会话不运行生成器"的操作规则冲突，执行者运行全量 pytest 时须知悉。
 - **S-6** `--role dev` 拒绝名为 `eval_seeds_v3.json` 或 `role: eval_v3` 的文件；eval 角色下禁止调高 `--max-live-calls`。
 - **S-7** b1b3 在 eval 角色下由 `run_b3_dev` 再次读取种子文件（与 `final_v3` 校验后的列表不是同一对象）；可改为传入已校验列表。
+
+---
+
+## 9. 协调会话补充（2026-10-24 08:08Z 消息）复核
+
+协调会话的消息提出 X1、X2 两个阻塞项，并给出本地拟定修复与种子口径。本节逐条复核。所提修复尚未出现在任何分支上，所以只能写成"拟定行为"的测试草案；草案在当前代码上运行，失败计数照实记录。
+
+### 9.1 X1（守卫与 `artifacts/llm_cache/`）
+
+- 复核：与本报告 §2.3 / M-1 一致。实测：未跟踪的新缓存文件被拒（`working tree must be clean`）；提交后的新缓存文件被拒（`outside the eval allowlist`）。另外，**允许列表内的未跟踪文件同样被拒**：`artifacts/eval_v3/b4.json`、`artifacts/eval_v3/live_ledger.jsonl` 未跟踪时也因工作树不干净而拒绝。所以每行运行之后都要先提交回执，下一行才能开始；而 B4 live 中断之后，按 X2 写出的 ledger 本身也会触发拒绝。
+- 拟定修复的可检验点（附录 B.4 第 1 部分）：允许列表内的未跟踪文件放行；提交后的新缓存文件放行；已有缓存文件的修改或删除（已提交、未提交两种）拒绝；`src/`、`tests/` 下的未跟踪文件，以及前缀相似的 `artifacts/llm_cache_x/` 拒绝；工作区里未提交的 `src` 修改拒绝。
+- 草案当前结果：4 个"应放行"用例全部失败（被现行规则拒绝），8 个"应拒绝"用例通过。在现行代码下，这 8 个是因为任何改动都会让工作树不干净而被拒，不是因为区分了新增与修改。
+- 与 §2.2 绕过的关系：拟定修复没有涉及 `GIT_DIR`/`GIT_WORK_TREE`、`--skip-worktree`、换 tag、非后代 HEAD。这四种绕过在修复后仍然成立，除非另行处理。
+- 关于"只允许新增"（FACT）：缓存文件名是请求 SHA-256，live 只写缺失的键（`_ReadThroughProvider` 先查缓存），正常流程不会改写已有文件。dev 缓存与 eval 缓存同在 `artifacts/llm_cache/`，修复后 `<tag>..HEAD` 中新增的文件全部来自 eval-v3 live。
+
+### 9.2 X2（distinct-live 计数持久化）
+
+- 复核：与 §3.2 / M-3 一致，包括崩溃、`KeyboardInterrupt`、401/403 的 `SystemExit`、replay 覆盖 `b4.json`、换输出目录这几条路径。
+- 拟定修复的可检验点（附录 B.4 第 2 部分）：每次 live 调用之前追加写 ledger，401 之后 ledger 中已有该请求；ledger 行只含 64 位十六进制 SHA；续跑时已用次数取 ledger 中不同 SHA 的个数，与输出目录无关，2,499 条记录之后只能再发 1 个新请求。
+- 草案当前结果：3 个用例全部失败（ledger 不存在；续跑时已用次数为 0，没有在上限处停止）。
+- 实现时需要注意的事实：
+  - 计数登记发生在 `LimitedProvider.complete` 中，位于发送之前（`final_v3.py:96-100`）。B4 使用线程池（`b4_dev.py:244-249`），写 ledger 需要与 `_lock` 同步，否则多个线程可能交错写入。
+  - 5xx 重试复用同一个键，ledger 去重后计 1 次。
+  - 若 ledger 放在 `artifacts/eval_v3/`，按 X1 修复之前的规则，它未跟踪时会让下一条命令被拒（见 9.1）。
+  - 两次 replay 不发 live 请求，不写 ledger。若 replay 仍写回同一目录的 `b4.json`，`distinct_live_requests` 字段会是 0；这只影响回执中的该字段，不再影响上限。
+
+### 9.3 种子口径：去掉 `episode_id`，`command_id` 改写为 `"{target_id}:{step}"`
+
+**实测（附录 B.5 `seed_strings_in_request.py`）**：dev seed 3、21，4 个文本变体，B4_STRICT，空提案 provider。在 user content 中找"等于 `str(seed)` 或以 `"{seed}:"` 开头"的字符串：
+
+| 树 | 不同请求 | 命中的键路径（次数） |
+|---|---|---|
+| #28 head | 36 | 无 |
+| #27 + #28 + main 合并 | 36 | `command_feedback[].command_id` 56、`command_feedback[].episode_id` 56、`decision.episode_id` 36、`observations[].episode_id` 1388、`presence_events[].episode_id` 1388 |
+
+`command_id` 的格式是 `f"{seed}:{target_id}:{step}"`（#28 `src/rra/evidence/episode.py:1032`，#27 `:1058`）。#27 把 `policy_feedbacks` 的整行（`**item`）放进 `command_feedback`，所以 `command_id` 随之进入请求。本报告 §4 合并行的打桩运行只统计了 `episode_id` 键，没有覆盖 `command_id`，这里补上。
+
+**按协调口径修改后，剩余位置（FACT）**：
+
+| 位置 | 是否写出种子值 | 说明 |
+|---|---|---|
+| B4 请求体、外部服务 | 否（按口径） | 剩下与种子有关的只有 `context.text` 的模板与措辞选择（`seed % k`）和 `context.content_sha256`；仿真数值由种子决定 |
+| 缓存文件名 | 否 | 最终请求的 SHA-256 |
+| 缓存文件内容 | 否（按口径） | 请求 + 响应；响应由服务端生成 |
+| ledger（`artifacts/eval_v3/live_ledger.jsonl`，拟定） | 否 | 只有请求 SHA-256，与缓存文件名是同一组值 |
+| `artifacts/eval_v3/<row>.json` | **是** | b1b3、b2、b4 的 `episodes[].seed`；b1-legacy 的 `diagnostic.seeds.values` |
+| `artifacts/eval_v3/b4-dev.json`（旁路） | **是** | `seed_identity.values` 全部种子、`seed_identity.path` 绝对路径、`episodes[].seed` |
+| `.md` 回执、stdout | 否 | 实测 |
+| 失败路径的 stderr / traceback | **是** | §5.2 的 7 处 |
+| 行回执中的 episode receipt 哈希 | 否（值） | 哈希的输入含种子 |
+| L3 导出（`sources.py`） | 是（`episode_id = str(seed)`、`command_id`） | eval-v3 路径不调用；只有单独对 eval 种子运行 L3 导出时才写出 |
+| Meterless / Zetaris | 不涉及 | eval-v3 路径不导入 `sponsor/*` |
+| `/tmp/eval-v3-b1b3-*/b3-dev.json` | 是（临时） | 进程结束时删除 |
+
+**提交到公开仓库的影响（只陈述）**：
+
+- 缓存文件与 ledger 本身不含种子值。但请求内容（观测数值、`context.text` 的选择）是种子的确定性函数，代码又是公开的，理论上可以穷举候选种子、比对请求或 SHA 来反推。候选空间约 2.1×10⁹。本机每个 episode 约 1.2 s（b1b3 在 4 核上 80 s 跑完 130 seed × 2 个 episode 加串/并行检查），单核穷举约 2.6×10⁹ 核秒；可以并行分摊。这是对可行性量级的事实估计，没有实际尝试。
+- 行回执与 `b4-dev.json` 一经提交即公开种子值。A06 §1.3 写的是"所有登记基线运行完后，种子值出现在结果回执中"。若 b1b3/b2/b1-legacy 先于 B4 live 完成就提交（现行守卫要求每行之后先提交，§9.1），种子值会在 B4 live 期间公开。
+- `b4-dev.json` 的绝对路径会公开运行机器的目录结构。
+
+### 9.4 协调会话其他要求的现状
+
+| 要求 | 现状（FACT） |
+|---|---|
+| #27 合并后，把 main 合进 #28 | #27 未合并；#28 与 #27 冲突两处（§6.1）。本节的合并树为临时 worktree，未推送 |
+| eval 的 b4 路径传递 `format_mode` | 未传；`rra eval-v3` 无该参数（§3.3） |
+| 带上 `llm_request_spec`、`served_models` | 只在旁路 `b4-dev.json`，不在 `b4.json`（§6.3 实测） |
+| 重跑 dev 等价验证 | 已在合并树上运行：b1b3 130/130（同机）；b4 打桩 replay 两次一致、444 个请求（§4）。修复提交出现后需要再跑一次 |
+
+### 9.5 新增（X1、X2 之外，本报告发现的协议或实现问题）
+
+与 §8 对应，列出编号以便追踪：
+
+- **N-1** tag 名不固定（生成器与守卫，§1.1、§2.2）——对应 M-2。
+- **N-2** 守卫可以通过 `GIT_DIR`/`GIT_WORK_TREE`、`--skip-worktree`、另建 tag、非后代 HEAD 绕过（§2.2）；`--role dev` 可读 eval 文件且没有守卫；eval 角色下 `--max-live-calls` 可以调高。
+- **N-3** 没有截止时间实现；非上限情形不产生 incomplete 标记；没有部分 replay 的入口（§3.2）——对应 M-4、T9a M-4。
+- **N-4** 401/403 的退出码为 1，且不写回执（§3.2）。
+- **N-5** 失败路径消息中写出种子值，共 7 处（§5.2）——对应 M-7。
+- **N-6** B4 请求中的 `command_id` 携带种子（§9.3）。今天的所有者裁决条文没有提到它，协调会话口径提到了。
+- **N-7** b1-legacy 按 14 个场景 × 全部种子运行，不按 `index % 19`；`diagnostic.seeds.path` 硬编码为 dev 路径（§3.1、§8.1 第 8 项）。
+- **N-8** `b4-dev.json` 旁路文件含全部种子值和绝对路径；`b4.json` 缺 `llm_request_spec`、`served_models`（§3.3）。
+- **N-9** A04 §6.1 的逐类计数和 §6.2 的 50% 判定没有实现（§3.4）。
+- **N-10** 现有测试以子进程真实运行生成器（§7、S-5）。
+- **N-11** 生成器的干净检查忽略 `.gitignore` 中的文件和 skip-worktree 标记（§1.1）。
 
 ---
 
@@ -869,6 +956,186 @@ same = sum(ea[s].get("b1_receipt_sha256") == eb[s].get("b1_receipt_sha256") and
 full = sum(json.dumps(ea[s], sort_keys=True) == json.dumps(eb[s], sort_keys=True) for s in eb if s in ea)
 print(json.dumps({"seeds_a": len(ea), "seeds_b": len(eb), "b1_b3_hash_equal": same,
                   "episode_row_identical": full, "metrics_equal": a["metrics"] == b["metrics"]}))
+```
+
+### B.4 `test_t9b_x1x2_drafts.py`（§9 拟定行为；依赖 B.1 中的辅助函数）
+
+运行结果：#28 head `7 failed, 9 passed in 21.50s`；合并树 `8 failed, 8 passed in 22.72s`（多出的失败为 `test_request_has_no_seed_strings`）。失败原因（head）：`working tree must be clean` ×3、`outside the eval allowlist` ×1、ledger 不存在 ×2、`DID NOT RAISE LiveBudgetExceeded` ×1。
+
+```python
+"""Drafts for the coordinator's proposed X1/X2 fixes and the seed-free request view.
+They state the proposed behaviour; on the current code they are expected to fail.
+Assumed interfaces (not in the code yet): `final_v3.LIVE_LEDGER_PATH` (Path, patched to
+tmp here); ledger lines hold only a 64-hex request SHA-256."""
+from __future__ import annotations
+
+import json
+import re
+from pathlib import Path
+
+import pytest
+
+from rra.eval import b4_dev, final_v3
+from test_t9b_scratch import FAKE, TAG, FakeLive, body, commit_seed_file, git, init_repo
+
+
+def _guard(root: Path, path: Path):
+    return final_v3.load_seed_file(path, "eval_v3", freeze_tag=TAG, root=root)
+
+
+@pytest.fixture
+def frozen(tmp_path):
+    init_repo(tmp_path)
+    cache = tmp_path / "artifacts/llm_cache"
+    cache.mkdir(parents=True)
+    (cache / "existing.json").write_text("{}\n")
+    git(tmp_path, "add", "-A"); git(tmp_path, "commit", "-qm", "dev cache")
+    git(tmp_path, "tag", TAG)
+    return tmp_path, commit_seed_file(tmp_path)
+
+
+# ---- X1: allowlist covers seed file, artifacts/eval_v3/**, new files under artifacts/llm_cache/** ----
+
+@pytest.mark.parametrize("rel", ["artifacts/llm_cache/new.json", "artifacts/eval_v3/b4.json",
+                                 "artifacts/eval_v3/live_ledger.jsonl"])
+def test_x1_untracked_allowed_paths_pass(frozen, rel):
+    root, path = frozen
+    p = root / rel; p.parent.mkdir(parents=True, exist_ok=True); p.write_text("{}\n")
+    assert _guard(root, path)[0] == FAKE
+
+
+def test_x1_committed_new_cache_file_passes(frozen):
+    root, path = frozen
+    (root / "artifacts/llm_cache/new.json").write_text("{}\n")
+    git(root, "add", "-A"); git(root, "commit", "-qm", "cache")
+    assert _guard(root, path)[0] == FAKE
+
+
+@pytest.mark.parametrize("committed", [False, True])
+@pytest.mark.parametrize("change", ["modify", "delete"])
+def test_x1_existing_cache_file_change_rejected(frozen, change, committed):
+    root, path = frozen
+    target = root / "artifacts/llm_cache/existing.json"
+    target.write_text('{"x": 1}\n') if change == "modify" else target.unlink()
+    if committed:
+        git(root, "add", "-A"); git(root, "commit", "-qm", change)
+    with pytest.raises(ValueError):
+        _guard(root, path)
+
+
+@pytest.mark.parametrize("rel", ["src/new.py", "tests/new_test.py", "artifacts/llm_cache_x/a.json"])
+def test_x1_untracked_outside_allowlist_rejected(frozen, rel):
+    root, path = frozen
+    p = root / rel; p.parent.mkdir(parents=True, exist_ok=True); p.write_text("x\n")
+    with pytest.raises(ValueError):
+        _guard(root, path)
+
+
+def test_x1_uncommitted_src_edit_rejected(frozen):
+    root, path = frozen
+    (root / "src/mod.py").write_text("x = 2\n")
+    with pytest.raises(ValueError):
+        _guard(root, path)
+
+
+# ---- X2: ledger appended before each live call; resume counts distinct ledger SHAs ----
+
+@pytest.fixture
+def ledger(monkeypatch, tmp_path):
+    FakeLive.script, FakeLive.sent = [], []
+    monkeypatch.setattr(b4_dev, "NvidiaNimProvider", FakeLive)
+    monkeypatch.setattr(b4_dev.time, "sleep", lambda s: None)
+    path = tmp_path / "artifacts/eval_v3/live_ledger.jsonl"
+    monkeypatch.setattr(final_v3, "LIVE_LEDGER_PATH", path, raising=False)
+    return path, tmp_path / "cache"
+
+
+def _shas(path: Path) -> list[str]:
+    return [line.strip() for line in path.read_text().splitlines() if line.strip()]
+
+
+def test_x2_ledger_written_before_401(ledger):
+    path, cache = ledger
+    with final_v3._LiveBudgetScope(10):
+        rt = b4_dev._ReadThroughProvider(cache)
+        FakeLive.script = [401]
+        with pytest.raises(SystemExit):
+            rt.complete(body(1))
+    assert path.is_file() and len(_shas(path)) == 1
+
+
+def test_x2_ledger_holds_only_hex_sha(ledger):
+    path, cache = ledger
+    with final_v3._LiveBudgetScope(10):
+        rt = b4_dev._ReadThroughProvider(cache)
+        rt.complete(body(1)); rt.complete(body(2))
+    lines = _shas(path)
+    assert len(set(lines)) == 2 and all(re.fullmatch(r"(\{\"sha256\":\")?[0-9a-f]{64}(\"\})?", s) for s in lines)
+
+
+def test_x2_resume_counts_ledger_after_crash(ledger, monkeypatch, tmp_path):
+    path, cache = ledger
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("".join(f"{i:064x}\n" for i in range(2499)))
+    with final_v3._LiveBudgetScope(2500, final_v3._prior_distinct_live_requests(tmp_path / "any_dir")) as budget:
+        rt = b4_dev._ReadThroughProvider(cache)
+        rt.complete(body(1))
+        with pytest.raises(final_v3.LiveBudgetExceeded):
+            rt.complete(body(2))
+    assert budget.distinct_total() == 2500
+
+
+# ---- seed-free request view (owner ruling 2026-10-24 and coordinator note on command_id) ----
+
+def test_request_has_no_seed_strings():
+    """Run seed 3 / 21 under all variants; no user-content string equals str(seed) or starts with "{seed}:"."""
+    import subprocess, sys
+    script = Path(__file__).with_name("seed_strings_in_request.py")
+    out = subprocess.run([sys.executable, str(script), "3", "21"], cwd=final_v3.ROOT,
+                         capture_output=True, text=True, check=True).stdout
+    assert json.loads(out)["seed_string_paths"] == {}
+```
+
+### B.5 `seed_strings_in_request.py`
+
+```python
+"""For given dev seeds, run B4_STRICT under every text variant with a recording provider and
+report which user-content key paths hold a string equal to str(seed) or starting with f"{seed}:"."""
+import json, sys
+from rra.eval.b4_dev import _realization
+from rra.eval.context_v3 import VARIANTS, freeze_episode_contexts
+from rra.eval.framework import v3_world_config
+from rra.evidence import run_episode
+from rra.llm.adapter import HypothesisProposer
+from rra.llm.providers import finalize_payload, request_sha256
+
+dev = json.load(open("config/dev_seeds.json"))["seeds"]
+seeds = [int(x) for x in sys.argv[1:]]
+hits, requests = {}, {}
+def walk(v, seed, path):
+    if isinstance(v, dict):
+        for k, x in v.items(): walk(x, seed, f"{path}.{k}")
+    elif isinstance(v, list):
+        for x in v: walk(x, seed, path + "[]")
+    elif isinstance(v, str) and (v == str(seed) or v.startswith(f"{seed}:")):
+        hits[path] = hits.get(path, 0) + 1
+for seed in seeds:
+    real = _realization(dev.index(seed), seed)
+    ctx = freeze_episode_contexts(str(seed), seed, real.fault_family or real.structure)
+    class P:
+        last_http_status = None
+        def complete(self, body):
+            payload = finalize_payload(body, {})
+            requests[request_sha256(payload)] = seed
+            for m in payload["messages"]:
+                try: walk(json.loads(m["content"]), seed, "user")
+                except (json.JSONDecodeError, TypeError): pass
+            return {"choices": [{"message": {"content": "{\"items\": []}"}}]}
+    for v in VARIANTS:
+        run_episode(v3_world_config("nominal"), seed, True, terminal_monitoring="corrected",
+                    realization=real, text_context=ctx[v].text, system2_enabled=True,
+                    s2_variant="B4_STRICT", proposer=HypothesisProposer(P()))
+print(json.dumps({"seeds": seeds, "distinct_requests": len(requests), "seed_string_paths": hits}, indent=1))
 ```
 
 ## 附录 C. 执行隔离
