@@ -340,3 +340,31 @@ def test_ten_consecutive_error_records_stop_and_a_success_resets(tmp_path, monke
         assert len(list(tmp_path.glob("*.json"))) == 20
     finally:
         providers.disable_live_outage()
+
+
+def test_a_deadline_blocks_the_next_http_attempt(tmp_path, monkeypatch):
+    from datetime import datetime, timezone
+    from rra.llm import providers
+
+    clock = {"now": datetime(2026, 10, 27, 5, 0, tzinfo=timezone.utc)}
+    calls = {"n": 0}
+    monkeypatch.setenv("NVIDIA_API_KEY", "test-secret")
+    monkeypatch.setattr(providers, "utc_now", lambda: clock["now"])
+    monkeypatch.setattr(providers.time, "sleep", lambda seconds: None)
+
+    def urlopen(request, timeout):
+        calls["n"] += 1
+        clock["now"] = datetime(2026, 10, 27, 6, 0, tzinfo=timezone.utc)
+        raise _http_error(500, body=b"later")
+
+    monkeypatch.setattr(providers, "urlopen", urlopen)
+    providers.set_live_deadline(datetime(2026, 10, 27, 6, 0, tzinfo=timezone.utc))
+    providers.disable_live_outage()
+    try:
+        provider = providers.NvidiaNimProvider(cache_dir=tmp_path)
+        with pytest.raises(providers.LiveDeadlineExceeded):
+            provider.complete({"messages": [{"role": "user", "content": "retry-across-deadline"}]})
+        assert calls["n"] == 1
+        assert list(tmp_path.glob("*.json")) == []
+    finally:
+        providers.set_live_deadline(None)

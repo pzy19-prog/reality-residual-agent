@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +21,12 @@ ROWS = ("b1b3", "b2", "b1-legacy", "b4")
 SEED_SCHEMA = "rra.eval-seeds.v3"
 # Addendum 06 §3.3, owner patch P-1: distinct live requests on one eval-v3 run.
 DEFAULT_MAX_LIVE_CALLS = 2500
+DEFAULT_DEADLINE_UTC = "2026-10-27T06:00:00Z"
+_UNHASHED_RECEIPT_KEYS = (
+    "runtime_versions", "git_sha", "receipt_sha256",
+    "live_fill_started_utc", "live_fill_completed_utc",
+)
+_A04_LABELS = ("valid", "INVALID_PROPOSAL", "PROVIDER_ERROR", "truncated")
 DEV_SEEDS_PATH = ROOT / "config" / "dev_seeds.json"
 DIAG_SUBSET_PATH = ROOT / "artifacts" / "s2" / "diag-d1g.json"
 
@@ -130,6 +137,10 @@ class _LiveBudgetScope:
 
         class LimitedProvider(original_provider):
             def complete(self, request_body: dict) -> dict:
+                from rra.llm.providers import LiveDeadlineExceeded, live_deadline_reached
+
+                if live_deadline_reached():
+                    raise LiveDeadlineExceeded("live fill deadline reached")
                 payload = finalize_payload(request_body, self)
                 budget.reserve(request_sha256(payload))
                 return super().complete(request_body)
@@ -386,21 +397,128 @@ def _prior_distinct_live_requests(output_dir: Path) -> int:
     return value
 
 
+def _parse_deadline(value: str) -> datetime:
+    text = value.strip()
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError as exc:
+        raise ValueError("--deadline-utc is not a valid timestamp") from exc
+    if parsed.tzinfo is None:
+        raise ValueError("--deadline-utc must include a timezone")
+    return parsed.astimezone(timezone.utc)
+
+
+def _utc_stamp() -> str:
+    from rra.llm.providers import utc_now
+
+    return utc_now().strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _finish_reason(response: dict) -> str | None:
+    try:
+        finish = response["choices"][0].get("finish_reason")
+    except (AttributeError, IndexError, KeyError, TypeError):
+        return None
+    return finish if isinstance(finish, str) else None
+
+
+def classify_cache_record(record: dict) -> str | None:
+    """Classify one cache record with the adapter rules used by episode receipts."""
+    if not isinstance(record, dict):
+        return None
+    if isinstance(record.get("error"), dict) and "response" not in record:
+        return "PROVIDER_ERROR"
+    response = record.get("response")
+    if not isinstance(response, dict):
+        return "PROVIDER_ERROR"
+    if _finish_reason(response) == "length":
+        return "truncated"
+    from rra.llm.adapter import HypothesisProposer
+
+    class _Fixed:
+        def complete(self, request_body: dict) -> dict:
+            return response
+
+    proposal = HypothesisProposer(_Fixed()).propose({})
+    if not proposal.error:
+        return "valid"
+    kind = proposal.error.split(":", 1)[0]
+    if kind in {"ValueError", "TypeError", "ValidationError", "JSONDecodeError"}:
+        return "INVALID_PROPOSAL"
+    return "PROVIDER_ERROR"
+
+
+def a04_counts_from_ledger(ledger_path: Path, cache_dir: Path) -> dict[str, Any]:
+    shas = _ledger_shas(ledger_path)
+    counts: dict[str, Any] = {
+        "llm_calls": len(shas),
+        "valid": 0,
+        "INVALID_PROPOSAL": 0,
+        "PROVIDER_ERROR": 0,
+        "truncated": 0,
+        "gate_reason_distribution": "not available (incomplete)",
+    }
+    for sha in shas:
+        path = cache_dir / f"{sha}.json"
+        if not path.is_file():
+            continue
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        label = classify_cache_record(record)
+        if label in _A04_LABELS:
+            counts[label] += 1
+    return counts
+
+
+def _invocation_total(metrics: dict, field: str) -> int:
+    total = 0
+    for variant in metrics.values():
+        if not isinstance(variant, dict):
+            continue
+        strict = variant.get("B4_STRICT")
+        if isinstance(strict, dict):
+            total += int(strict.get(field, 0) or 0)
+    return total
+
+
+def _b4_result_fields(result: dict[str, Any], *, subset: bool, max_live_calls: int,
+                      distinct: int) -> dict[str, Any]:
+    metrics = result.get("metrics", {})
+    return {
+        "status": "complete",
+        "metrics": metrics,
+        "episodes": result.get("episodes", []),
+        "llm_calls": result.get("llm_calls", 0),
+        "llm_request_spec": result.get("llm_request_spec"),
+        "served_models": result.get("served_models"),
+        "strict_proposer_invocations": _invocation_total(metrics, "strict_proposer_invocations"),
+        "tiebreak_proposer_invocations": _invocation_total(metrics, "tiebreak_proposer_invocations"),
+        "subset": subset,
+        "max_live_calls": max_live_calls,
+        "distinct_live_requests": distinct,
+    }
+
+
 def _run_b4(seeds_path: Path, output_dir: Path, *, replay: bool, live: bool,
             subset: bool, max_live_calls: int, nproc: int | None,
-            role: str = "dev") -> dict[str, Any]:
+            role: str = "dev", format_mode: str | None = None,
+            deadline: datetime | None = None, cache_dir: Path | None = None) -> dict[str, Any]:
     from rra.eval import b4_dev
+    from rra.llm.providers import DEFAULT_FORMAT_MODE, LiveDeadlineExceeded, LiveOutageStop, set_live_deadline
 
+    selected_mode = DEFAULT_FORMAT_MODE if format_mode is None else format_mode
+    cache_root = cache_dir or (ROOT / "artifacts" / "llm_cache")
     # subset=True reads the registered diag file and keeps each seed's dev index.
     # The canonical dev file likewise keeps the historical path string.
     recorded = None if subset or _same_file(seeds_path, DEV_SEEDS_PATH) else seeds_path
     if not live:
         result = b4_dev.run_b4_dev(output_dir, nproc=nproc, subset=subset, replay_only=replay,
-                                   seeds_path=recorded)
-        return {"status": "complete", "metrics": result["metrics"],
-                "episodes": result["episodes"], "llm_calls": result["llm_calls"],
-                "subset": subset, "max_live_calls": max_live_calls,
-                "distinct_live_requests": 0}
+                                   seeds_path=recorded, format_mode=selected_mode)
+        return _b4_result_fields(result, subset=subset, max_live_calls=max_live_calls, distinct=0)
     # eval-v3 counts from the append-only ledger. Dev keeps the prior receipt total.
     ledger_path = output_dir / "live_ledger.jsonl" if role == "eval_v3" else None
     if ledger_path is not None:
@@ -409,23 +527,38 @@ def _run_b4(seeds_path: Path, output_dir: Path, *, replay: bool, live: bool,
     else:
         seen = set()
         already = _prior_distinct_live_requests(output_dir)
-    from rra.llm.providers import LiveOutageStop
+    started = _utc_stamp()
+    set_live_deadline(deadline)
 
-    with _LiveBudgetScope(max_live_calls, already, seen, ledger_path) as budget:
-        try:
-            result = b4_dev.run_b4_dev(output_dir, nproc=nproc, subset=subset,
-                                       replay_only=False, seeds_path=recorded)
-        except (LiveBudgetExceeded, LiveOutageStop) as exc:
-            reason = ("live_outage" if isinstance(exc, LiveOutageStop)
-                      else "max_live_calls_reached")
-            return {"status": "incomplete", "reason": reason,
-                    "max_live_calls": max_live_calls,
-                    "distinct_live_requests": budget.distinct_total(),
-                    "completed_text_condition_pairs": budget.completed_pairs}
-    return {"status": "complete", "metrics": result["metrics"],
-            "episodes": result["episodes"], "llm_calls": result["llm_calls"],
-            "subset": subset, "max_live_calls": max_live_calls,
-            "distinct_live_requests": budget.distinct_total()}
+    def incomplete(reason: str, budget: _LiveBudget) -> dict[str, Any]:
+        body = {"status": "incomplete", "reason": reason,
+                "max_live_calls": max_live_calls,
+                "distinct_live_requests": budget.distinct_total(),
+                "completed_text_condition_pairs": budget.completed_pairs,
+                "live_fill_started_utc": started}
+        if ledger_path is not None:
+            body["a04_counts"] = a04_counts_from_ledger(ledger_path, cache_root)
+        return body
+
+    try:
+        with _LiveBudgetScope(max_live_calls, already, seen, ledger_path) as budget:
+            try:
+                result = b4_dev.run_b4_dev(output_dir, nproc=nproc, subset=subset,
+                                           replay_only=False, seeds_path=recorded,
+                                           format_mode=selected_mode)
+            except LiveBudgetExceeded:
+                return incomplete("max_live_calls_reached", budget)
+            except LiveDeadlineExceeded:
+                return incomplete("deadline", budget)
+            except LiveOutageStop:
+                return incomplete("live_outage", budget)
+        body = _b4_result_fields(result, subset=subset, max_live_calls=max_live_calls,
+                                 distinct=budget.distinct_total())
+        body["live_fill_started_utc"] = started
+        body["live_fill_completed_utc"] = _utc_stamp()
+        return body
+    finally:
+        set_live_deadline(None)
 
 
 def estimate_b4(seeds: list[int], indices: list[int] | None = None) -> int:
@@ -450,7 +583,8 @@ def run_row(row: str, *, seeds: list[int], seed_path: Path, seed_sha256: str,
             output_dir: Path, role: str, nproc: int | None = None, replay: bool = False,
             live: bool = False, subset: bool = False,
             max_live_calls: int = DEFAULT_MAX_LIVE_CALLS,
-            indices: list[int] | None = None) -> dict[str, Any]:
+            indices: list[int] | None = None, format_mode: str | None = None,
+            deadline: datetime | None = None) -> dict[str, Any]:
     if row == "b1b3":
         result, auxiliary = _run_b1b3(seed_path, output_dir, nproc)
     elif row == "b2":
@@ -460,7 +594,8 @@ def run_row(row: str, *, seeds: list[int], seed_path: Path, seed_sha256: str,
     elif row == "b4":
         result, auxiliary = _run_b4(seed_path, output_dir, replay=replay, live=live,
                                     subset=subset, max_live_calls=max_live_calls,
-                                    nproc=nproc, role=role), {}
+                                    nproc=nproc, role=role, format_mode=format_mode,
+                                    deadline=deadline), {}
     else:
         raise ValueError(f"unknown row: {row}")
     receipt: dict[str, Any] = {
@@ -473,7 +608,7 @@ def run_row(row: str, *, seeds: list[int], seed_path: Path, seed_sha256: str,
     }
     receipt["receipt_sha256"] = _canonical_sha({
         key: value for key, value in receipt.items()
-        if key not in ("runtime_versions", "git_sha", "receipt_sha256")
+        if key not in _UNHASHED_RECEIPT_KEYS
     })
     output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / f"{row}.json").write_text(json.dumps(receipt, indent=2, ensure_ascii=False) + "\n")
@@ -499,6 +634,8 @@ def run_row(row: str, *, seeds: list[int], seed_path: Path, seed_sha256: str,
 
 
 def main(argv: list[str] | None = None) -> int:
+    from rra.llm.providers import DEFAULT_FORMAT_MODE
+
     parser = argparse.ArgumentParser(prog="rra eval-v3")
     parser.add_argument("row", choices=ROWS)
     parser.add_argument("--role", choices=("eval_v3", "dev"), default="eval_v3")
@@ -512,6 +649,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--subset", action="store_true")
     parser.add_argument("--max-live-calls", type=int, default=DEFAULT_MAX_LIVE_CALLS)
     parser.add_argument("--estimate", action="store_true")
+    parser.add_argument("--format-mode", choices=("json_object", "json_schema", "nvext_guided_json"),
+                        default=DEFAULT_FORMAT_MODE)
+    parser.add_argument("--deadline-utc", default=DEFAULT_DEADLINE_UTC)
     args = parser.parse_args(argv)
     try:
         if args.max_live_calls < 0:
@@ -551,7 +691,9 @@ def main(argv: list[str] | None = None) -> int:
         receipt = run_row(args.row, seeds=seeds, seed_path=seed_path, seed_sha256=digest,
                           output_dir=args.output_dir, role=args.role, nproc=args.nproc,
                           replay=args.replay, live=args.live, subset=args.subset,
-                          max_live_calls=args.max_live_calls, indices=indices)
+                          max_live_calls=args.max_live_calls, indices=indices,
+                          format_mode=args.format_mode,
+                          deadline=_parse_deadline(args.deadline_utc))
         print(json.dumps({"row": args.row, "status": receipt["status"],
                           "receipt_sha256": receipt["receipt_sha256"]}, sort_keys=True))
         return 3 if receipt["status"] == "incomplete" else 0

@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from rra.evidence import run_episode
+from rra.llm.providers import DEFAULT_FORMAT_MODE
 from rra.sim import WorldConfig
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -138,7 +139,7 @@ def main(argv: list[str] | None = None) -> int:
     b4_parser.add_argument("--subset", action="store_true", help="use the registered L1g 33-seed subset")
     b4_parser.add_argument("--replay", action="store_true", help="run offline from artifacts/llm_cache")
     b4_parser.add_argument("--format-mode", choices=("json_object", "json_schema", "nvext_guided_json"),
-                           default="json_object")
+                           default=DEFAULT_FORMAT_MODE)
     eval_v3_parser = commands.add_parser("eval-v3", help="run a frozen eval-v3 baseline row")
     eval_v3_parser.add_argument("row")
     eval_v3_parser.add_argument("eval_args", nargs=argparse.REMAINDER)

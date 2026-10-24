@@ -234,7 +234,7 @@ def run_b4_dev(output_dir: Path = ROOT / "artifacts" / "s2", *,
                                text_context=frozen.text, system2_enabled=True,
                                s2_variant="B4_TIEBREAK", proposer=proposer)
             if strict["system2_decisions"] != b3["system2_decisions"]:
-                raise AssertionError(f"B-1 mismatch seed={seed} variant={variant}")
+                raise AssertionError(f"B-1 mismatch variant={variant}")
             scores = {
                 "B4_STRICT": score_against_b1_denominators(strict, realization, config, b1),
                 "B4_TIEBREAK": score_against_b1_denominators(tie, realization, config, b1),
@@ -284,9 +284,9 @@ def run_b4_dev(output_dir: Path = ROOT / "artifacts" / "s2", *,
             for mode in (0, 1):
                 if (expected[mode]["receipt_sha256"] != actual[mode]["receipt_sha256"]
                         or expected[mode]["system2_decisions"] != actual[mode]["system2_decisions"]):
-                    mismatches.append({"seed": key[0], "variant": key[1], "mode": mode})
+                    mismatches.append({"variant": key[1], "mode": mode})
         if mismatches:
-            raise RuntimeError(f"serial/parallel mismatch: {mismatches[0]}")
+            raise RuntimeError("serial/parallel mismatch")
         serial_parallel_seconds = time.perf_counter() - serial_parallel_started
 
         compact = [{

@@ -503,3 +503,186 @@ def test_ledger_cap_blocks_a_new_request_before_any_http_attempt(monkeypatch, tm
     assert attempts["n"] == 0
     assert (output / "live_ledger.jsonl").read_text() == "".join(lines)
 
+
+def test_incomplete_eval_b4_reports_a04_counts_from_ledger_and_cache(monkeypatch, tmp_path):
+    from rra.s2.dsl import STRUCTURE_IDS
+
+    output = tmp_path / "out"
+    cache = tmp_path / "cache"
+    output.mkdir()
+    cache.mkdir()
+    valid_sha, invalid_sha, error_sha, truncated_sha, missing_sha = (f"{index:064x}" for index in range(5))
+    (output / "live_ledger.jsonl").write_text("".join(
+        json.dumps({"request_sha256": sha}) + "\n"
+        for sha in (valid_sha, invalid_sha, error_sha, truncated_sha, missing_sha)
+    ))
+    valid_body = json.dumps({"items": [{
+        "hypothesis_id": STRUCTURE_IDS[0], "rationale": "pattern holds", "evidence_refs": ["obs:0"],
+    }]})
+
+    def write(sha, record):
+        (cache / f"{sha}.json").write_text(json.dumps(record))
+
+    write(valid_sha, {"request": {}, "response": {"choices": [
+        {"finish_reason": "stop", "message": {"content": valid_body}}]}})
+    write(invalid_sha, {"request": {}, "response": {"choices": [
+        {"finish_reason": "stop", "message": {"content": "not-json"}}]}})
+    write(error_sha, {"request": {}, "error": {"http_status": 400, "class": "deterministic"}})
+    write(truncated_sha, {"request": {}, "response": {"choices": [
+        {"finish_reason": "length", "message": {"content": "{"}}]}})
+
+    def stop(*args, **kwargs):
+        raise final_v3.LiveBudgetExceeded("stop")
+
+    monkeypatch.setattr(b4_dev, "run_b4_dev", stop)
+    result = final_v3._run_b4(
+        tmp_path / "seeds.json", output, replay=False, live=True, subset=False,
+        max_live_calls=10, nproc=1, role="eval_v3", cache_dir=cache,
+    )
+    counts = result["a04_counts"]
+    assert result["status"] == "incomplete"
+    assert counts == {
+        "llm_calls": 5,
+        "valid": 1,
+        "INVALID_PROPOSAL": 1,
+        "PROVIDER_ERROR": 1,
+        "truncated": 1,
+        "gate_reason_distribution": "not available (incomplete)",
+    }
+
+
+def test_deadline_stops_before_a_new_http_attempt(monkeypatch, tmp_path):
+    from datetime import datetime, timezone
+    from rra.llm import providers
+
+    clock = {"now": datetime(2026, 10, 27, 5, 59, tzinfo=timezone.utc)}
+    monkeypatch.setattr(providers, "utc_now", lambda: clock["now"])
+    calls = []
+
+    class Live:
+        model = "test-model"
+        max_tokens = 1800
+        chat_template_kwargs = {"enable_thinking": False}
+        no_think = False
+        last_http_status = None
+
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def complete(self, request_body):
+            calls.append(request_body["messages"][0]["content"])
+            return {"choices": [{"message": {"content": "{\"items\": []}"}}]}
+
+    monkeypatch.setattr(b4_dev, "NvidiaNimProvider", Live)
+
+    def run(*args, **kwargs):
+        provider = b4_dev.NvidiaNimProvider()
+        provider.complete({"messages": [{"role": "user", "content": "before"}]})
+        clock["now"] = datetime(2026, 10, 27, 6, 0, tzinfo=timezone.utc)
+        provider.complete({"messages": [{"role": "user", "content": "after"}]})
+        return {"metrics": {}, "episodes": [], "llm_calls": 1}
+
+    monkeypatch.setattr(b4_dev, "run_b4_dev", run)
+    output = tmp_path / "out"
+    output.mkdir()
+    result = final_v3._run_b4(
+        tmp_path / "seeds.json", output, replay=False, live=True, subset=False,
+        max_live_calls=10, nproc=1, role="dev",
+        deadline=datetime(2026, 10, 27, 6, 0, tzinfo=timezone.utc),
+    )
+    assert calls == ["before"]
+    assert result["status"] == "incomplete"
+    assert result["reason"] == "deadline"
+    assert result["live_fill_started_utc"] == "2026-10-27T05:59:00Z"
+    assert "live_fill_completed_utc" not in result
+    assert providers.live_deadline_reached() is False
+
+
+def test_completed_live_timestamps_stay_outside_the_receipt_hash(monkeypatch, tmp_path):
+    from datetime import datetime, timezone
+    from rra.llm import providers
+
+    clock = {"now": datetime(2026, 10, 26, 1, 2, 3, tzinfo=timezone.utc)}
+    monkeypatch.setattr(providers, "utc_now", lambda: clock["now"])
+
+    def run(*args, **kwargs):
+        clock["now"] = datetime(2026, 10, 26, 1, 2, 4, tzinfo=timezone.utc)
+        return {"metrics": {"NO_TEXT_CONTEXT": {"B4_STRICT": {
+            "strict_proposer_invocations": 2,
+            "tiebreak_proposer_invocations": 2,
+        }}},
+                "episodes": [], "llm_calls": 2,
+                "llm_request_spec": {"format_mode": kwargs["format_mode"]},
+                "served_models": {"served": 2}}
+
+    monkeypatch.setattr(b4_dev, "run_b4_dev", run)
+    seeds = tmp_path / "seeds.json"
+    seeds.write_text('{"seeds": [1]}\n')
+    receipt = final_v3.run_row(
+        "b4", seeds=[1], seed_path=seeds, seed_sha256="abc", output_dir=tmp_path / "out",
+        role="dev", live=True, format_mode=providers.DEFAULT_FORMAT_MODE,
+        deadline=datetime(2026, 10, 27, 6, 0, tzinfo=timezone.utc),
+    )
+    assert receipt["live_fill_started_utc"] == "2026-10-26T01:02:03Z"
+    assert receipt["live_fill_completed_utc"] == "2026-10-26T01:02:04Z"
+    assert receipt["llm_request_spec"]["format_mode"] == providers.DEFAULT_FORMAT_MODE
+    assert receipt["served_models"] == {"served": 2}
+    assert receipt["strict_proposer_invocations"] == 2
+    assert receipt["tiebreak_proposer_invocations"] == 2
+    hashed = {key: value for key, value in receipt.items() if key not in final_v3._UNHASHED_RECEIPT_KEYS}
+    assert receipt["receipt_sha256"] == final_v3._canonical_sha(hashed)
+    mutated = dict(receipt)
+    mutated["live_fill_started_utc"] = "1999-01-01T00:00:00Z"
+    hashed_mutated = {key: value for key, value in mutated.items()
+                      if key not in final_v3._UNHASHED_RECEIPT_KEYS}
+    assert final_v3._canonical_sha(hashed_mutated) == receipt["receipt_sha256"]
+
+
+def test_eval_b4_format_mode_defaults_to_the_provider_constant(monkeypatch, tmp_path):
+    from datetime import datetime, timezone
+    from rra.llm import providers
+
+    seen = {}
+
+    def fake_run_row(row, **kwargs):
+        seen["row"] = row
+        seen.update(kwargs)
+        return {"status": "complete", "metrics": {}, "receipt_sha256": "digest"}
+
+    monkeypatch.setattr(final_v3, "run_row", fake_run_row)
+    monkeypatch.setattr(final_v3, "load_seed_file", lambda *args, **kwargs: ([11], "digest"))
+    code = final_v3.main([
+        "b4", "--role", "dev", "--seeds-file", str(tmp_path / "seeds.json"),
+        "--replay", "--output-dir", str(tmp_path / "out"),
+    ])
+    assert code == 0
+    assert seen["format_mode"] == providers.DEFAULT_FORMAT_MODE
+    assert seen["deadline"] == datetime(2026, 10, 27, 6, 0, tzinfo=timezone.utc)
+    code = final_v3.main([
+        "b4", "--role", "dev", "--seeds-file", str(tmp_path / "seeds.json"),
+        "--replay", "--output-dir", str(tmp_path / "out"), "--format-mode", "json_schema",
+    ])
+    assert code == 0
+    assert seen["format_mode"] == "json_schema"
+
+
+def test_eval_cli_output_does_not_contain_a_seed_value(tmp_path, capsys):
+    import re
+
+    seed = 102030405
+    path = tmp_path / "seeds.json"
+    path.write_text(json.dumps({"seeds": [seed]}) + "\n")
+    code = final_v3.main([
+        "b4", "--role", "dev", "--seeds-file", str(path), "--output-dir", str(tmp_path / "err"),
+    ])
+    captured = capsys.readouterr()
+    assert code == 2
+    assert str(seed) not in captured.out + captured.err
+    code = final_v3.main([
+        "b2", "--role", "dev", "--seeds-file", str(path), "--output-dir", str(tmp_path / "b2"),
+    ])
+    captured = capsys.readouterr()
+    visible = re.sub(r"\b[0-9a-f]{64}\b", "", captured.out + captured.err)
+    assert code == 0
+    assert str(seed) not in visible
+
