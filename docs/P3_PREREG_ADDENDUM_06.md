@@ -36,7 +36,7 @@ This addendum does not move or rewrite `p3-prereg`, and does not alter `docs/P3_
 
 3.2 Format mode selection (dev only, before X): on the probe set (the first 10 distinct B4 requests collected in seed order and text-variant order on the 33-seed development subset), each format mode (`json_object`, `json_schema`, `nvext_guided_json`) is sent once per request. The mode with the most valid proposals (non-empty items and no error under the adapter rules) is selected; ties are broken in the order `json_object`, `json_schema`, `nvext_guided_json`. The selected mode becomes the default in X, and the probe artifact is committed before X. Addendum 04 Section 6.2 applies regardless of the selected mode's probe score.
 
-3.3 Live calls on eval-v3 go through the read-through cache keyed by the finalized request (Addendum 04 Section 4; Addendum 05 Section 3.4) and may be resumed after an interruption. HTTP 401 or 403 stops the run. At most 1,600 distinct live requests are made for eval-v3.
+3.3 Live calls on eval-v3 go through the read-through cache keyed by the finalized request (Addendum 04 Section 4; Addendum 05 Section 3.4) and may be resumed after an interruption. HTTP 401 or 403 stops the run. At most 2,500 distinct live requests are made for eval-v3.
 
 3.4 The scored B4 artifact is generated afterwards in replay mode from the filled cache, twice, with identical receipts (Addendum 04 Section 4; Addendum 05 Section 3.1).
 
@@ -58,7 +58,21 @@ These were fixed during development and are not triggered by any eval-v3 result.
 
 4.6 The episode-level safe stop, which prevents commands for the rest of an episode after an escalation or latch, is unchanged by Addendum 05 and this addendum.
 
-4.7 The B4 request carries the canonical evidence packet (the policy-whitelisted packet verified in L3) and a derived System-2 summary (passing structure IDs, fit RMSE, usable-sample counts, current time, horizon). This corrects the reduced packet disclosed in Addendum 04 Section 5.3.
+4.7 The B4 request carries the canonical evidence packet built by the same function used in L3, with the following scope (owner ruling R7): observations and presence events of the current target with all C1 fields; all command feedback in the episode that precedes the decision (no later feedback); and `known_config` restricted to the five C1 fields (`dt`, `tolerance`, `x_pick`, `y_pick`, `belt_speed`). The L3 export tables additionally carry `episode_steps` and `object_count`, which L3 uses for storage and sequence numbering. These two fields are not C1 fields and are not sent to the generator. Restricting `known_config` to C1 does not remove evidence in the sense of Addendum 03 Section 2 item 4. Rows keep the L3 bookkeeping keys `episode_id` and `seq`, and feedback rows also keep `step`. The request also carries a derived System-2 summary that contains exactly the items of owner ruling R6: the passing structures (`structure_id`, `rmse`, `n_usable`), `current_time`, and `horizon`. This corrects the reduced packet disclosed in Addendum 04 Section 5.3.
+
+## 4A. Owner interpretive rulings (2026-10-24)
+
+These rulings interpret existing clauses before eval-v3 generation. They change no threshold, gate, scoring rule, or denominator, and none is triggered by an eval-v3 result.
+
+- R1: Re-observation hold entry is limited to the fast-layer `ESCALATE` path (Section 4.4).
+- R2: The safe-stop reading of Addendum 05 Section 1.3 is retained and disclosed (Section 4.5).
+- R3: The episode-level safe stop is outside this freeze and is disclosed as a failure mode (Section 4.6).
+- R4: Registered runner (Section 2.1).
+- R5: Addendum 05 Section 3.4 is implemented on the registered runner, and the B4 cache is rebuilt live there.
+- R6: The B4 request keeps the passing structures (`structure_id`, `rmse`, `n_usable`), `current_time`, and `horizon`. B4-tiebreak selects among verifier-passing structures and cannot do so without them.
+- R7: Scope of "the full whitelisted evidence packet for the episode" (Addendum 03 Section 2 item 4), as stated in Section 4.7.
+- R8: Two-dimensional grid ties under Addendum 05 Section 2 select the lexicographically smallest (tau, delay) pair (Section 4.3).
+- R9: The request-template SHA-256 of Addendum 04 Section 5.4 is the SHA-256 of the canonical JSON of the finalized request in which the evidence packet and the System-2 summary are replaced by fixed placeholders; it covers the system prompt, model name, generation parameters, response-format settings, and chat-template arguments. The model identifier recorded per response is the name returned by the service; the requested code constant is recorded separately.
 
 ## 5. Added stop conditions (P3 Section 25)
 
@@ -68,4 +82,4 @@ Each of the following invalidates the affected eval-v3 rows until corrected unde
 - any `src/` change between X and a result commit;
 - seed values inspected before all rows are run;
 - a scored B4 artifact whose two replay generations differ, or that contains a replay-cache-miss fallback;
-- more than 1,600 distinct live eval-v3 requests.
+- more than 2,500 distinct live eval-v3 requests.
