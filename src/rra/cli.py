@@ -136,6 +136,9 @@ def main(argv: list[str] | None = None) -> int:
     b4_parser.add_argument("--nproc", type=int, default=None)
     b4_parser.add_argument("--subset", action="store_true", help="use the registered L1g 33-seed subset")
     b4_parser.add_argument("--replay", action="store_true", help="run offline from artifacts/llm_cache")
+    eval_v3_parser = commands.add_parser("eval-v3", help="run a frozen eval-v3 baseline row")
+    eval_v3_parser.add_argument("row")
+    eval_v3_parser.add_argument("eval_args", nargs=argparse.REMAINDER)
     args = parser.parse_args(argv)
     if args.command == "run":
         args.output_dir.mkdir(parents=True, exist_ok=True)
@@ -162,6 +165,9 @@ def main(argv: list[str] | None = None) -> int:
                           "llm_calls": receipt["llm_calls"],
                           "serial_parallel_check": receipt["serial_parallel_check"]}, indent=2))
         return 0
+    if args.command == "eval-v3":
+        from rra.eval.final_v3 import main as eval_v3_main
+        return eval_v3_main([args.row, *args.eval_args])
     result = run_bench(args.output_dir)
     print(result["markdown"])
     return 0
