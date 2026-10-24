@@ -22,7 +22,7 @@ from rra.evidence.policy import (
     sanitize_observation,
     target_presence_event,
 )
-from rra.evidence.packet import build_packet, project_c1_known_config
+from rra.evidence.packet import build_packet, generator_view, project_c1_known_config
 from rra.s2.b3 import run_b3
 from rra.s2.dsl import Action, FaultHypothesis, structure_id as registered_structure_id
 from rra.s2.fitter import Observation as S2Observation, CommandFeedback as S2Feedback, fit as fit_hypothesis
@@ -702,7 +702,7 @@ def run_episode(
             )
             if (s2_variant in ("B4_STRICT", "B4_TIEBREAK")
                     and not b3["faults"] and b3["gate_reason"] == "AMBIGUOUS"):
-                evidence_packet = build_packet(
+                evidence_packet = generator_view(build_packet(
                     episode_id=str(seed), target_id=observation.target_id, step=observation.step,
                     time=observation.time, observations=policy_observation_samples,
                     presence_events=canonical_presence_events,
@@ -717,7 +717,7 @@ def run_episode(
                     context={"text": text_context,
                              "content_sha256": sha256(text_context.encode("utf-8")).hexdigest()},
                     episode_steps=config.episode_steps,
-                )
+                ))
                 s2_summary = {
                     "passing": [{"structure_id": _verification_structure_id(item),
                                  "rmse": float(item.rmse), "n_usable": int(item.n_usable)}

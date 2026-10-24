@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from copy import deepcopy
 from typing import Any, Iterable
 
 
@@ -34,6 +35,26 @@ def build_packet(*, episode_id: str, target_id: int, step: int, time: float,
         "decision": {"episode_id": str(episode_id), "target_id": int(target_id),
                      "step": int(step), "time": time, "seq": seq},
     }
+
+
+def generator_view(packet: dict[str, Any]) -> dict[str, Any]:
+    """Copy a packet for the generator, without seed identifiers.
+
+    Drops ``decision.episode_id`` and the ``episode_id`` of each observation,
+    presence, and command-feedback row. Rewrites each feedback ``command_id``
+    to ``{target_id}:{step}`` (the same id with the seed prefix removed).
+    Does not change ``build_packet`` or the L3 export.
+    """
+    view = deepcopy(packet)
+    view["decision"].pop("episode_id", None)
+    for row in view["observations"]:
+        row.pop("episode_id", None)
+    for row in view["presence_events"]:
+        row.pop("episode_id", None)
+    for row in view["command_feedback"]:
+        row.pop("episode_id", None)
+        row["command_id"] = f"{row['target_id']}:{row['step']}"
+    return view
 
 
 def canonical(packet: dict[str, Any]) -> str:
