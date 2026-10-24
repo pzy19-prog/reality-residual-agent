@@ -14,6 +14,7 @@
 | 2026-09-27 | setuptools build-system | 不显式恢复 setuptools build-system | 仓库通过 `rra` source-tree launcher 运行，不构建 Python wheel；Docker 直接复制源码，增加构建依赖没有必要。setuptools 不是运行依赖 |
 | 2026-09-27 | CLI / 模块签名 | 保持公开 `rra run`、`rra bench` 命令和 `run_bench(output_dir)` 签名；用 `RRA_SEED_FILE` 选择 dev 冒烟 seed 文件 | 支持本地与 Docker dev 冒烟，正式默认仍由冻结 eval 文件驱动 |
 | 2026-10-23 | 运行时 Python 版本 | 统一为 Python 3.12（本机 3.12.3），CI/启动脚本/Dockerfile/README 同步；3.11 时期的历史结果保留为历史记录 | requirements 钉 numpy==2.5.4（L5 D10），该版本要求 Python>=3.12；PR #19 合并后 CI 因此失败 |
+| 2026-10-24 | FRZ-2A 所有者裁决 R1–R9 | R1 A05 §1.1 保持入口取窄读法，只限快速层 ESCALATE 路径；R2 §1.3 维持现状不改代码，88/5 在提交材料中披露；R3 episode 级 safe_stop 主导 84/775 不在冻结范围，作为失败模式披露；R4 登记 runner = 本机 i7-10750H、Python 3.12.3、NumPy 2.5.4、scipy-openblas 0.3.34；R5 A05 §3.4 在本机实现，B4 缓存在本机 live 重建；R6 B4 请求保留 passing[]、current_time、horizon；R7 证据包范围：本目标的观测与在场事件、episode 内决策之前的全部指令反馈、known_config 取 C1 的 5 个字段；R8 二维网格平局按 (tau, delay) 字典序；R9 请求模板 SHA-256 = 去掉证据后的请求骨架的哈希，模型标识记录服务端返回的名字 | T4 审查 §7 第 1、2、9、10 条；T6 冻结前核对 §5 第 1–4 条；Addendum 05；登记见 Addendum 06 |
 
 ## 评估纪律
 

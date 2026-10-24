@@ -3,16 +3,68 @@ from __future__ import annotations
 
 import json
 import re
+from copy import deepcopy
+from hashlib import sha256
 from typing import Any, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from rra.llm.providers import ReplayCacheMiss
+from rra.llm.providers import canonical_json, finalize_payload
 from rra.s2.dsl import STRUCTURE_IDS, FaultHypothesis
 
 FAULT_HYPOTHESIS_IDS = tuple(item.value for item in FaultHypothesis)
 
 _ALLOWED_IDS = frozenset((*STRUCTURE_IDS, *FAULT_HYPOTHESIS_IDS))
+
+SYSTEM_PROMPT = (
+    "Propose an ordered list of hypotheses from the registered IDs only. "
+    "Choose model structures only; do not estimate numeric parameters. "
+    'Return an object matching this JSON schema exactly: '
+    '{"items":[{"hypothesis_id":"SENSOR_BIAS","rationale":"…",'
+    '"evidence_refs":["obs:0:1.200"]}]}. Each item requires hypothesis_id, '
+    'rationale, and evidence_refs; no additional properties are allowed. '
+    f"Allowed IDs: {', '.join((*STRUCTURE_IDS, *FAULT_HYPOTHESIS_IDS))}"
+)
+
+
+def proposal_request(evidence_packet: Any, s2_summary: Any = None) -> dict[str, Any]:
+    user_body = {"evidence_packet": evidence_packet}
+    if s2_summary is not None:
+        user_body["s2_summary"] = s2_summary
+    return {
+        "temperature": 0,
+        "max_tokens": 1800,
+        "response_format": {"type": "json_object"},
+        "messages": [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": json.dumps(
+                user_body, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
+            )},
+        ],
+    }
+
+
+def request_template_sha256(settings: Any, request_body: dict[str, Any] | None = None) -> str:
+    """Hash the finalized request skeleton with evidence replaced by fixed markers."""
+    request = deepcopy(request_body) if request_body is not None else proposal_request(
+        "<EVIDENCE_PACKET>", "<S2_SUMMARY>")
+    if request_body is not None:
+        for message in request.get("messages", []):
+            if message.get("role") != "user" or not isinstance(message.get("content"), str):
+                continue
+            try:
+                user = json.loads(message["content"])
+            except json.JSONDecodeError:
+                continue
+            if "evidence_packet" in user:
+                user["evidence_packet"] = "<EVIDENCE_PACKET>"
+            if "s2_summary" in user:
+                user["s2_summary"] = "<S2_SUMMARY>"
+            message["content"] = json.dumps(user, sort_keys=True, separators=(",", ":"),
+                                             ensure_ascii=False)
+    payload = finalize_payload(request, settings)
+    return sha256(canonical_json(payload).encode("utf-8")).hexdigest()
 
 
 class ProposalItem(BaseModel):
@@ -64,23 +116,9 @@ class HypothesisProposer:
     def __init__(self, provider: Provider):
         self.provider = provider
 
-    def propose(self, evidence_packet: dict, context_text: str) -> Proposal:
-        request_body = {
-            "temperature": 0,
-            "max_tokens": 1800,
-            "response_format": {"type": "json_object"},
-            "messages": [
-            {"role": "system", "content": (
-                "Propose an ordered list of hypotheses from the registered IDs only. "
-                "Choose model structures only; do not estimate numeric parameters. "
-                "Return JSON: {items:[{hypothesis_id,rationale,evidence_refs}]}. "
-                f"Allowed IDs: {', '.join((*STRUCTURE_IDS, *FAULT_HYPOTHESIS_IDS))}"
-            )},
-            {"role": "user", "content": json.dumps(
-                {"evidence_packet": evidence_packet, "context_text": context_text},
-                sort_keys=True, separators=(",", ":"), ensure_ascii=False,
-            )},
-        ]}
+    def propose(self, evidence_packet: dict, context_text: str = "", *,
+                s2_summary: dict | None = None) -> Proposal:
+        request_body = proposal_request(evidence_packet, s2_summary)
         receipt: dict[str, Any] = {"unknown_ids": [], "ignored_numeric_parameters": []}
         try:
             response = self.provider.complete(request_body)

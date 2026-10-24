@@ -20,6 +20,7 @@ from rra.eval.scenarios import FAULT_FAMILIES, composition_structures, realize_e
 from rra.eval.runner import score_against_b1_denominators
 from rra.evidence import run_episode
 from rra.llm.adapter import HypothesisProposer
+from rra.llm.adapter import request_template_sha256
 from rra.llm.providers import (NIM_MODEL, NvidiaNimProvider, ReplayCacheMiss,
                                ReplayProvider)
 
@@ -28,11 +29,17 @@ ROOT = Path(__file__).resolve().parents[3]
 
 class _ReadThroughProvider:
     """Use the finalized-payload cache before making a live request."""
-    def __init__(self, cache_dir: Path, *, replay_only: bool = False):
-        self.replay = ReplayProvider(cache_dir, model=NIM_MODEL)
-        self.live = None if replay_only else NvidiaNimProvider(cache_dir=cache_dir)
+    def __init__(self, cache_dir: Path, *, replay_only: bool = False, format_mode: str = "json_object"):
+        self.replay = ReplayProvider(cache_dir, model=NIM_MODEL, format_mode=format_mode)
+        self.live = None if replay_only else NvidiaNimProvider(cache_dir=cache_dir, format_mode=format_mode)
         self.live_calls = 0
         self.requests_served = 0
+        self.served_models: dict[str, int] = {}
+
+    def _record_model(self, response: dict) -> None:
+        model = response.get("model")
+        if isinstance(model, str) and model:
+            self.served_models[model] = self.served_models.get(model, 0) + 1
 
     @property
     def last_http_status(self):
@@ -42,6 +49,7 @@ class _ReadThroughProvider:
         try:
             result = self.replay.complete(request_body)
             self.requests_served += 1
+            self._record_model(result)
             return result
         except ReplayCacheMiss:
             if self.live is None:
@@ -51,6 +59,7 @@ class _ReadThroughProvider:
                     result = self.live.complete(request_body)
                     self.live_calls += 1
                     self.requests_served += 1
+                    self._record_model(result)
                     return result
                 except RuntimeError:
                     status = self.live.last_http_status
@@ -67,11 +76,11 @@ class _MemoizedProposer:
         self.proposer = proposer
         self.cache: dict[str, Any] = {}
 
-    def propose(self, evidence_packet: dict, context_text: str):
-        key = json.dumps({"evidence_packet": evidence_packet, "context_text": context_text},
+    def propose(self, evidence_packet: dict, context_text: str = "", *, s2_summary: dict | None = None):
+        key = json.dumps({"evidence_packet": evidence_packet, "s2_summary": s2_summary},
                          sort_keys=True, separators=(",", ":"), ensure_ascii=False, default=str)
         if key not in self.cache:
-            self.cache[key] = self.proposer.propose(evidence_packet, context_text)
+            self.cache[key] = self.proposer.propose(evidence_packet, context_text, s2_summary=s2_summary)
         return self.cache[key]
 
 
@@ -119,6 +128,10 @@ def _summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
                 "unsafe_by_source": unsafe_by_source,
                 "llm_calls": sum(x["llm_requests_served"] for x in variant_rows)
                              if mode == "B4_STRICT" else 0,
+                "strict_proposer_invocations": sum(x["B4_STRICT"].get("strict_proposer_invocations", 0)
+                                                    for x in variant_rows),
+                "tiebreak_proposer_invocations": sum(x["B4_TIEBREAK"].get("tiebreak_proposer_invocations", 0)
+                                                      for x in variant_rows),
                 "TEXT_TIEBREAK": sum(d.get("gate_reason") == "TEXT_TIEBREAK"
                                      for x in selected for d in x.get("system2_decisions", [])),
                 "fallbacks": fallbacks,
@@ -179,8 +192,8 @@ def _misleading_audit(row: dict[str, Any], mode: str) -> dict[str, Any]:
 
 def run_b4_dev(output_dir: Path = ROOT / "artifacts" / "s2", *,
                nproc: int | None = None, subset: bool = False,
-               replay_only: bool = False,
-               seeds_path: Path | None = None) -> dict[str, Any]:
+               replay_only: bool = False, seeds_path: Path | None = None,
+               format_mode: str = "json_object") -> dict[str, Any]:
     """Run paired B4 modes for every dev episode and frozen text variant."""
     run_started = time.perf_counter()
     if seeds_path is not None and subset:
@@ -218,7 +231,7 @@ def run_b4_dev(output_dir: Path = ROOT / "artifacts" / "s2", *,
         b1, b3, realization = baseline[seed]
         from rra.eval.context_v3 import verify_frozen_context
         verify_frozen_context(frozen)
-        provider = _ReadThroughProvider(cache_dir, replay_only=replay_only)
+        provider = _ReadThroughProvider(cache_dir, replay_only=replay_only, format_mode=format_mode)
         proposer = _MemoizedProposer(HypothesisProposer(provider))
         strict = run_episode(config, seed, True, terminal_monitoring="corrected", realization=realization,
                              text_context=frozen.text, system2_enabled=True,
@@ -239,6 +252,7 @@ def run_b4_dev(output_dir: Path = ROOT / "artifacts" / "s2", *,
             "B4_STRICT": strict, "B4_TIEBREAK": tie, "scores": scores,
             "llm_requests_served": provider.requests_served,
             "live_llm_calls": provider.live_calls,
+            "served_models": provider.served_models,
         }
 
     workers = max(1, min(nproc or min(4, os.cpu_count() or 1), len(tasks)))
@@ -255,7 +269,7 @@ def run_b4_dev(output_dir: Path = ROOT / "artifacts" / "s2", *,
     def replay_task(task):
         seed, variant, frozen = task
         b1, b3, realization = baseline[seed]
-        provider = _ReadThroughProvider(cache_dir, replay_only=True)
+        provider = _ReadThroughProvider(cache_dir, replay_only=True, format_mode=format_mode)
         proposer = _MemoizedProposer(HypothesisProposer(provider))
         strict = run_episode(config, seed, True, terminal_monitoring="corrected", realization=realization,
                              text_context=frozen.text, system2_enabled=True,
@@ -290,6 +304,8 @@ def run_b4_dev(output_dir: Path = ROOT / "artifacts" / "s2", *,
         "B4_TIEBREAK_receipt_sha256": row["B4_TIEBREAK"]["receipt_sha256"],
         "B4_STRICT_decision_count": len(row["B4_STRICT"]["system2_decisions"]),
         "B4_TIEBREAK_decision_count": len(row["B4_TIEBREAK"]["system2_decisions"]),
+        "strict_proposer_invocations": row["B4_STRICT"].get("strict_proposer_invocations", 0),
+        "tiebreak_proposer_invocations": row["B4_TIEBREAK"].get("tiebreak_proposer_invocations", 0),
         "B4_STRICT_decisions_sha256": _decisions_sha256(row["B4_STRICT"]["system2_decisions"]),
         "B4_TIEBREAK_decisions_sha256": _decisions_sha256(row["B4_TIEBREAK"]["system2_decisions"]),
         "B4_STRICT_proposal_rank": row["B4_STRICT"].get("system2_proposal_rank", []),
@@ -306,6 +322,10 @@ def run_b4_dev(output_dir: Path = ROOT / "artifacts" / "s2", *,
         }} if row["text_variant"] == "MISLEADING_TEXT_CONTEXT" else {}),
         "llm_requests_served": row["llm_requests_served"],
     } for row in rows]
+    served_models: dict[str, int] = {}
+    for row in rows:
+        for model, count in row["served_models"].items():
+            served_models[model] = served_models.get(model, 0) + count
     body = {
         "schema_version": "rra.s2.b4-dev.v1", "subset": subset,
         "seed_identity": {"path": "artifacts/s2/diag-d1g.json" if subset else
@@ -317,6 +337,17 @@ def run_b4_dev(output_dir: Path = ROOT / "artifacts" / "s2", *,
         "llm_requests_served": sum(row["llm_requests_served"] for row in rows),
         "llm_calls": sum(row["llm_requests_served"] for row in rows),
         "metrics": _summary(rows), "episodes": compact,
+        "llm_request_spec": {
+            "model": NIM_MODEL,
+            "format_mode": format_mode,
+            "max_tokens": 1800,
+            "chat_template_kwargs": {"enable_thinking": False},
+            "request_template_sha256": request_template_sha256({
+                "model": NIM_MODEL, "format_mode": format_mode, "max_tokens": 1800,
+                "chat_template_kwargs": {"enable_thinking": False},
+            }),
+        },
+        "served_models": served_models,
         "runtime_versions": runtime_versions(),
         "operational_cost": {
             "live_llm_calls": sum(row["live_llm_calls"] for row in rows),

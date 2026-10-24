@@ -136,6 +136,8 @@ def main(argv: list[str] | None = None) -> int:
     b4_parser.add_argument("--nproc", type=int, default=None)
     b4_parser.add_argument("--subset", action="store_true", help="use the registered L1g 33-seed subset")
     b4_parser.add_argument("--replay", action="store_true", help="run offline from artifacts/llm_cache")
+    b4_parser.add_argument("--format-mode", choices=("json_object", "json_schema", "nvext_guided_json"),
+                           default="json_object")
     eval_v3_parser = commands.add_parser("eval-v3", help="run a frozen eval-v3 baseline row")
     eval_v3_parser.add_argument("row")
     eval_v3_parser.add_argument("eval_args", nargs=argparse.REMAINDER)
@@ -160,7 +162,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "s2-b4-dev":
         from rra.eval.b4_dev import run_b4_dev
         receipt = run_b4_dev(args.output_dir, nproc=args.nproc, subset=args.subset,
-                             replay_only=args.replay)
+                             replay_only=args.replay, format_mode=args.format_mode)
         print(json.dumps({"receipt_sha256": receipt["receipt_sha256"],
                           "llm_calls": receipt["llm_calls"],
                           "serial_parallel_check": receipt["serial_parallel_check"]}, indent=2))
