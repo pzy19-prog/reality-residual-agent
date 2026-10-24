@@ -806,3 +806,585 @@ FAILED ::test_speed_step_and_delay_tie_selects_lexicographic_smallest_tau_then_d
 FAILED ::test_s2_b4_dev_replay_cache_miss_exits_non_zero - assert 0 != 0
 3 failed, 1 passed, 5 deselected in 81.52s (0:01:21)
 ```
+
+---
+
+## 第 2 阶段（FRZ-2A，PR #27）
+
+本节在第 1 阶段之后追加，第 1 阶段内容未改动。
+
+- 审查对象：PR #27，分支 `feat/frz2-b4req`，head `a9fa6c3ec912161bdcf13e6d9170ce09b68fe4a1`（`git rev-parse origin/feat/frz2-b4req` 与协调消息一致）；基于 `5a05f6d56f2f08d1d9a985ee17912bcec02a23bc`（`git merge-base` 一致）。`origin/main` 当前为 `349d1e68ebf196f9f3b25d5e2f6746b6029401fe`（含 A06）。
+- 5 个提交：`a63523d`、`2eccd65`、`37b0563`、`53d7410`、`a9fa6c3`；相对 `5a05f6d` 改 16 个文件（`git diff --stat 5a05f6d a9fa6c3`，A.P2-1）。
+- 运行方式：对 `a9fa6c3` 建只读 worktree（scratchpad），环境与第 1 阶段相同（Python 3.12.3、numpy 2.5.4、Xeon，非 R4 runner）。没有运行 live 命令；`scripts/b4_probe.py` 只跑 `--dry-run`。`config/eval_seeds*.json` 未打开。
+- 判定口径：协调消息转达的 R6–R9、G0–G7、known_config 截取、反馈只含决策之前、B3 基准改为 PR 中重新生成的 `artifacts/s2/b3-dev.json`、B1 0/130。
+- 分支说明：`cloud/t6-prefreeze-check` 仍以 `cb77107` 为基（是 `5a05f6d` 的祖先）。本节只是在其上追加一个提交，没有改写历史。
+
+### P2.1 清单 C-01 至 C-16 实测
+
+| 项 | 命令（同 §2，在 worktree 中运行） | 实测 |
+|---|---|---|
+| C-01 | `git rev-parse HEAD` | `a9fa6c3ec912161bdcf13e6d9170ce09b68fe4a1` |
+| C-02 | `git status --porcelain` | 所有运行前后都无输出（worktree 与仓库） |
+| C-03 | 全量 pytest | `221 passed, 4 skipped in 320.15s`，exit 0；skipped 为 meterless live ×3、Zetaris live ×1 |
+| C-04 | §3.4 行为 | 我的原草案 `-k "six_decimals or last_digit"`：3 failed（草案检查的是 `propose()` 交给 provider 的请求体，而 PR 把取整放在 `finalize_payload`，`src/rra/llm/providers.py:54-71`，见 P2.6）。PR 中对应测试（检查 finalized payload）：`tests/test_t6_frz2.py` 中 3 个 passed，`tests/test_frz2_request.py::test_provider_payload_rounds_embedded_json_floats_to_six_places` passed |
+| C-05 | §3.4 在 tests/ 中有测试 | `git diff --name-only cb77107 a9fa6c3 -- tests/` 含 `tests/test_t6_frz2.py`、`tests/test_frz2_request.py`、`tests/test_frz2_packet_equivalence.py`；原 grep 模式 `nextafter|6 decimal|decimals` 无命中，按 `six` 命中 `tests/test_frz2_request.py:8`；这些测试计入 C-03 |
+| C-06 | `check_packet_whitelist.py 21 3` | exit 0，`RESULT ALL_C1_FIELDS_PRESENT`。完整对照见 P2.2 |
+| C-07 | replay 缺失端到端 | 原草案 `-k replay_cache_miss`：1 passed；PR 中 `test_s2_b4_dev_replay_cache_miss_exits_nonzero_without_artifact`：passed |
+| C-08 | B1 receipt | 本机重跑对 PR 中 `b3-dev.json`：`b1 ... differ 0/130`；对 `cb77107` 已提交文件：0/130 |
+| C-09 | 同机两次 B3 [R4] | run1 = run2 = `0fbebcb9f5d024a8d2fbed49a7313d7628fb4129c20abc29538c6920e1968914`；逐 seed B3 0/130 不同；对 PR 中 `b3-dev.json`（`bfda4d101bd79f8d62738807402b33e24aba29028f5f4bc550a9b13304cb1132`，i7-10750H 生成）115/130 不同，metrics 相同（跨机，本机不是 R4 runner） |
+| C-10 | runtime_versions [R4] | PR 中 `b3-dev.json` 与 R4 一致；`artifacts/s2/b4-dev.json` 未在 PR 中重新生成（最后提交 `c852566`），仍只有 python/numpy；本机新输出为 Xeon |
+| C-11 | B4 replay 两次一致 [R4] | `s2-b4-dev --replay --subset`：64 s 后 exit 1，`ReplayCacheMiss: .../cfda7646….json`，未写出 `b4-dev.json`。缓存仍为 `c852566` 的 386 条（`ls artifacts/llm_cache | wc -l`），尚未按新请求重建（R5 的 live 步骤） |
+| C-12 | 已提交 receipt 重算 | PR 中 `b3-dev.json` 重算 = 存储值（True）；`b4-dev.json`（`b23231e1…`）True |
+| C-13 | B4 receipt 模型标识与模板 SHA | 已提交 `b4-dev.json` 未重新生成，仍无。代码层面：`run_b4_dev` 写入 `llm_request_spec`（含 `model`、`format_mode`、`max_tokens`、`chat_template_kwargs`、`request_template_sha256`）与 `served_models`（`src/rra/eval/b4_dev.py:335-345`），实测见 P2.3 |
+| C-14 | eval-v3 禁止状态 | `config/eval_seeds_v3.json` absent；三个标志均为 `False` |
+| C-15 | 改动范围 | `git diff --name-only 5a05f6d a9fa6c3 -- docs/ config/`：无输出（PR 不含 A06；A06 在 main 的 `349d1e6`）。相对 `cb77107`：17 个文件，多出的一个是 `docs/P3_PREREG_ADDENDUM_05.md`（来自 main）。`decisions.md` 新增 1 行，记录 R1–R9（A.P2-2）。`git merge-tree --write-tree --name-only origin/main a9fa6c3` → `b13144d…`，exit 0，无冲突文件；main 相对 `5a05f6d` 只多 `docs/P3_PREREG_ADDENDUM_06.md` |
+| C-16 | 测试草案 | 原草案在 `a9fa6c3` 上：`5 failed, 4 passed`（2 个保持测试因 `_CountingProposer.propose()` 不接受新的 `s2_summary` 关键字参数而 TypeError；3 个 §3.4 原因同 C-04）。PR 改写版 `tests/test_t6_frz2.py`：9 passed |
+
+### P2.2 证据包（C-06、R6、R7、A06 §4.7，附加项 (a)/(b)）
+
+脚本 `check_packet_p2.py`（A.P2-3）：130 个 dev seed、`HELPFUL_TEXT_CONTEXT`、`B4_STRICT`，捕获经 `finalize_payload` 之后实际发出的请求，共 350 个。每次调用时读取 `run_episode` 帧中的 `policy_observation_samples`、`canonical_presence_events`、`policy_feedbacks`、`text_context`，与包比较完整性。
+
+| 组 | 包中键 | 缺 C1 | 白名单外键 | 范围实测（350 个请求） |
+|---|---|---|---|---|
+| `observations` | target_id, step, time, observed_x, observed_y, nominal_x, nominal_y, nominal_speed, episode_id, seq | 无 | `episode_id`, `seq` | 只含当前目标，`seq ≤ decision.seq`；条数等于该目标到此刻的全部策略观测（0 违例） |
+| `presence_events` | target_id, step, time, target_observed, episode_id, seq | 无 | `episode_id`, `seq` | 只含当前目标，`seq ≤ decision.seq`；条数完整（0 违例） |
+| `command_feedback` | command_id, target_id, issued_time, execution_time, accepted, success, reason_code, episode_id, seq, step | 无 | `episode_id`, `seq`, `step` | 整个 episode；`seq < decision.seq`；条数等于调用时 `policy_feedbacks` 的全部条目（0 违例） |
+| `known_config` | dt, tolerance, x_pick, y_pick, belt_speed | 无 | 无 | 恰好 5 个字段（`project_c1_known_config`，`src/rra/evidence/packet.py:9-14`） |
+
+包的其他键（白名单外）：`schema`（`"rra.evidence_packet.v1"`）、`decision`（episode_id, seq, step, target_id, time）、`context`（text, content_sha256）。user message 只有 `evidence_packet` 和 `s2_summary` 两个键。`s2_summary` 的键为 `passing`（行键 structure_id, rmse, n_usable）、`current_time`、`horizon`，没有其他字段。350 个请求中 `context.text` 都等于该 episode 的冻结文本。
+
+逐字段列出，**需所有者确认**（R6 只批准了 `passing[]`、`current_time`、`horizon`）：
+1. `evidence_packet.context.text`、`evidence_packet.context.content_sha256`（见下文 (b)）。
+2. `evidence_packet.schema`、`evidence_packet.decision.{episode_id, seq, step, target_id, time}`。
+3. 行级 `episode_id`、`seq`（三组）与反馈行 `step`。A06 §4.7（main 上，第 61 行）写到 "Rows keep the L3 bookkeeping keys `episode_id` and `seq`, and feedback rows also keep `step`"，但没有提到 `schema`、`decision`、`context`。
+
+时间口径说明（FACT）：每个目标的 `time` 在各自的目标时钟上，跨目标比较用 `seq = target_id × episode_steps + step`（`packet.py:21-26`）。"决策之前"在代码中按 `seq < decision.seq` 实现。`accepted`/`success`/`reason_code` 仍在下发命令那一步写入，`execution_time` = 下发时刻 + 响应延迟（`src/rra/evidence/episode.py` 的 `policy_feedbacks.append`，与 `cb77107` 相同）。
+
+**(b) context 放进 evidence_packet 之后涉及的条文**（只陈述，列入"需所有者裁决/确认"）：
+- P3 §12（`docs/P3_SYSTEM2_DESIGN.md:498`）："The System-2 evidence packet may include synthetic but realistic operational text…"
+- `docs/H1_EVAL_FOUNDATION.md:17`："Free-form operational text is a separate channel."
+- Addendum 02 §4.2（`docs/P3_PREREG_ADDENDUM_02.md:71`）："Only C1 whitelist fields and P3 §12 context records may be written to any Zetaris-reachable source."
+- Addendum 03 §2 第 4 项（`:35`）讲 "full whitelisted evidence packet"；第 7 项（`:47`）要求文本按内容哈希与冻结版本一致；包中的 `context.content_sha256` 是 `sha256(text)`（`episode.py` 的 `build_packet` 调用处）。
+- Addendum 04 §1.2（`:15`）："Free-form text context enters B4 requests only."；P3 §14（`:629`）："B1/B2/B3 ignore free-form text"。B3 路径不读取这个包（`run_b3` 的输入未变）。
+- FACT：`5a05f6d` 上 L3 的 `build_packet` 已经有 `context` 参数并写入 `"context"` 键（PR 对 `packet.py` 只新增了 `project_c1_known_config`），所以 L3 包在 PR 之前就带 context。PR 的变化是 B4 请求改用这个包，不再有单独的 `context_text` 字段（`src/rra/llm/adapter.py` 的 `proposal_request`）。
+
+### P2.3 G4 / R9 模板 SHA 与回执（附加项 3(a)、(b)）
+
+脚本 `g4_check.py`、`b4_receipt_check.py`（A.P2-4、A.P2-5）：
+
+| 检查 | 结果 |
+|---|---|
+| 只有 `context.text` 不同的两个请求：模板 SHA | 相同（cache key 不同） |
+| 证据包与 s2_summary 都不同：模板 SHA | 相同 |
+| 从请求体计算 = 默认骨架计算 | 相同 |
+| `format_mode` 三种：模板 SHA / cache key | 3 个互不相同 / 3 个互不相同 |
+| system prompt 改一个空格：模板 SHA | 不同 |
+| 未知 `format_mode` | `ValueError: unknown format_mode: bogus` |
+| json_object 模板 SHA | `6a4bc876b1f3bf0c0f68048d55b786bbbf936157c090076b50544decffcf5c25` |
+
+替换方式（FACT）：`request_template_sha256` 把 user message 中的 `evidence_packet` 换成 `"<EVIDENCE_PACKET>"`，`s2_summary` 换成 `"<S2_SUMMARY>"`，再走 `finalize_payload` 和 `canonical_json` 取 SHA-256（`adapter.py` 中 `request_template_sha256`）。context 在 `evidence_packet` 内，所以被一起替换。A06 R9（main，第 75 行）写的是 "the evidence packet and the System-2 summary are replaced by fixed placeholders"，实现与这句文字一致。
+
+回执（临时 ROOT，subset = dev seed 3、21，用桩替换 `ReplayProvider` 并返回 `model = "private/stub-served-model"`）：
+- `llm_request_spec.model` = `nvidia/nemotron-3.5-super-vl-120b-a12b`（请求名 `NIM_MODEL`）。服务端返回名记在 `served_models`，形式为 `{model: 响应次数}`，按每次成功响应累加（`b4_dev.py` 的 `_record_model`）：`{'private/stub-served-model': 36}`，等于 `llm_calls` 36。
+- 改 `llm_request_spec.request_template_sha256` → 回执哈希变；改 `served_models` → 变；改 `runtime_versions` → 不变。存储哈希 = 按代码规则重算（True）。
+
+### P2.4 G3 format_mode 与 G7 探针（附加项 (c)）
+
+- 三种模式进入 finalized payload：json_object → `response_format.type=json_object`；json_schema → `response_format.type=json_schema`（含 `PROPOSAL_SCHEMA`）；nvext_guided_json → 无 `response_format`，有 `nvext.guided_json`（`providers.py:37-53`）。cache key 是 finalized payload 的 SHA，所以随模式变化（实测 3/3 不同）。
+- 默认值 `"json_object"` 定义在 6 处：`finalize_payload` 的 `setting("format_mode", "json_object")`（`providers.py:37`）、`ReplayProvider.__init__`（`:94`）、`NvidiaNimProvider.__init__`（`:117`）、`_ReadThroughProvider.__init__`（`b4_dev.py:32`）、`run_b4_dev`（`:195`）、CLI `--format-mode`（`cli.py:139-140`）。`proposal_request` 本身仍写 `response_format: json_object`，由 `finalize_payload` 覆盖。
+- G7 `scripts/b4_probe.py --dry-run --k 10 --max-calls 30`（A.P2-6，把 `NvidiaNimProvider.__init__` 和 `urlopen` 换成抛异常的陷阱）：exit 0，`NvidiaNimProvider constructions: 0`；10 个请求 × 3 种模式，每种模式 10 个不同 key，三种模式之间无重合。代码中 dry-run 在 `:94-98` 返回，live provider 在 `:104` 才构造；dry-run 不写文件（运行后 `git status` 为空）。live 分支会写 `artifacts/s2/b4-probe.json` 和 `artifacts/llm_probe_cache/`（未运行）。
+
+### P2.5 G5 调用计数（附加项 (d)）
+
+- 字段：episode receipt 中的 `strict_proposer_invocations` / `tiebreak_proposer_invocations`（`episode.py` 中 B4 变体才写），按 `run_episode` 内到达 proposer 的次数计（memo 命中也计入）。b4-dev 逐行有同名字段；`metrics.<text_variant>.<mode>` 中两字段都按该文本变体的全部行求和，并在 B4_STRICT 和 B4_TIEBREAK 两行中重复出现。`llm_calls` 仍只记在 B4_STRICT 行（等于 `llm_requests_served` 之和），B4_TIEBREAK 行为 0。
+- 桩运行实测：每个 (seed, 变体) `llm_requests_served` = strict = tiebreak（seed 3：2；seed 21：7）；汇总 `llm_calls` 36。
+
+### P2.6 G1 等价测试（附加项 (e)、1(c)）
+
+`tests/test_frz2_packet_equivalence.py`：
+- 测试 1：dev seed 0、3、7（`export_sources(..., episodes=8)`），对每个 B4 调用点，比较 B4 内部包与 L3 `load_packets` 的对应包，L3 侧先把 `known_config` 截成 5 字段（`project_c1_known_config`）再比 `packet_sha256`。另外断言 L3 原 `known_config` 比截取后多的正好是 `episode_steps`、`object_count`；断言 `s2_summary` 键为 R6 三项；断言至少一个包带反馈。
+- 测试 2：从 `artifacts/s2/b3-dev.json` 的逐决策记录中选出 diag 子集里有 AMBIGUOUS 无 fault 决策的 seed，断言只有 `[3]`，4 个文本变体共 8 个包，对 L3 包截取 known_config 并替换为 B4 的 context 后比哈希。FACT：`b3-dev.json` 只保存前 20 个 seed 的逐决策记录（`src/rra/eval/b3_dev.py:170-172`，`index < 20`），所以测试名中的 "all diag call points" 只覆盖 diag 子集中索引 < 20 的 seed。
+- 两个测试比较的都是截取之后的包，且是 `finalize_payload` 取整之前的包；实际发出的是取整后的包。
+- 结果：2 passed。
+
+**L3 / Zetaris 路径（附加项 1(b)、3(c)）**：`export_sources(out, 20)` 在 `5a05f6d` 与 `a9fa6c3` 上，5 个表文件 sha256 完全相同（A.P2-7）；20 个 episode 的 `packets_sha256_rollup` 全部相同。审计总哈希不同（`f00df8ea…` → `cecbfbbd…`），唯一差异是 episode 7（seed 7）审计中的 `system2_decisions` 与 `s2_diagnostic_trace`，与 G0-c 改变 seed 7 的复查时刻一致（P2.7）。L3 导出、表结构和包哈希没有因 context 或 known_config 截取而变化。live Zetaris 路径未运行。
+
+### P2.7 G0 保持逻辑改动对照（附加 (1)–(4)）
+
+| 改动 | 改动前（`5a05f6d` = `cb77107` 的 src） | 改动后（`a9fa6c3`） | 对应 Addendum 05 条款 |
+|---|---|---|---|
+| G0-c 到期容差 | `episode.py:653` `observation.time >= system2_next_retry…`；`:668` 同样 | `:42` `REOBSERVE_RETRY_EPSILON = 1e-9`；`:665`、`:681` 改为 `>= next_retry - REOBSERVE_RETRY_EPSILON` | §1.2；§5 第 1 项 |
+| G0-b 已有终态不再进入保持 | `:886-893`（条件在 `:887-888`）：ESCALATE 且 PAUSE 即 `setdefault` 进入保持 | `:913` 增加 `and observation.target_id not in outcomes_by_target` | §1.4；§5 第 2 项相关（终态唯一） |
+
+`episode.py` 中其余改动：新增 `policy_observation_samples`、`canonical_presence_events` 两个列表（只追加、只供 B4 包使用），B4 包构造，以及 B4 receipt 的两个计数字段。B3 路径的输入（`run_b3` 的参数）没有改变。`tests/test_frz1_reobserve.py` 中复查间隔断言从 `<= 0.5 + dt + 1e-9` 收紧为 `<= 0.5 + 1e-9`。
+
+实测（`hold_probe.py`，130 个 dev seed，A.P2-8）：
+
+| 量 | `cb77107` | `a9fa6c3` |
+|---|---|---|
+| hold_entries / reobservations / authorized_after_hold / exhausted | 183 / 82 / 1 / 182 | 177 / 83 / 1 / 176 |
+| end_reasons | window_end 153，latch 11，target_switch 16，episode_end 2，authorized 1，s2_non_pause 0 | window_end 153，latch 11，target_switch 11，episode_end 1，authorized 1，s2_non_pause 0 |
+| 以 exhausted 结束的不同对象 + authorized | 176 + 1 = 177 | 176 + 1 = 177 |
+| `;REOBSERVE_EXHAUSTED` escalation 行 | 182 | 176 |
+| 同一目标多于 1 行的 | 17/9、21/8、39/4、61/11、69/7、83/7 | 无 |
+| 保持中 S2 调用与上次调用的间隔 | 0.5 s ×74，0.6 s ×8 | 0.5 s ×83 |
+| 间隔 > 0.5 + 1e-9 | 8 个（7/1、7/2、7/7、7/8、53/9、86/1、86/7、91/8，都是 3.8→4.4） | 0 |
+| `system2_calls` / `verifier_calls` | 2009 / 28126 | 2010 / 28140 |
+| metrics | — | 与 `cb77107` 完全相同：success 84/775，wrong 588，miss 97，unsafe 7（fast_layer_command 7），authorization 210 |
+
+- (1)：hold_entries 177 = 不同对象数 177；exhausted、end_reasons、escalations 中不再有同一目标的重复项。上述 6 个对象的 escalation 行数各减 1（17：9→8，21：5→4，39：11→10，61：9→8，69：10→9，83：9→8）。
+- (2)：按本文定义（保持中每次 S2 调用到同目标上一次调用的间隔）共 83 个，全部为 0.5 s。T4/协调消息中的 "11 个 0.6 s" 用的是 T4 的区间定义（245 个区间），与本文的 8 个不是同一口径。变化的调用全部是复查时刻从 x.4/x.9 提前到 x.3/x.8（seed 7、53、86、91），另外 seed 7 target 8 多了一次 4.8 的复查（reobservations +1），seed 61 target 11 一次非保持调用从 8.2 变为 8.1。
+- (3)：88/5 的 `trace_88.py` 输出除行号外完全相同：结局 `attempt_failed`/"missed pick window"，命令已下发，position_error 0.2656；决策 0.2 PAUSE、4.9/5.4 PAUSE、5.9 UPDATE；safe_stop 在 4.4（target 2）置 True、5.9（target 5）解除、5.0（target 6）再置 True。行号从 1050/886/905 变为 1076/911/931。
+- (4)：130 个 seed 的逐对象结局没有任何变化（`outcomes` 比较无差异）。metrics 不变，`system2_reobserve` 与调用数变化见上表。与协调消息中本地自报的数字（指标不变、88/5 不变、hold_entries 183→177、target_switch 16→11、episode_end 2→1、reobservations 82→83、system2_calls 2009→2010）逐项相同。diff 中 B3/B1 路径上除 G0-b、G0-c 之外没有其他行为改动；B4 路径的改动见 P2.2–P2.5。
+
+### P2.8 `tests/test_t6_frz2.py` 与附录 B.1 草案的对应
+
+| 草案（B.1） | PR 中（`tests/test_t6_frz2.py`） | 断言变化 |
+|---|---|---|
+| `test_b4_variants_enter_and_exhaust_reobserve_hold_like_b3[B4_STRICT/B4_TIEBREAK]` | 同名 | 断言相同；`_CountingProposer.propose` 签名增加 `s2_summary`（接口变化） |
+| `test_actuator_delay_fit_chooses_smallest_delay_within_tie_tolerance` | 同名 | 相同 |
+| `test_actuator_delay_fit_without_tie_keeps_strict_minimum` | 同名 | 相同 |
+| `test_speed_step_and_delay_tie_selects_lexicographic_smallest_tau_then_delay` | `test_speed_step_delay_tie_selects_lexicographic_smallest_tau_then_delay` | 断言相同；删掉了说明注释 |
+| `test_s2_b4_dev_replay_cache_miss_exits_non_zero` | `test_s2_b4_dev_replay_cache_miss_exits_nonzero_without_artifact` | 断言相同（returncode ≠ 0、stderr 含 `ReplayCacheMiss`、无 `b4-dev.json`） |
+| `test_b4_request_body_and_cache_key_ignore_last_digit_float_differences` | `test_request_body_and_cache_key_ignore_float_changes_beyond_six_places` | 比较对象从 `propose()` 交给 provider 的请求体改为 `finalize_payload` 之后的 payload；输入从含 `rmse` 的真实形状包、`np.nextafter` 末位改为单个键 `{"value": x}`、x 与 x−1e-15 |
+| `test_b4_request_floats_have_at_most_six_decimals` | `test_finalized_request_floats_are_six_decimal_fixed_points` | 检查对象改为 finalized payload，范围扩大到整个 user message（含 `s2_summary`） |
+| `test_b4_episode_requests_on_dev_seed_are_rounded_to_six_decimals` | `test_b4_episode_provider_payload_floats_are_rounded_to_six_places` | 检查 finalized payload；新增断言 user message 键 = `{evidence_packet, s2_summary}`，并同时检查 `s2_summary` 中的浮点 |
+
+计数：草案 8 个测试函数、23 条 `assert`；PR 版 8 个、24 条（`grep -c '^\s*assert'`）。没有删除断言。§3.4 的 3 个测试改成检查 finalized payload，这与实现把取整放在 `finalize_payload` 一致。第一个 §3.4 测试的输入不再是真实形状的包，也不再用 `nextafter` 构造末位差异，这一点照实记录。
+
+### P2.9 需所有者裁决/确认（第 2 阶段新增）
+
+1. P2.2 列出的白名单外字段：`evidence_packet.context.{text, content_sha256}`、`schema`、`decision.*`；行级 `episode_id`/`seq`/`step` 已写入 A06 §4.7，另外三项没有。
+2. context 放进 `evidence_packet` 与 H1 "separate channel"、Addendum 04 §1.2、Addendum 02 §4.2 的关系（P2.2 (b)）。协调消息提到将用 Addendum 07 登记。
+3. 已提交的 `artifacts/s2/b4-dev.json` 与 `artifacts/llm_cache/` 仍是 `c852566` 的版本，`--replay` 在第一个请求就缺失（C-11）；需要在 R4 runner 上 live 重建并重新生成，之后 C-09/C-10/C-11/C-13 才能按期望核验。
+4. `served_models` 是 `{model: 次数}` 的汇总，不是逐响应列表；`llm_request_spec.model` 记的是请求名。是否满足 R9 "per response" 的要求，由所有者确认。
+5. 等价测试 2 的覆盖范围受 `b3-dev.json` 只存前 20 个 seed 的逐决策记录所限（P2.6）。
+
+### 附录 A.P2 第 2 阶段命令与输出
+
+脚本都在会话 scratchpad 的 `t6/` 目录下。
+
+A.P2-1 `git diff --stat 5a05f6d a9fa6c3`（尾部）与提交列表：
+
+```
+a9fa6c3 Record owner rulings R1-R9
+53d7410 Add the offline B4 format-mode probe
+37b0563 Rebuild the B4 request from the canonical evidence packet
+2eccd65 Regenerate B3 artifact after hold conformance fix
+a63523d Align re-observation holds with A05 timing
+ 16 files changed, 6363 insertions(+), 3987 deletions(-)
+```
+
+A.P2-2 `git merge-tree --write-tree --name-only origin/main a9fa6c3`：
+
+```
+b13144d13a976929b5e386f1a10f7160c01c9523
+merge-tree exit=0
+```
+
+A.P2-3 `check_packet_p2.py HELPFUL_TEXT_CONTEXT`（在 worktree 中）：
+
+```
+variant=HELPFUL_TEXT_CONTEXT seeds=130 requests=350
+user message keys ['evidence_packet', 's2_summary']
+evidence_packet keys ['command_feedback', 'context', 'decision', 'known_config', 'observations', 'presence_events', 'schema']
+observations: keys=['episode_id', 'nominal_speed', 'nominal_x', 'nominal_y', 'observed_x', 'observed_y', 'seq', 'step', 'target_id', 'time'] | missing C1=none | outside C1=['episode_id', 'seq']
+presence_events: keys=['episode_id', 'seq', 'step', 'target_id', 'target_observed', 'time'] | missing C1=none | outside C1=['episode_id', 'seq']
+known_config: keys=['belt_speed', 'dt', 'tolerance', 'x_pick', 'y_pick'] | missing C1=none | outside C1=none
+command_feedback: keys=['accepted', 'command_id', 'episode_id', 'execution_time', 'issued_time', 'reason_code', 'seq', 'step', 'success', 'target_id'] | missing C1=none | outside C1=['episode_id', 'seq', 'step']
+decision keys ['episode_id', 'seq', 'step', 'target_id', 'time']
+context keys ['content_sha256', 'text']
+s2_summary keys ['current_time', 'horizon', 'passing'] | passing row keys ['n_usable', 'rmse', 'structure_id']
+scope/timing violations none
+examples {}
+```
+
+A.P2-4 `g4_check.py`：
+
+```
+context-only differ: template equal True | cache key equal False
+packet+summary differ: template equal True
+template from body == default skeleton template True
+template per mode distinct True | cache key per mode distinct True
+json_object payload format keys: {'response_format': 'json_object'} False
+json_schema payload format keys: {'response_format': 'json_schema'} False
+nvext_guided_json payload format keys: {} True
+system prompt change -> template differs True
+bogus mode -> unknown format_mode: bogus
+template sha json_object 6a4bc876b1f3bf0c0f68048d55b786bbbf936157c090076b50544decffcf5c25
+```
+
+A.P2-5 `b4_receipt_check.py`：
+
+```
+stored == recomputed True
+llm_request_spec {"model": "nvidia/nemotron-3.5-super-vl-120b-a12b", "format_mode": "json_object", "max_tokens": 1800, "chat_template_kwargs": {"enable_thinking": false}, "request_template_sha256": "6a4bc876b1f3bf0c0f68048d55b786bbbf936157c090076b50544decffcf5c25"}
+served_models {'private/stub-served-model': 36} | llm_calls 36 | llm_requests_served 36
+edit llm_request_spec.request_template_sha256 -> hash changes True
+edit served_models -> hash changes True
+edit runtime_versions -> hash changes False
+metrics NO_TEXT_CONTEXT B4_STRICT {'llm_calls': 9, 'strict_proposer_invocations': 9, 'tiebreak_proposer_invocations': 9}
+metrics NO_TEXT_CONTEXT B4_TIEBREAK {'llm_calls': 0, 'strict_proposer_invocations': 9, 'tiebreak_proposer_invocations': 9}
+metrics HELPFUL_TEXT_CONTEXT B4_STRICT {'llm_calls': 9, 'strict_proposer_invocations': 9, 'tiebreak_proposer_invocations': 9}
+metrics HELPFUL_TEXT_CONTEXT B4_TIEBREAK {'llm_calls': 0, 'strict_proposer_invocations': 9, 'tiebreak_proposer_invocations': 9}
+metrics IRRELEVANT_TEXT_CONTEXT B4_STRICT {'llm_calls': 9, 'strict_proposer_invocations': 9, 'tiebreak_proposer_invocations': 9}
+metrics IRRELEVANT_TEXT_CONTEXT B4_TIEBREAK {'llm_calls': 0, 'strict_proposer_invocations': 9, 'tiebreak_proposer_invocations': 9}
+metrics MISLEADING_TEXT_CONTEXT B4_STRICT {'llm_calls': 9, 'strict_proposer_invocations': 9, 'tiebreak_proposer_invocations': 9}
+metrics MISLEADING_TEXT_CONTEXT B4_TIEBREAK {'llm_calls': 0, 'strict_proposer_invocations': 9, 'tiebreak_proposer_invocations': 9}
+episode keys with proposer ['llm_requests_served', 'strict_proposer_invocations', 'tiebreak_proposer_invocations']
+per-episode (seed, variant, served, strict_inv, tie_inv): [(3, 'NO_TEXT_CONTEXT', 2, 2, 2), (3, 'HELPFUL_TEXT_CONTEXT', 2, 2, 2), (3, 'IRRELEVANT_TEXT_CONTEXT', 2, 2, 2), (3, 'MISLEADING_TEXT_CONTEXT', 2, 2, 2), (21, 'NO_TEXT_CONTEXT', 7, 7, 7), (21, 'HELPFUL_TEXT_CONTEXT', 7, 7, 7), (21, 'IRRELEVANT_TEXT_CONTEXT', 7, 7, 7), (21, 'MISLEADING_TEXT_CONTEXT', 7, 7, 7)]
+top-level keys ['schema_version', 'subset', 'seed_identity', 'episode_count', 'text_variants', 'N_amb', 'estimated_llm_calls', 'serial_parallel_check', 'llm_requests_served', 'llm_calls', 'metrics', 'episodes', 'llm_request_spec', 'served_models', 'runtime_versions', 'operational_cost', 'receipt_sha256']
+```
+
+A.P2-6 `probe_dryrun.py`（输出尾部与 key 统计）：
+
+```
+SystemExit 0
+NvidiaNimProvider constructions: 0
+{'json_object': 10, 'json_schema': 10, 'nvext_guided_json': 10} cross-mode overlap 0
+```
+
+A.P2-7 `l3_export_hash.py`，`5a05f6d` 与 `a9fa6c3`：
+
+```
+[5a05f6d]
+9112912f46366427aaa1c7925c6ba111a2387e840c275ddf8382ad06a40961ef command_feedback.jsonl
+d7215ff8a5f54761c78619a61916223184d88bb45c1f58d76855cefbea838f17 known_config.jsonl
+f56a175d2a6ae3e827d2f98793c3be36581a94dba747fda21c86aa6164ea004f observation_samples.jsonl
+d14c5bca946026ac2671d46a543cd917a228fef9dabc4b512fbbbfc008509184 ops_context.jsonl
+bb9ff6bcffee1c063e8602d3b60585d25cec16d3d1f7b32496db3203f8476a92 presence_events.jsonl
+audits_sha256 f00df8ea8ca8c6754ff1a5e1fb9dfcfb4028b0000dc7c02d233a5f081e8b4348
+episodes 20 decision_points 24000
+audit keys ['auth_evidence_nonempty', 'case', 'decision_points', 'hard_fault_latch_decisions', 'mismatches', 'packets_sha256_rollup', 's2_diagnostic_trace', 'seed', 'system2_decisions', 'variant']
+[a9fa6c3]
+9112912f46366427aaa1c7925c6ba111a2387e840c275ddf8382ad06a40961ef command_feedback.jsonl
+d7215ff8a5f54761c78619a61916223184d88bb45c1f58d76855cefbea838f17 known_config.jsonl
+f56a175d2a6ae3e827d2f98793c3be36581a94dba747fda21c86aa6164ea004f observation_samples.jsonl
+d14c5bca946026ac2671d46a543cd917a228fef9dabc4b512fbbbfc008509184 ops_context.jsonl
+bb9ff6bcffee1c063e8602d3b60585d25cec16d3d1f7b32496db3203f8476a92 presence_events.jsonl
+audits_sha256 cecbfbbde4cfd735d513863cf309c6399b92ae674ceb4c33742fc8504755fe91
+episodes 20 decision_points 24000
+audit keys ['auth_evidence_nonempty', 'case', 'decision_points', 'hard_fault_latch_decisions', 'mismatches', 'packets_sha256_rollup', 's2_diagnostic_trace', 'seed', 'system2_decisions', 'variant']
+[l3_audit_diff.py 5a05f6d vs a9fa6c3]
+0 NO_TEXT_CONTEXT rollup equal True | differing keys []
+1 HELPFUL_TEXT_CONTEXT rollup equal True | differing keys []
+2 IRRELEVANT_TEXT_CONTEXT rollup equal True | differing keys []
+3 MISLEADING_TEXT_CONTEXT rollup equal True | differing keys []
+4 NO_TEXT_CONTEXT rollup equal True | differing keys []
+5 HELPFUL_TEXT_CONTEXT rollup equal True | differing keys []
+6 IRRELEVANT_TEXT_CONTEXT rollup equal True | differing keys []
+7 MISLEADING_TEXT_CONTEXT rollup equal True | differing keys ['s2_diagnostic_trace', 'system2_decisions']
+8 NO_TEXT_CONTEXT rollup equal True | differing keys []
+9 HELPFUL_TEXT_CONTEXT rollup equal True | differing keys []
+10 IRRELEVANT_TEXT_CONTEXT rollup equal True | differing keys []
+11 MISLEADING_TEXT_CONTEXT rollup equal True | differing keys []
+12 NO_TEXT_CONTEXT rollup equal True | differing keys []
+13 HELPFUL_TEXT_CONTEXT rollup equal True | differing keys []
+14 IRRELEVANT_TEXT_CONTEXT rollup equal True | differing keys []
+15 MISLEADING_TEXT_CONTEXT rollup equal True | differing keys []
+16 NO_TEXT_CONTEXT rollup equal True | differing keys []
+17 HELPFUL_TEXT_CONTEXT rollup equal True | differing keys []
+18 IRRELEVANT_TEXT_CONTEXT rollup equal True | differing keys []
+19 MISLEADING_TEXT_CONTEXT rollup equal True | differing keys []
+```
+
+A.P2-8 `hold_probe.py`，`cb77107` 与 `a9fa6c3`：
+
+```
+[cb77107] aggregate {'hold_entries': 183, 'reobservations': 82, 'authorized_after_hold': 1, 'exhausted': 182} {'authorized': 1, 'window_end': 153, 'latch': 11, 'target_switch': 16, 's2_non_pause': 0, 'episode_end': 2}
+distinct exhausted targets 176 | REOBSERVE_EXHAUSTED escalation rows 182
+targets with >1 REOBSERVE_EXHAUSTED escalation row ['17/9', '21/8', '39/4', '61/11', '69/7', '83/7']
+in-hold S2 calls: gap to previous S2 call of same target {0.5: 74, 0.6: 8} total 82
+gaps > 0.5+1e-9: 8 ['7/1:3.800->4.400', '7/2:3.800->4.400', '7/7:3.800->4.400', '7/8:3.800->4.400', '53/9:3.800->4.400', '86/1:3.800->4.400', '86/7:3.800->4.400', '91/8:3.800->4.400']
+[a9fa6c3] aggregate {'hold_entries': 177, 'reobservations': 83, 'authorized_after_hold': 1, 'exhausted': 176} {'authorized': 1, 'window_end': 153, 'latch': 11, 'target_switch': 11, 's2_non_pause': 0, 'episode_end': 1}
+distinct exhausted targets 176 | REOBSERVE_EXHAUSTED escalation rows 176
+targets with >1 REOBSERVE_EXHAUSTED escalation row []
+in-hold S2 calls: gap to previous S2 call of same target {0.5: 83} total 83
+gaps > 0.5+1e-9: 0 []
+```
+
+`compare_b3.py`（`a9fa6c3` 两次运行对 PR 中 `b3-dev.json`）：
+
+```
+run1 receipt 0fbebcb9f5d024a8d2fbed49a7313d7628fb4129c20abc29538c6920e1968914
+run2 receipt 0fbebcb9f5d024a8d2fbed49a7313d7628fb4129c20abc29538c6920e1968914
+run1==run2 True
+b1_receipt_sha256: run1 vs run2 differ 0/130; run1 vs committed differ 0/130
+b3_receipt_sha256: run1 vs run2 differ 0/130; run1 vs committed differ 115/130
+metrics run1==committed True
+run1 runtime_versions {"python": "3.12.3", "numpy": "2.5.4", "machine": "x86_64", "cpu_model": "Intel(R) Xeon(R) Processor @ 2.10GHz", "blas": {"name": "scipy-openblas", "version": "0.3.34.106.0"}}
+committed runtime_versions {"python": "3.12.3", "numpy": "2.5.4", "machine": "x86_64", "cpu_model": "Intel(R) Core(TM) i7-10750H CPU @ 2.60GHz", "blas": {"name": "scipy-openblas", "version": "0.3.34.106.0"}}
+committed receipt stored bfda4d101bd79f8d62738807402b33e24aba29028f5f4bc550a9b13304cb1132 recomputed equal True
+artifacts/s2/b4-dev.json stored b23231e1e0ea2fb95c3f52ad19bdb8e37068aa87e0c8aa2e2212dd11862231a6 recomputed equal True
+```
+
+全量 pytest 尾部：
+
+```
+=========================== short test summary info ============================
+SKIPPED [1] tests/test_meterless_bridge.py:219: needs Node, scripts/setup_meterless.sh and RRA_METERLESS_LIVE=1
+SKIPPED [1] tests/test_meterless_bridge.py:240: needs Node, scripts/setup_meterless.sh and RRA_METERLESS_LIVE=1
+SKIPPED [1] tests/test_meterless_bridge.py:249: needs Node, scripts/setup_meterless.sh and RRA_METERLESS_LIVE=1
+SKIPPED [1] tests/test_packet_sources.py:48: Zetaris live checks are opt-in
+221 passed, 4 skipped in 320.15s (0:05:20)
+exit=0
+```
+
+第 2 阶段脚本全文：
+
+```python
+# ---- check_packet_p2.py
+"""T6 phase 2: B4 request packet vs C1 / R6 / R7 / A06 §4.7, over dev seeds. Offline; reads caller-frame
+locals of run_episode at each propose() call to compare against the full policy-visible lists."""
+import json, sys
+from collections import Counter, defaultdict
+from rra.eval.b4_dev import _realization
+from rra.eval.context_v3 import freeze_episode_contexts
+from rra.eval.framework import v3_world_config
+from rra.evidence import run_episode
+from rra.llm.adapter import HypothesisProposer
+from rra.llm.providers import ReplayProvider, finalize_payload
+
+C1 = {"observations": {"target_id", "step", "time", "observed_x", "observed_y", "nominal_x", "nominal_y", "nominal_speed"},
+      "presence_events": {"target_id", "step", "time", "target_observed"},
+      "known_config": {"dt", "tolerance", "x_pick", "y_pick", "belt_speed"},
+      "command_feedback": {"command_id", "target_id", "issued_time", "execution_time", "accepted", "success", "reason_code"}}
+SETTINGS = ReplayProvider("unused").settings
+seeds_all = json.load(open("config/dev_seeds.json"))["seeds"]
+variant = sys.argv[1]; seeds = [int(x) for x in sys.argv[2:]] or seeds_all
+keysets = defaultdict(set); viol = Counter(); ex = defaultdict(list); n = 0
+top_keys = set(); user_keys = set(); summary_keys = set(); passing_keys = set(); decision_keys = set(); context_keys = set()
+def bad(kind, msg):
+    viol[kind] += 1
+    if len(ex[kind]) < 3: ex[kind].append(msg)
+class Cap:
+    last_http_status = None
+    def complete(self, body):
+        global n
+        n += 1
+        f = sys._getframe(1)  # walk back to run_episode
+        while f.f_code.co_name != "run_episode": f = f.f_back
+        L = f.f_locals
+        sent = finalize_payload(body, SETTINGS)
+        user = json.loads(sent["messages"][1]["content"]); user_keys.update(user)
+        p = user["evidence_packet"]; s = user.get("s2_summary") or {}
+        top_keys.update(p); summary_keys.update(s); decision_keys.update(p["decision"]); context_keys.update(p.get("context", {}))
+        for r in s.get("passing", []): passing_keys.update(r)
+        d = p["decision"]; tid, seq = d["target_id"], d["seq"]
+        for g in ("observations", "presence_events", "command_feedback"):
+            for r in p[g]: keysets[g].update(r)
+        keysets["known_config"].update(p["known_config"])
+        for r in p["observations"] + p["presence_events"]:
+            if r["target_id"] != tid: bad("obs/presence other target", (seed, d))
+            if r["seq"] > seq: bad("obs/presence after decision", (seed, d, r["seq"]))
+        for r in p["command_feedback"]:
+            if r["seq"] >= seq: bad("feedback at/after decision seq", (seed, d, r["seq"]))
+        # completeness vs the run's own policy-visible lists at call time
+        exp_obs = [r for r in L["policy_observation_samples"] if r["target_id"] == tid and r["seq"] <= seq]
+        exp_pres = [r for r in L["canonical_presence_events"] if r["target_id"] == tid and r["seq"] <= seq]
+        if len(exp_obs) != len(p["observations"]): bad("observations count != policy list", (seed, d, len(exp_obs), len(p["observations"])))
+        if len(exp_pres) != len(p["presence_events"]): bad("presence count != policy list", (seed, d))
+        if len(L["policy_feedbacks"]) != len(p["command_feedback"]): bad("feedback count != policy_feedbacks so far", (seed, d, len(L["policy_feedbacks"]), len(p["command_feedback"])))
+        ctx = p.get("context", {})
+        if ctx.get("text") != L["text_context"]: bad("context text != frozen text", (seed, d))
+        return {"choices": [{"message": {"content": '{"items": []}'}}]}
+for seed in seeds:
+    real = _realization(seeds_all.index(seed), seed)
+    txt = freeze_episode_contexts(str(seed), seed, real.fault_family or real.structure)[variant].text
+    run_episode(v3_world_config("nominal"), seed, True, terminal_monitoring="corrected", realization=real,
+                text_context=txt, system2_enabled=True, s2_variant="B4_STRICT", proposer=HypothesisProposer(Cap()))
+print(f"variant={variant} seeds={len(seeds)} requests={n}")
+print("user message keys", sorted(user_keys)); print("evidence_packet keys", sorted(top_keys))
+for g, req in C1.items():
+    got = keysets[g]
+    print(f"{g}: keys={sorted(got)} | missing C1={sorted(req - got) or 'none'} | outside C1={sorted(got - req) or 'none'}")
+print("decision keys", sorted(decision_keys)); print("context keys", sorted(context_keys))
+print("s2_summary keys", sorted(summary_keys), "| passing row keys", sorted(passing_keys))
+print("scope/timing violations", dict(viol) or "none"); print("examples", dict(ex))
+# ---- g4_check.py
+"""T6 phase 2: request template SHA (R9 / A06 erratum reading), format_mode in payload & cache key."""
+import json
+from rra.llm.adapter import proposal_request, request_template_sha256, SYSTEM_PROMPT
+from rra.llm.providers import finalize_payload, request_sha256, NIM_MODEL
+def settings(mode): return {"model": NIM_MODEL, "format_mode": mode, "max_tokens": 1800,
+                            "chat_template_kwargs": {"enable_thinking": False}}
+def pkt(text, x=-4.79, tid=5):
+    return {"schema": "rra.evidence_packet.v1", "observations": [{"target_id": tid, "observed_x": x}],
+            "context": {"text": text, "content_sha256": "h:" + text}}
+summ = {"passing": [{"structure_id": "SENSOR_BIAS", "rmse": 0.01, "n_usable": 10}], "current_time": 0.9, "horizon": 9.9}
+s = settings("json_object")
+a = proposal_request(pkt("motor serviced"), summ); b = proposal_request(pkt("sensor recalibrated"), summ)
+c = proposal_request(pkt("motor serviced", x=-1.0, tid=7), {**summ, "current_time": 3.3})
+T = lambda body, st=s: request_template_sha256(st, body)
+print("context-only differ: template equal", T(a) == T(b), "| cache key equal", request_sha256(finalize_payload(a, s)) == request_sha256(finalize_payload(b, s)))
+print("packet+summary differ: template equal", T(a) == T(c))
+print("template from body == default skeleton template", T(a) == request_template_sha256(s))
+modes = ["json_object", "json_schema", "nvext_guided_json"]
+tm = {m: T(a, settings(m)) for m in modes}; ck = {m: request_sha256(finalize_payload(a, settings(m))) for m in modes}
+print("template per mode distinct", len(set(tm.values())) == 3, "| cache key per mode distinct", len(set(ck.values())) == 3)
+for m in modes:
+    p = finalize_payload(a, settings(m)); print(m, "payload format keys:", {k: (v if k != "response_format" else v.get("type")) for k, v in p.items() if k in ("response_format",)} , "nvext" in p)
+alt = proposal_request(pkt("x"), summ); alt["messages"][0]["content"] = SYSTEM_PROMPT + " "
+print("system prompt change -> template differs", T(alt) != T(a))
+try:
+    finalize_payload(a, settings("bogus")); print("bogus mode accepted")
+except ValueError as e: print("bogus mode ->", e)
+print("template sha json_object", tm["json_object"])
+# ---- b4_receipt_check.py
+"""run_b4_dev on dev seed 3 (subset file in a temp ROOT) with a stub replay provider; then field-edit checks."""
+import copy, json, shutil, sys, tempfile
+from hashlib import sha256
+from pathlib import Path
+import rra.eval.b4_dev as b4
+tmp = Path(tempfile.mkdtemp(dir=sys.argv[1]))
+(tmp / "config").mkdir(); (tmp / "artifacts/s2").mkdir(parents=True); (tmp / "artifacts/llm_cache").mkdir()
+shutil.copy("config/dev_seeds.json", tmp / "config/dev_seeds.json")
+(tmp / "artifacts/s2/diag-d1g.json").write_text(json.dumps({"seeds": [3, 21]}))
+class StubReplay:
+    def __init__(self, *a, **k): self.n = 0
+    def complete(self, body):
+        self.n += 1
+        return {"model": "private/stub-served-model", "choices": [{"message": {"content": '{"items": []}'}, "finish_reason": "stop"}]}
+b4.ROOT = tmp; b4.ReplayProvider = StubReplay
+r = b4.run_b4_dev(tmp / "out", nproc=1, subset=True, replay_only=True)
+def rh(d):
+    h = {k: v for k, v in d.items() if k not in ("runtime_versions", "operational_cost", "receipt_sha256")}
+    return sha256(json.dumps(h, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+print("stored == recomputed", rh(r) == r["receipt_sha256"])
+print("llm_request_spec", json.dumps(r["llm_request_spec"]))
+print("served_models", r["served_models"], "| llm_calls", r["llm_calls"], "| llm_requests_served", r["llm_requests_served"])
+for path, val in ((("llm_request_spec", "request_template_sha256"), "0" * 64), (("served_models",), {"x": 1}),
+                  (("runtime_versions",), {"python": "0"})):
+    d = copy.deepcopy(r); t = d
+    for k in path[:-1]: t = t[k]
+    t[path[-1]] = val
+    print("edit", ".".join(path), "-> hash changes", rh(d) != r["receipt_sha256"])
+m = r["metrics"]
+for mode in m:
+    for var, row in (m[mode].items() if isinstance(m[mode], dict) else []):
+        if isinstance(row, dict) and "strict_proposer_invocations" in row:
+            print("metrics", mode, var, {k: row[k] for k in ("llm_calls", "strict_proposer_invocations", "tiebreak_proposer_invocations")})
+ep = r["episodes"]
+print("episode keys with proposer", sorted(k for k in ep[0] if "proposer" in k or "llm" in k))
+print("per-episode (seed, variant, served, strict_inv, tie_inv):", [(e["seed"], e["text_variant"], e["llm_requests_served"], e["strict_proposer_invocations"], e["tiebreak_proposer_invocations"]) for e in ep])
+print("top-level keys", list(r))
+# ---- probe_dryrun.py
+"""Run scripts/b4_probe.py --dry-run with live provider construction and network trapped."""
+import sys, runpy, urllib.request
+import rra.llm.providers as P
+built = []
+def trap_init(self, *a, **k): built.append(k); raise AssertionError("NvidiaNimProvider constructed")
+P.NvidiaNimProvider.__init__ = trap_init
+def trap_net(*a, **k): raise AssertionError("network")
+urllib.request.urlopen = trap_net; P.urlopen = trap_net
+sys.argv = ["b4_probe.py", "--dry-run", "--k", "10", "--max-calls", "30"]
+try:
+    runpy.run_path("scripts/b4_probe.py", run_name="__main__")
+except SystemExit as e:
+    print("SystemExit", e.code)
+print("NvidiaNimProvider constructions:", len(built))
+# ---- hold_probe.py
+"""T6 phase-2 probe (read-only instrumentation, src/ unchanged).
+Wraps module-global rra.evidence.episode.run_b3 (same replacement point as tests/test_frz1_reobserve.py)
+and reads the caller frame's system2_reobserve_holds / observation at each call."""
+import json, sys
+from collections import Counter, defaultdict
+from rra.eval.b4_dev import _realization
+from rra.eval.framework import v3_world_config
+from rra.evidence import run_episode
+import rra.evidence.episode as ep
+
+out_path = sys.argv[1]
+seeds = json.load(open("config/dev_seeds.json"))["seeds"]
+config = v3_world_config("nominal")
+original = ep.run_b3
+calls = []
+def wrapped(*a, **k):
+    f = sys._getframe(1)
+    obs = f.f_locals.get("observation"); holds = f.f_locals.get("system2_reobserve_holds", {})
+    tid = getattr(obs, "target_id", None)
+    calls.append({"target": tid, "time": k.get("current_time"), "in_hold": tid in holds})
+    return original(*a, **k)
+ep.run_b3 = wrapped
+rows = {}
+for index, seed in enumerate(seeds):
+    calls.clear()
+    r = run_episode(config, seed, True, terminal_monitoring="corrected",
+                    realization=_realization(index, seed), system2_enabled=True)
+    exhausted = [e["target_id"] for e in r["escalations"] if e["reason"].endswith(";REOBSERVE_EXHAUSTED")]
+    rows[seed] = {"reobserve": r["system2_reobserve"], "metrics_inputs": None,
+                  "exhausted_targets": exhausted, "calls": list(calls),
+                  "outcomes": {str(o["target_id"]): [o["status"], o["reason"]] for o in r["outcomes"]},
+                  "escalation_rows": len(r["escalations"])}
+json.dump(rows, open(out_path, "w"))
+agg = Counter(); ends = Counter(); dup = []; gaps = Counter(); over = []
+for seed, row in rows.items():
+    for k in ("hold_entries", "reobservations", "authorized_after_hold", "exhausted"):
+        agg[k] += row["reobserve"][k]
+    ends.update(row["reobserve"]["end_reasons"])
+    dup += [f"{seed}/{t}" for t, n in Counter(row["exhausted_targets"]).items() if n > 1]
+    last = {}
+    for c in row["calls"]:
+        if c["in_hold"] and c["target"] in last:
+            g = c["time"] - last[c["target"]]; gaps[round(g, 6)] += 1
+            if g > 0.5 + 1e-9: over.append(f"{seed}/{c['target']}:{last[c['target']]:.3f}->{c['time']:.3f}")
+        last[c["target"]] = c["time"]
+print("aggregate", dict(agg), dict(ends))
+print("distinct exhausted targets", sum(len(set(r["exhausted_targets"])) for r in rows.values()),
+      "| REOBSERVE_EXHAUSTED escalation rows", sum(len(r["exhausted_targets"]) for r in rows.values()))
+print("targets with >1 REOBSERVE_EXHAUSTED escalation row", dup)
+print("in-hold S2 calls: gap to previous S2 call of same target", dict(sorted(gaps.items())), "total", sum(gaps.values()))
+print("gaps > 0.5+1e-9:", len(over), over)
+# ---- trace_88.py
+"""safe_stop transitions and target-5 events in dev seed 88 (line trace on run_episode frame)."""
+import json, sys
+from rra.eval.b4_dev import _realization
+from rra.eval.framework import v3_world_config
+from rra.evidence import run_episode
+import rra.evidence.episode as ep
+seeds = json.load(open("config/dev_seeds.json"))["seeds"]; seed = 88
+trans = []; last = [None]
+def tr(frame, event, arg):
+    if frame.f_code.co_name != "run_episode" or frame.f_code.co_filename != ep.__file__:
+        return None
+    def local(frame, event, arg):
+        v = frame.f_locals.get("safe_stop")
+        if v is not None and v != last[0]:
+            obs = frame.f_locals.get("observation")
+            trans.append((getattr(obs, "time", None), getattr(obs, "target_id", None), frame.f_lineno, last[0], v))
+            last[0] = v
+        return local
+    return local
+sys.settrace(tr)
+r = run_episode(v3_world_config("nominal"), seed, True, terminal_monitoring="corrected",
+                realization=_realization(seeds.index(seed), seed), system2_enabled=True)
+sys.settrace(None)
+print("safe_stop transitions (obs.time, obs.target, line, old, new):")
+for t in trans: print("  ", t)
+o = next(x for x in r["outcomes"] if x["target_id"] == 5); e = next(x for x in r["evaluator_objects"] if x["target_id"] == 5)
+print("88/5 outcome", o["status"], o["reason"]); print("88/5 evaluator", {k: e.get(k) for k in ("command_issued", "position_error", "target_exists_at_execution")})
+print("88/5 decisions", [(d["time"], d["action"], d["gate_reason"]) for d in r["system2_decisions"] if d["target_id"] == 5])
+print("reobserve", r["system2_reobserve"])
+# ---- l3_export_hash.py
+"""T6: export L3 source tables to a scratch dir and hash files + per-episode audits."""
+import hashlib, json, sys
+from pathlib import Path
+from rra.evidence.sources import export_sources
+out = Path(sys.argv[1]); res = export_sources(out, 20)
+for p in sorted(out.rglob("*")):
+    if p.is_file(): print(hashlib.sha256(p.read_bytes()).hexdigest(), p.relative_to(out))
+print("audits_sha256", hashlib.sha256(json.dumps(res["audits"], sort_keys=True).encode()).hexdigest())
+print("episodes", len(res["audits"]), "decision_points", sum(a["decision_points"] for a in res["audits"]))
+print("audit keys", sorted(res["audits"][0]))
+# ---- l3_audit_diff.py
+"""Run export_sources in two source trees (via subprocess) and diff per-episode audit fields."""
+import json, subprocess, sys
+code = "import json,sys;from pathlib import Path;from rra.evidence.sources import export_sources;r=export_sources(Path(sys.argv[1]),20);print(json.dumps(r['audits']))"
+def run(tree, out):
+    return json.loads(subprocess.run([sys.executable, "-c", code, out], cwd=tree, env={"PYTHONPATH": tree + "/src", "PATH": "/usr/bin:/bin"},
+                                     capture_output=True, text=True, check=True).stdout)
+a = run(sys.argv[1], sys.argv[3]); b = run(sys.argv[2], sys.argv[4])
+for x, y in zip(a, b):
+    diff = [k for k in sorted(set(x) | set(y)) if x.get(k) != y.get(k)]
+    print(x["seed"], x["variant"], "rollup equal", x["packets_sha256_rollup"] == y["packets_sha256_rollup"], "| differing keys", diff)
+```
