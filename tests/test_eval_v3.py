@@ -547,6 +547,8 @@ def test_incomplete_eval_b4_reports_a04_counts_from_ledger_and_cache(monkeypatch
         "INVALID_PROPOSAL": 1,
         "PROVIDER_ERROR": 1,
         "truncated": 1,
+        "not_recorded": 1,
+        "b4_variant_counts": "not available (incomplete)",
         "gate_reason_distribution": "not available (incomplete)",
     }
 
@@ -685,4 +687,24 @@ def test_eval_cli_output_does_not_contain_a_seed_value(tmp_path, capsys):
     visible = re.sub(r"\b[0-9a-f]{64}\b", "", captured.out + captured.err)
     assert code == 0
     assert str(seed) not in visible
+
+
+def test_eval_live_fill_writes_b4_live_not_the_scored_name(monkeypatch, tmp_path):
+    def run(*args, **kwargs):
+        return {"metrics": {}, "episodes": [], "llm_calls": 0,
+                "llm_request_spec": {}, "served_models": {}}
+
+    monkeypatch.setattr(b4_dev, "run_b4_dev", run)
+    output = tmp_path / "out"
+    receipt = final_v3.run_row(
+        "b4", seeds=[1], seed_path=tmp_path / "seeds.json", seed_sha256="abc",
+        output_dir=output, role="eval_v3", live=True,
+    )
+    saved = json.loads((output / "b4_live.json").read_text())
+    assert saved["status"] == "complete"
+    assert saved["distinct_live_requests"] == receipt["distinct_live_requests"] == 0
+    assert saved["live_fill_started_utc"]
+    assert saved["live_fill_completed_utc"]
+    assert not (output / "b4.json").exists()
+    assert (output / "b4_live.md").is_file()
 

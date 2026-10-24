@@ -23,7 +23,7 @@ from rra.llm.adapter import HypothesisProposer
 from rra.llm.adapter import request_template_sha256
 from rra.llm.providers import (DEFAULT_FORMAT_MODE, NIM_MODEL, NvidiaNimProvider,
                                ReplayCacheMiss, ReplayProvider, disable_live_outage,
-                               note_live_success, reset_live_outage)
+                               reset_live_outage)
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -57,7 +57,6 @@ class _ReadThroughProvider:
             self.live_calls += 1
         self.requests_served += 1
         self._record_model(result)
-        note_live_success()
         return result
 
 

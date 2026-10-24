@@ -425,16 +425,16 @@ def _finish_reason(response: dict) -> str | None:
 
 
 def classify_cache_record(record: dict) -> str | None:
-    """Classify one cache record with the adapter rules used by episode receipts."""
+    """Classify one cache record. Truncation is decided before the adapter."""
     if not isinstance(record, dict):
         return None
+    response = record.get("response")
+    if isinstance(response, dict) and _finish_reason(response) == "length":
+        return "truncated"
     if isinstance(record.get("error"), dict) and "response" not in record:
         return "PROVIDER_ERROR"
-    response = record.get("response")
     if not isinstance(response, dict):
         return "PROVIDER_ERROR"
-    if _finish_reason(response) == "length":
-        return "truncated"
     from rra.llm.adapter import HypothesisProposer
 
     class _Fixed:
@@ -458,15 +458,19 @@ def a04_counts_from_ledger(ledger_path: Path, cache_dir: Path) -> dict[str, Any]
         "INVALID_PROPOSAL": 0,
         "PROVIDER_ERROR": 0,
         "truncated": 0,
+        "not_recorded": 0,
+        "b4_variant_counts": "not available (incomplete)",
         "gate_reason_distribution": "not available (incomplete)",
     }
     for sha in shas:
         path = cache_dir / f"{sha}.json"
         if not path.is_file():
+            counts["not_recorded"] += 1
             continue
         try:
             record = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
+            counts["not_recorded"] += 1
             continue
         label = classify_cache_record(record)
         if label in _A04_LABELS:
@@ -611,7 +615,9 @@ def run_row(row: str, *, seeds: list[int], seed_path: Path, seed_sha256: str,
         if key not in _UNHASHED_RECEIPT_KEYS
     })
     output_dir.mkdir(parents=True, exist_ok=True)
-    (output_dir / f"{row}.json").write_text(json.dumps(receipt, indent=2, ensure_ascii=False) + "\n")
+    # The eval live fill is b4_live. The scored b4 artifact is the replay.
+    stem = "b4_live" if row == "b4" and live and role == "eval_v3" else row
+    (output_dir / f"{stem}.json").write_text(json.dumps(receipt, indent=2, ensure_ascii=False) + "\n")
     metrics = receipt.get("metrics", {})
     lines = [f"# eval-v3 {row}", "", f"Status: {receipt['status']}"]
     if receipt["status"] != "complete":
@@ -624,12 +630,13 @@ def run_row(row: str, *, seeds: list[int], seed_path: Path, seed_sha256: str,
     if "max_live_calls" in receipt:
         lines.append(f"Live-call cap: {receipt['max_live_calls']}")
     lines.extend([f"Seeds: {len(seeds)}; seed file SHA-256: `{seed_sha256}`", "",
-                  f"Receipt SHA-256: `{receipt['receipt_sha256']}`", "", "## Metrics", "",
-                  "| Metric | Value |", "|---|---:|"])
-    lines.extend(f"| {key} | {value} |" for key, value in metrics.items()
-                 if isinstance(value, (str, int, float, bool)))
+                  f"Receipt SHA-256: `{receipt['receipt_sha256']}`", ""])
+    if receipt["status"] == "complete":
+        lines.extend(["## Metrics", "", "| Metric | Value |", "|---|---:|"])
+        lines.extend(f"| {key} | {value} |" for key, value in metrics.items()
+                     if isinstance(value, (str, int, float, bool)))
     lines.append("")
-    (output_dir / f"{row}.md").write_text("\n".join(lines))
+    (output_dir / f"{stem}.md").write_text("\n".join(lines))
     return receipt
 
 

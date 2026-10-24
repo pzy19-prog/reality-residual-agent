@@ -368,3 +368,65 @@ def test_a_deadline_blocks_the_next_http_attempt(tmp_path, monkeypatch):
         assert list(tmp_path.glob("*.json")) == []
     finally:
         providers.set_live_deadline(None)
+
+
+def test_non_200_success_status_uses_two_four_eight_sixteen(tmp_path, monkeypatch):
+    sleeps = []
+
+    def urlopen(request, timeout):
+        assert timeout == 90.0
+        raise _http_error(201, body=b"partial-body")
+
+    providers, provider = _install_live(monkeypatch, tmp_path, urlopen)
+    monkeypatch.setattr(providers.time, "sleep", lambda seconds: sleeps.append(seconds))
+    with pytest.raises(providers.CachedProviderError, match="^transient_exhausted$"):
+        provider.complete({"messages": [{"role": "user", "content": "created"}]})
+    assert sleeps == [2.0, 4.0, 8.0, 16.0]
+    record = json.loads(next(tmp_path.glob("*.json")).read_text(encoding="utf-8"))
+    assert record["error"] == {"class": "transient_exhausted", "http_status": 201}
+    assert "partial-body" not in json.dumps(record)
+
+
+def test_cache_hits_do_not_change_the_outage_streak(tmp_path, monkeypatch):
+    from rra.eval.b4_dev import _ReadThroughProvider
+    from rra.llm import providers
+
+    monkeypatch.setenv("NVIDIA_API_KEY", "test-secret")
+    monkeypatch.setattr(providers.time, "sleep", lambda seconds: None)
+    mode = {"ok": True}
+
+    def urlopen(request, timeout):
+        if mode["ok"]:
+            class Response:
+                status = 200
+                headers = None
+
+                def __enter__(self):
+                    return self
+
+                def __exit__(self, *args):
+                    return False
+
+                def read(self):
+                    return b'{"choices":[{"message":{"content":"{}"}}]}'
+
+            return Response()
+        raise _http_error(400, body=b"nope")
+
+    monkeypatch.setattr(providers, "urlopen", urlopen)
+    providers.reset_live_outage()
+    try:
+        live = providers.NvidiaNimProvider(cache_dir=tmp_path)
+        live.complete({"messages": [{"role": "user", "content": "cached-ok"}]})
+        mode["ok"] = False
+        for index in range(9):
+            with pytest.raises(providers.CachedProviderError):
+                live.complete({"messages": [{"role": "user", "content": f"err-{index}"}]})
+        reader = _ReadThroughProvider(tmp_path)
+        reader.complete({"messages": [{"role": "user", "content": "cached-ok"}]})
+        with pytest.raises(providers.CachedProviderError):
+            reader.complete({"messages": [{"role": "user", "content": "err-0"}]})
+        with pytest.raises(providers.LiveOutageStop):
+            live.complete({"messages": [{"role": "user", "content": "tenth"}]})
+    finally:
+        providers.disable_live_outage()

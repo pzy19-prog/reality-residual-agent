@@ -173,7 +173,8 @@ def note_live_error_record() -> None:
 def _status_kind(status: int) -> str:
     if status in _AUTH_STATUS:
         return "auth"
-    if status in _TRANSIENT_STATUS or status >= 500:
+    # 1xx and 2xx other than 200 are transient. 3xx and the remaining 4xx are deterministic.
+    if status in _TRANSIENT_STATUS or status >= 500 or (100 <= status < 300 and status != 200):
         return "transient"
     return "deterministic"
 
@@ -338,7 +339,9 @@ class NvidiaNimProvider:
                 if attempt == LIVE_ATTEMPTS:
                     self._cache_error(payload, last_status, "transient_exhausted")
                     raise CachedProviderError("transient_exhausted") from None
-                time.sleep(_backoff_seconds(attempt, exc.headers))
+                # attempt is the try that just failed. The next try is 2, 3, 4, 5,
+                # so the waits are 2, 4, 8 and 16 seconds.
+                time.sleep(_backoff_seconds(attempt + 1, exc.headers))
                 continue
             self.last_response_body = response_body
             key = request_sha256(payload)
