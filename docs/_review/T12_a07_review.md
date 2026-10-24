@@ -330,3 +330,61 @@ A07 没有 A06 §4A 那样的"change no threshold, gate, scoring rule, or denomi
 - 原"必须"项里，两处字面冲突已解决，§5.1 缺失已补，但其后半主张的覆盖范围未完全核实；实现项仍待 EVAL-PATH-R1，且比原先多（R14 的细节）。
 - 新增歧义 N-1–N-6，其中 N-1、N-2、N-3 与实现行为直接相关。
 - 本次复审未运行代码，上述判定均来自读 A07、`decisions.md` 和已读过的代码。
+
+---
+
+# 第二次复审（A07-R2，head `ca1ff0e7a0a89281df1f9bf7c2dcab6012068b41`）
+
+本节追加在"复审"一节之后；前面各节没有改动。本节行号指 `ca1ff0e` 上的 A07（90 行，行数与 `f1cef93` 相同）。
+
+- 复审对象：PR #29 新 head `ca1ff0e`，单个新提交 "clarify counting, error classes and holdout wording in addendum 07"，父提交 `f1cef93`。
+- 范围：`git diff --stat 349d1e6 ca1ff0e` 只有 `decisions.md`（+1）和 `docs/P3_PREREG_ADDENDUM_07.md`（+90）。相对 `f1cef93`，A07 为 7 增 7 删，涉及第 9、49、51、54、61、63、77 行；`decisions.md` 与 `f1cef93` 相比没有差异。merge-base 仍是 `349d1e6`。P3、A01–A06 及其他已登记文件未被编辑。
+- 我没有读到 issue #26 18:00 那条评论本身，核对依据是协调会话转述的清单。
+- #28 仍为 `52bdd47`，main 仍为 `edd54c0`；未重读代码。未运行任何代码，未打开 `config/eval_seeds*.json`。
+
+## R2.1 清单逐条核对
+
+| 项 | A07-R2 出处 | 判定 | 说明 |
+|---|---|---|---|
+| §5.1 收窄 | §5.1:77 | 一致 | 现为"None of the 33 seeds of the B4 development subset ... belongs to case 9, and no committed B4 development run used a case-9 seed"。上一版"生成器没有收到该结构"的宽主张已删。我据 main 上唯一提交的 B4 开发工件 `artifacts/s2/b4-dev.json` 核对：`subset = true`，`seed_identity.path = artifacts/s2/diag-d1g.json`，33 个种子，与 9、28、47、66、85、104、123 无交集。该工件是 `c852566` 的旧版本，而 386 条缓存对应 `92e2b89` 的历史运行（A04 §5.1），二者是否同一组种子仍靠推断；句子限定为"committed"运行，所以不依赖这一点。该句描述的是当前仓库状态，A07 没有限制之后的 dev B4 运行（例如在注册 runner 上重建缓存时若跑全量 130 个 dev 种子，该句就不再成立）。 |
+| N-5 措辞张力 | :9 | 一致 | 现为"does not edit ... Addenda 01–06 ... Section 4.5 amends Addendum 04 Section 6.1 for the incomplete case only"，张力已消除。 |
+| Q-1 / N-6 | §4.1:49 | 一致 | 1xx 和 200 以外的 2xx 归瞬时类；Retry-After 每次等待最多 60 秒。残留：①"up to 60 s per wait"有两种读法（超过 60 秒时等待 60 秒；超过 60 秒时不采纳而用自身后退）；②后退的底数与倍数、单次请求超时时长仍未写。影响小。 |
+| N-1 | §4.1:51 | 部分 | 现已写明：所有错误记录（确定性与瞬时）都计入 10 次；"连续"按跨线程的完成顺序；成功一次即清零；每个进程从 0 开始，续跑也是。残留的新问题见 R2.3 的 M-1。 |
+| Q-2 / N-3 | §4.2:54 | 一致 | 现已写明：已追加但未发送的条目照样计数；续跑时重发该请求且不新增条目；最终不超过 2,500 条不同条目即为完成；"only when it would need a 2,501st distinct request"才算因上限未完成。原先的两个空洞（崩溃条目、恰好 2,500 条）都已关闭。残留的措辞问题见 R2.3 的 M-2。 |
+| N-4 | §4.4:61 | 部分 | "The start and completion times are recorded outside the hashed content of the receipt"，哈希问题已解决。时钟来源（是否 NTP 同步）仍未写。该时刻记在哪个文件仍与 Q-7 相连，见 R2.3 的 M-3。 |
+| N-2 | §4.5:63 | 部分 | 现已写明：未完成时"LLM calls"指 ledger 中不同条目的数量；分类只用 ledger 条目对应的缓存记录；按变体的计数不可用并如此报告。原先"缓存范围"与"口径"两个问题已关闭。残留见 R2.3 的 M-4。 |
+| `decisions.md` | — | 一致 | 与 `f1cef93` 的一行相同。 |
+
+## R2.2 原 §6.2"必须"项中属于 A07 文本的部分
+
+| 原必须项 | 状态 |
+|---|---|
+| §5.1 缺 B4/LLM dev 子集说明 | 已解决（见上）。 |
+| X-1 与 A04 §6.1 的字面冲突 | 已解决（`f1cef93` 起）。 |
+| X-2 与 A04 §3 rule 1 的字面冲突 | 已解决（`f1cef93` 起）。 |
+| §4.1、§4.2 对应的实现须在 `impl-freeze-v3` 前完成并审查 | 不属于 A07 文本；仍待 EVAL-PATH-R1，且 R14 与 R2 各条细化后范围更具体：5 次尝试、Retry-After ≤ 60 s、最终错误记录、跨线程完成顺序的连续 10 条计数且成功清零、每进程清零；ledger 与"先检查后追加"、崩溃条目重发不新增；起止时刻写在哈希之外；未完成时的 ledger 计数；case 9 单列；守卫放行 `artifacts/llm_cache/` 的新文件并拒绝改动已有文件。我读过的 #27 `b4_dev.py:54-70`（已在 main）与 #28 `52bdd47` 均未实现这些。 |
+
+属于 A07 文本的"必须"项现在都已处理；上面仍列出的是实现项。
+
+## R2.3 A07-R2 之后仍存在或新出现的问题
+
+| 编号 | 出处 | 内容与影响 | 检验设计 |
+|---|---|---|---|
+| M-1 | §4.1:51 | "any successful response resets the count"。缓存命中算不算"successful response"？缓存里已有的错误记录被读到时算不算"ends in error records"？读法 1：只看本进程内的 live 结果。读法 2：读通路径服务的每个响应或错误记录都算。读法 2 下，续跑时重新读到先前保留的 10 条错误记录，若它们在完成顺序中连续，进程一开始就可能再次停止，运行无法前进；读法 1 下不会。这两种读法都与"每个进程从 0 开始"相容。 | 用 mock 缓存预置 10 条连续的错误记录，续跑，观察是否立即停止；再在其间插入缓存命中的成功响应，观察计数。 |
+| M-2 | §4.5:63 与 §4.2:54 | §4.5 仍写"if the cap is reached"，而 §4.2 说"incomplete for the cap only when it would need a 2,501st distinct request"。"reached"字面可读为到达 2,500 条。A06 §3.5 同样写"reached"，A06 §5 写"more than 2,500"。§4.2 的定义已经把"reached"限定为需要第 2,501 个，但 §4.5 没有指回；两处并置时仍有一条与字面不同的读法。§4.2 的"完成"读法是对 A06 §3.5 的一种解释，我按转述认为所有者已采纳，没有核对原话。 | — |
+| M-3 | §4.3:59；§4.4:61；§4.7:69 | 与上次 Q-7 相连，A07-R2 未处理：live 运行回执、第一次回放（计分工件）、第二次回放回执都默认写 `artifacts/eval_v3/b4.json`，A07 只登记这一个路径，且"第二次必须与第一次 match"比较的对象（`receipt_sha256` 还是文件字节）未写。起止时刻"recorded outside the hashed content"但记在哪一个文件里取决于这一点——若记在 live 运行的回执，该文件会被回放覆盖。 | mock 缓存上依次运行 live、回放两次，检查每次写出的文件及起止时刻字段的去向。 |
+| M-4 | §4.5:63 | ①"classified by the adapter rules"：A04 的 `INVALID_PROPOSAL` 是 tiebreak 回退原因，其中 rule 4（提议中没有 verifier-passing 结构）需要 verifier 状态，不能由缓存记录单独得出；A07 没有写 adapter 级分类与 A04 标签的对应关系。②ledger 条目若没有缓存记录（已追加但未发送，或发送后停止），"LLM calls"里计入而分类里不计，分类合计可能小于 LLM calls；A07 没写这个差如何呈现。 | 在 ledger 中放一条没有缓存记录的条目，看报告的各类计数与 LLM calls 之差。 |
+| M-5 | §5.1:77 | "no committed B4 development run used a case-9 seed"只描述当前状态；§3.4:41 要求 dev B4 缓存在注册 runner 上重建，该次重建用 33 个子集还是全量 dev 未写。若重建用全量 130 个 dev 种子，则 §5.1 的这句话在重建提交后不再成立。 | 核对重建后提交的 B4 开发工件的 `seed_identity` 与七个种子的交集。 |
+
+## R2.4 与上位文件、已登记文件的一致性
+
+- 与 P3、A01–A06 的字面冲突：**未发现新的冲突**。X-1、X-2 已于 `f1cef93` 消除；R2 对 A07 的修改只涉及第 9、49、51、54、61、63、77 行，不触及阈值、门控、计分或分母。
+- §4.2 的"最终不超过 2,500 条即完成"是对 A06 §3.5"reached"的一种解释（见 M-2），不是新的数值改动；列给所有者，作为读法选择的确认事项。
+- 悬而未决、A07-R2 未涉及：X-5（P3 §19 与 holdout）、Q-9（§5.3 对 eval v2 的事实陈述）、Q-3（`allow_nan=False` 与 context-text 残留分支）、Q-4（探针由谁驱动）、Q-8（观测上界与反馈执行时刻）、Q-10（"committed together"）、Q-11（写结果文件时崩溃的边界）、Q-13（"same leakage validation"的含义）、§1.4 的证据工件位置、§4.7 的探针工件位置、P2.9-3（旧 dev 工件的处理）。上述都是原"建议"或"需所有者裁决"级，不属于必须项。
+- 已登记文件没有被编辑；A07 以补遗修订，符合项目规则。
+
+## R2.5 当前状态摘要
+
+- 原"必须"项里属于 A07 文本的都已处理；实现项仍待 EVAL-PATH-R1。
+- 新增或残留的问题 M-1–M-5，其中 M-1（续跑是否会因重放先前保留的错误记录而再次停止）和 M-3（回执路径与"match"比较对象）与实现行为直接相关。
+- 本次复审未运行代码，判定来自读 A07、`decisions.md`、main 上的 `artifacts/s2/b4-dev.json` 以及此前读过的代码。
