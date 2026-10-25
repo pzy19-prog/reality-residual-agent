@@ -1,0 +1,61 @@
+{
+  "schema_version": "rra.s2.b4-probe.v1",
+  "seed_role": "dev_diag_only",
+  "seed_source": "artifacts/s2/diag-d1g.json",
+  "probe_request_count": 10,
+  "max_calls": 30,
+  "request_template_sha256": {
+    "json_object": "6a4bc876b1f3bf0c0f68048d55b786bbbf936157c090076b50544decffcf5c25",
+    "json_schema": "24d6aedfedd684b9b8a8555b0633104d5ae4738edb52feb0c66054adf050d329",
+    "nvext_guided_json": "400a7785cf9f9106fb040ea000cdb2a0520bb72a96da78ed8a79ee131d3ef208"
+  },
+  "modes": {
+    "json_object": {
+      "valid_nonempty_items": 10,
+      "finish_reason_distribution": {
+        "stop": 10
+      },
+      "http_errors": 0,
+      "average_latency_seconds": 12.148044409199793,
+      "served_models": {
+        "private/nvidia/nemotron-3.5-super-120b-a12b": 10
+      },
+      "request_count": 10
+    },
+    "json_schema": {
+      "valid_nonempty_items": 10,
+      "finish_reason_distribution": {
+        "stop": 10
+      },
+      "http_errors": 0,
+      "average_latency_seconds": 8.092858184502983,
+      "served_models": {
+        "private/nvidia/nemotron-3.5-super-120b-a12b": 10
+      },
+      "request_count": 10
+    },
+    "nvext_guided_json": {
+      "valid_nonempty_items": 0,
+      "finish_reason_distribution": {
+        "error_record": 10
+      },
+      "http_errors": 10,
+      "average_latency_seconds": 0.6233449027029565,
+      "served_models": {},
+      "request_count": 10
+    }
+  },
+  "runtime_versions": {
+    "python": "3.12.3",
+    "numpy": "2.5.4",
+    "machine": "x86_64",
+    "cpu_model": "Intel(R) Core(TM) i7-10750H CPU @ 2.60GHz",
+    "blas": {
+      "name": "scipy-openblas",
+      "version": "0.3.34.106.0"
+    }
+  },
+  "selected_format_mode": "json_object",
+  "selection_rule": "A06 §3.2 / A07 §3.2",
+  "receipt_sha256": "402c16e8dd6c6b35c6bcc0958496db3b7dbdde0aa5f48cac3118bb95fb04ad14"
+}

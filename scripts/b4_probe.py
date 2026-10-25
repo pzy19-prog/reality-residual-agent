@@ -22,6 +22,7 @@ from rra.runtime import runtime_versions
 
 ROOT = Path(__file__).resolve().parents[1]
 FORMAT_MODES = ("json_object", "json_schema", "nvext_guided_json")
+SELECTION_RULE = "A06 §3.2 / A07 §3.2"
 
 
 class _CaptureProposer:
@@ -76,6 +77,13 @@ def _receipt_hash(body: dict[str, Any]) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def _select_format_mode(results: dict[str, dict[str, Any]]) -> str:
+    return max(
+        FORMAT_MODES,
+        key=lambda mode: (results[mode]["valid_nonempty_items"], -FORMAT_MODES.index(mode)),
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group(required=True)
@@ -96,6 +104,9 @@ def main(argv: list[str] | None = None) -> int:
             mode: len(requests) for mode in FORMAT_MODES}, "live_calls": total_calls,
             "cache_keys": cache_keys}, indent=2))
         return 0
+    out = ROOT / "artifacts/s2/b4-probe.json"
+    if out.exists():
+        parser.error(f"refusing to overwrite existing probe artifact: {out}")
     if not os.environ.get("NVIDIA_API_KEY"):
         parser.error("--live requires NVIDIA_API_KEY")
 
@@ -109,13 +120,24 @@ def main(argv: list[str] | None = None) -> int:
         served_models: Counter[str] = Counter()
         for row in requests:
             proposer = HypothesisProposer(provider)
+            # Metadata belongs to one request only; failed calls must not inherit
+            # the previous response body's model or finish_reason.
+            provider.last_response_body = None
+            provider.last_http_status = None
             proposal = proposer.propose(row["evidence_packet"], "", s2_summary=row["s2_summary"])
-            response = provider.last_response_body or {}
-            if isinstance(response.get("model"), str):
+            response = provider.last_response_body
+            finish_reason = "error_record"
+            if proposal.error is not None and response is None:
+                finish_reasons["error_record"] += 1
+            else:
+                response = response or {}
+                choice = (response.get("choices") or [{}])[0]
+                finish_reason = str(choice.get("finish_reason", "missing"))
+                finish_reasons[finish_reason] += 1
+            if isinstance(response, dict) and isinstance(response.get("model"), str):
                 served_models[response["model"]] += 1
-            choice = (response.get("choices") or [{}])[0]
-            finish_reasons[str(choice.get("finish_reason", "missing"))] += 1
-            valid += int(proposal.error is None and bool(proposal.items))
+            valid += int(proposal.error is None and bool(proposal.items)
+                         and finish_reason != "length")
             http_errors += int(provider.last_http_status is not None and provider.last_http_status >= 400)
             if provider.last_latency_seconds is not None:
                 latencies.append(float(provider.last_latency_seconds))
@@ -138,13 +160,15 @@ def main(argv: list[str] | None = None) -> int:
         "modes": results,
         "runtime_versions": runtime_versions(),
     }
+    selected_format_mode = _select_format_mode(results)
+    body["selected_format_mode"] = selected_format_mode
+    body["selection_rule"] = SELECTION_RULE
     hash_body = {key: value for key, value in body.items() if key != "runtime_versions"}
     hash_body["modes"] = {
         mode: {key: value for key, value in fields.items() if key != "average_latency_seconds"}
         for mode, fields in results.items()
     }
     body["receipt_sha256"] = _receipt_hash(hash_body)
-    out = ROOT / "artifacts/s2/b4-probe.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(body, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(json.dumps({"receipt_sha256": body["receipt_sha256"], "output": str(out)}, indent=2))
