@@ -14,7 +14,7 @@
   "T5": "PASS",
   "T8_reference_receipt_bytes_identical": true,
   "T8_reference_receipt_sha256": "2133703216e4227ab7f970e7a96725b0028536e2eaf28018b8813e775ddf445c",
-  "base_git_sha": "2a3b52dcf15cf352064f064e2a8b499c4fe06280",
+  "base_git_sha": "18041e5b9942e785d191003b5432d4b2e08ef45f",
   "episodes": [
     {
       "case": 0,
@@ -92,7 +92,7 @@
       "hard_fault_latch_decisions": 0,
       "mismatches": 0,
       "packets_sha256_rollup": "f271ba83be9f08b1424e4adfb919bf9e44f0cb31f79b5c04860f0adbc11e5927",
-      "s2_diagnostic_rows": 24,
+      "s2_diagnostic_rows": 31,
       "seed": 7,
       "variant": "MISLEADING_TEXT_CONTEXT"
     },
@@ -152,17 +152,17 @@
       "hard_fault_latch_decisions": 0,
       "mismatches": 0,
       "packets_sha256_rollup": "473e79325c13c3924989f313444f2cda5758af0dc058e0528065d6ea6773497c",
-      "s2_diagnostic_rows": 22,
+      "s2_diagnostic_rows": 24,
       "seed": 13,
       "variant": "HELPFUL_TEXT_CONTEXT"
     },
     {
       "case": 14,
       "decision_points": 1200,
-      "hard_fault_latch_decisions": 0,
+      "hard_fault_latch_decisions": 5,
       "mismatches": 0,
       "packets_sha256_rollup": "3633d55458d64faf4db41ecdcdae5d9d4ee324119f94d1d2b2af06f22b9d0560",
-      "s2_diagnostic_rows": 13,
+      "s2_diagnostic_rows": 9,
       "seed": 14,
       "variant": "IRRELEVANT_TEXT_CONTEXT"
     },
@@ -192,7 +192,7 @@
       "hard_fault_latch_decisions": 0,
       "mismatches": 0,
       "packets_sha256_rollup": "b96bdc819b8c8d36313d745c267ed25ecb3f1303cb0cd439aad620c7ea4095b1",
-      "s2_diagnostic_rows": 22,
+      "s2_diagnostic_rows": 23,
       "seed": 17,
       "variant": "HELPFUL_TEXT_CONTEXT"
     },
@@ -218,7 +218,7 @@
     }
   ],
   "federation_rows": 1,
-  "federation_seconds": 0.329427,
+  "federation_seconds": 0.456123,
   "federation_sql": "SELECT o.episode_id, k.dt FROM RRA_L3_TELEMETRY.observation_samples o JOIN RRA_L3_OPS.known_config k ON o.episode_id=k.episode_id WHERE o.episode_id='0' LIMIT 1",
   "numpy": "2.5.4",
   "plan": "A",
@@ -226,102 +226,102 @@
   "query_latencies": [
     {
       "queries": 1,
-      "query_seconds": 0.61729,
+      "query_seconds": 0.936304,
       "seed": 0
     },
     {
       "queries": 1,
-      "query_seconds": 0.567478,
+      "query_seconds": 0.821628,
       "seed": 1
     },
     {
       "queries": 1,
-      "query_seconds": 0.600899,
+      "query_seconds": 0.739301,
       "seed": 2
     },
     {
       "queries": 1,
-      "query_seconds": 0.500756,
+      "query_seconds": 0.635148,
       "seed": 3
     },
     {
       "queries": 1,
-      "query_seconds": 0.556253,
+      "query_seconds": 0.681775,
       "seed": 4
     },
     {
       "queries": 1,
-      "query_seconds": 0.526173,
+      "query_seconds": 0.584189,
       "seed": 5
     },
     {
       "queries": 1,
-      "query_seconds": 0.530804,
+      "query_seconds": 0.599341,
       "seed": 6
     },
     {
       "queries": 1,
-      "query_seconds": 0.565586,
+      "query_seconds": 0.664097,
       "seed": 7
     },
     {
       "queries": 1,
-      "query_seconds": 0.467942,
+      "query_seconds": 0.5601,
       "seed": 8
     },
     {
       "queries": 1,
-      "query_seconds": 0.525632,
+      "query_seconds": 0.576971,
       "seed": 9
     },
     {
       "queries": 1,
-      "query_seconds": 0.502656,
+      "query_seconds": 0.659171,
       "seed": 10
     },
     {
       "queries": 1,
-      "query_seconds": 0.491122,
+      "query_seconds": 0.537909,
       "seed": 11
     },
     {
       "queries": 1,
-      "query_seconds": 0.512267,
+      "query_seconds": 0.627003,
       "seed": 12
     },
     {
       "queries": 1,
-      "query_seconds": 0.482483,
+      "query_seconds": 0.692207,
       "seed": 13
     },
     {
       "queries": 1,
-      "query_seconds": 0.530553,
+      "query_seconds": 0.511689,
       "seed": 14
     },
     {
       "queries": 1,
-      "query_seconds": 0.477023,
+      "query_seconds": 0.54182,
       "seed": 15
     },
     {
       "queries": 1,
-      "query_seconds": 0.523329,
+      "query_seconds": 0.724728,
       "seed": 16
     },
     {
       "queries": 1,
-      "query_seconds": 0.485809,
+      "query_seconds": 0.696914,
       "seed": 17
     },
     {
       "queries": 1,
-      "query_seconds": 0.451428,
+      "query_seconds": 0.529872,
       "seed": 18
     },
     {
       "queries": 1,
-      "query_seconds": 0.537436,
+      "query_seconds": 0.565835,
       "seed": 19
     }
   ],
