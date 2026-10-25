@@ -1,0 +1,19 @@
+{
+  "schema_version": "rra.eval-v3.replay-check.v1",
+  "scored_receipt_sha256": "538e6b832bf60833e4ac545f096d576f6800eed4b790c1d6bf882af9119e536d",
+  "check_receipt_sha256": "538e6b832bf60833e4ac545f096d576f6800eed4b790c1d6bf882af9119e536d",
+  "equal": true,
+  "check_output_dir_outside_repo": true,
+  "runtime_versions": {
+    "python": "3.12.3",
+    "numpy": "2.5.4",
+    "machine": "x86_64",
+    "cpu_model": "Intel(R) Core(TM) i7-10750H CPU @ 2.60GHz",
+    "blas": {
+      "name": "scipy-openblas",
+      "version": "0.3.34.106.0"
+    }
+  },
+  "git_sha": "c6fc79a714c59f759a0a628b9c36e10a97a7e351",
+  "receipt_sha256": "aa0297a882ab41cc73586236758d678b5f8b7c31985be4c2585872b07aa8c147"
+}
