@@ -1,83 +1,60 @@
-# Reality Residual Agent（RRA）V0
+# Reality Residual Agent
 
-一个完全确定性的 2D 传送带抓放仿真与残差补偿基线。V0 不调用 LLM、网络、NIM 或 Jev；每个物体位置由显式 seed 生成。扰动强度由 [`config/scenarios.json`](config/scenarios.json) 配置。
+Reality Residual Agent（RRA）是用于研究 2D 传送带抓取的确定性仿真。它面向需要检查“模型偏差如何变成动作风险、何时应停止并升级”的机器人开发者；它不是已部署的工业控制器。每集由明确 seed 驱动，扰动、观测与动作保存在 receipt 中，便于复现和审计。
 
-## 问题与架构
+## 架构
 
-固定名义模型会在传感器偏移、随时间变化的偏移、移动目标或速度阶跃下产生抓取误差。RRA 记录“观测值 − 名义预测值”，用滑动窗口分类，将残差拆分为传感器偏移与运动领先，经受限时刻补偿与可行性检查后，与无补偿基线做同 seed 对照；修正不可行的对象显式跳过（correction_infeasible）。残差超过固定安全阈值时停止抓取并发出 `ESCALATE`。
+快速残差层将观测与名义运动预测作比较，在边界内修正抓取时刻；超出边界时停止并升级。System 2 的 B3 在受限候选空间中做确定性假设搜索。B4 可选用 NVIDIA NIM 提案排序与 TIEBREAK，但提案须经过白名单、拟合器、验证器及明确授权检查才会执行。未经验证的提案不会直接成为控制动作。STRICT 与 B3 的结果按 A04 §2 的构造相同，这不是模型带来收益的新证据。
 
-```text
-seeded 2D World → nominal ScriptedPlanner → ResidualMonitor → bounded Corrector
-        ↑                    ↓                    ↓                 ↓
- perturbations          pick plan           residual receipt    Controller
-                                                                     ↓
-                                                     episode metrics + JSON receipt
-```
+Zetaris 提供证据视图；Meterless 按 episode 持久化决策、拒绝跨 episode 读取，并支持从保存的 manifest 重放。两者边界及已有证据见下文；quickstart 不需要密钥、NIM 或在线服务。
 
-2D 状态包含传送带方向的 x 与横向 y；抓爪固定在 `(x_pick, y_pick)`。V0 的补偿作用于抓取时刻，抓爪位置保持固定。所有速度、位置和抓取窗口由配置及 Controller 限位。
+## 快速开发 smoke
 
-## 安装与运行
-
-需要 Python 3.12。
+需要 Python 3.12。仓库依赖见 [`requirements.txt`](requirements.txt)：NumPy 2.5.4、Pydantic `>=2.6,<3`、pytest `>=8,<9`。安装应用依赖后即可运行确定性开发 smoke；默认 receipt 写入 `outputs/`，建议显式指定外部目录：
 
 ```bash
 python3.12 -m venv .venv
 .venv/bin/pip install -r requirements.txt
-.venv/bin/python ./rra run --scenario bias --seed 7 --compensation on
-.venv/bin/python ./rra run --scenario bias --seed 7 --compensation off
-.venv/bin/python ./rra bench
+mkdir -p /tmp/rra-demo
+PYTHONPATH=src .venv/bin/python ./rra run --scenario bias --seed 7 --compensation on --output-dir /tmp/rra-demo
 ```
 
-也可以先激活虚拟环境，再运行 `./rra ...` 或 `rra ...`。请使用虚拟环境中的 Python，避免 `rra` 的 `#!/usr/bin/env python3` shebang 命中系统 Python。
+实测 Python 3.12.3、NumPy 2.5.4；命令成功并生成 `bias-seed7-on.json`，attempted=12、successes=12、escalations=0。这个单 episode smoke 不调用模型，也不代表正式评估。
 
-`rra run` 会在 `outputs/` 写入 JSON receipt 并打印路径。`rra bench` 默认使用冻结的 eval seeds `2000–2099`，对 nominal、四种扰动的 low/mid/high 档和 combo 执行补偿开/关对照，在当前目录写入 `bench.json` 和 `bench.md`。迭代只用 dev seeds `0–129`。本地开发冒烟可运行：
+Meterless 是可选的开发集成，需要 Node 22；按 pin 安装并运行真实持久化演示的步骤见 [开发演示 runbook](docs/DEMO_RUNBOOK.md)。可选 Zetaris live 环境需要自行配置服务，本文不要求提供或读取凭据。记录的 Zetaris receipt 是历史集成证据，不是本次新查询。
 
-评估协议见 [docs/EVAL_PROTOCOL.md](docs/EVAL_PROTOCOL.md)。
+Docker 镜像也仅用于同一 Python-only 开发 smoke：
 
 ```bash
-RRA_SEED_FILE=config/dev_seeds.json .venv/bin/python ./rra bench
+docker build -t rra-dev-smoke .
+docker run --rm rra-dev-smoke
 ```
 
-Docker：
+基础镜像为 Python 3.12 slim；本次构建实际运行 Python 3.12.13、NumPy 2.5.4。镜像包含随 `src` 复制的 `rra.eval.final_v3` 模块，但不含 `.git` 元数据、已评分 eval-v3 artifacts 或可选 sponsor runtime，因此不支持正式 replay；也不是 sponsor stack 镜像。
 
-```bash
-docker build -t reality-residual-agent .
-docker run --rm -e RRA_SEED_FILE=/app/config/dev_seeds.json reality-residual-agent rra bench
-```
+## 正式 eval-v3 结果
 
-要保留 Docker 输出到宿主机，可执行：
+以下数字来自已注册的 100-seed 结果及其静态审计，**不是本次 smoke 或 Meterless dev demo 的新分数**。分母是 614 个 recoverable challenges；unsafe 是动作计数，不能解释为 episode 百分比。
 
-```bash
-docker run --rm -e RRA_SEED_FILE=/app/config/dev_seeds.json -v "$PWD:/results" reality-residual-agent rra bench --output-dir /results
-```
+| 条件 | 挑战恢复 | unsafe 动作 | 解释 |
+|---|---:|---:|---|
+| B2 | 104 / 614 | 47 | 同一正式比较中的 broader-envelope 静态基线 |
+| B3 | 41 / 614 | 15 | 15 个均来自 fast layer；S2-authorized unsafe actions = 0（授权事件总数为 159） |
+| B4 STRICT（四种文本条件各自） | 41 / 614 | 15 | 与 B3 按构造相等，不是独立模型收益证据 |
+| B4 TIEBREAK（四种文本条件各自） | 39 / 614 | 58–59 | 每个条件含 15 个 fast-layer unsafe 和 43–44 个 S2-authorized unsafe；恢复数未提高 |
 
-## Bench 指标定义
+结果、receipt 字段和审计：[`B2`](artifacts/eval_v3/b2.md) / [`B2 JSON`](artifacts/eval_v3/b2.json)、[`B3`](artifacts/eval_v3/b1b3.md) / [`B3 JSON`](artifacts/eval_v3/b1b3.json)、[`B4`](artifacts/eval_v3/b4.md) / [`B4 JSON`](artifacts/eval_v3/b4.json)、[逐条件响应分类与报告审计](artifacts/eval_v3/reporting_audit.md) / [机器可读审计](artifacts/eval_v3/reporting_audit.json)。审计指出 STRICT=B3 是设计构造；TIEBREAK 的恢复为 39 且 unsafe 为 58–59，不能宣称模型提高恢复或系统总体零风险。
 
-- **成功率** = 成功抓取数 / 基准中的全部生成物体数（每个 seed、配置生成 12 个物体）。成功要求 Controller 接受命令且抓取窗口判定成功。升级后未尝试的物体仍留在分母中，按失败计；Controller 拒绝的尝试也不计成功。
-- **MAE** = 所有实际发出抓取尝试的 pick-window error 之和 / 抓取尝试数。单次 error 是 `max(二维欧氏位置误差, |实际时间 − 命令时间| × 命令速度)`，单位为世界距离。它包含成功和失败尝试；升级后未尝试的物体不进入 MAE 分子或分母。如果全组都没有尝试，MAE 按 0 报告。
-- **升级数** = episode 中首次触发的安全升级数，加上 Controller 拒绝导致的升级数；同一 episode 的 residual 超限只记一次。
+上述计数对应 receipt 的 `challenge_success_count` / `recoverable_challenge_count`（B2）与 `recoverable_challenge_success_count` / `recoverable_challenge_count`（B3）；B3、B4 的来源拆分见 `unsafe_action_by_source`、`unsafe_by_source`，STRICT/TIEBREAK 分类及 gate 计数见 reporting audit。不要把 action count 当作 episode 比例。
 
-因此，旧聚合口径下 combo 补偿关闭曾出现 MAE `0.011`、成功率 `0`：多数 episode 升级后没有抓取，episode MAE 被记为 0 并参与 episode 均值；少数已尝试抓取全部失败，所以按全部生成物体计算的成功率仍为 0。该 MAE 聚合是 bug，当前 bench 改为按实际尝试数加权，未尝试物体只影响成功率分母。
+调用统计使用不同单位：跨四种文本条件共 1,519 个 provider `llm_calls`、1,523 个 distinct ledger requests，以及 2,700 次 proposer invocation（STRICT 1,352、TIEBREAK 1,348）。它们不是同一种请求数，也不能统称为 HTTP calls；TIEBREAK 行共享 provider 的 `llm_calls=0` 计数不表示没有模型使用。
 
-### 冻结 eval v2 结果
+Zetaris 已记录的等价性证据位于 [`zetaris-equivalence.json`](artifacts/sponsor/zetaris-equivalence.json)：base `18041e5`、T3/T4 mismatch 均为 0、T8 receipt bytes identical 为 true。这是保存的既有 receipt，并非当前 live 查询。
 
-以下结果使用冻结的 100 个 eval seeds `2000–2099`，代码版本 `c66b4bf`；每个配置 × seed 运行 12 个物体，补偿开/关使用相同 seeds。完整 coverage、precision 和终态计数见 [`bench.md`](bench.md) 与 [`bench.json`](bench.json)。
+## 复现与范围
 
-| 场景 | 参数 | off 成功率 | on 成功率 | 差值 | off MAE | on MAE | off 升级 | on 升级 |
-|---|---|---:|---:|---:|---:|---:|---:|---:|
-| nominal | — | 1.000 | 1.000 | +0.000 | 0.050 | 0.050 | 0 | 0 |
-| bias-low | `position_bias=0.08` | 1.000 | 1.000 | +0.000 | 0.093 | 0.050 | 0 | 0 |
-| bias-mid | `position_bias=0.25` | 0.000 | 1.000 | +1.000 | 0.255 | 0.050 | 100 | 0 |
-| bias-high | `position_bias=0.45` | 0.000 | 1.000 | +1.000 | 0.453 | 0.050 | 100 | 0 |
-| drift-low | `drift_per_second=0.008` | 1.000 | 1.000 | +0.000 | 0.070 | 0.050 | 0 | 0 |
-| drift-mid | `drift_per_second=0.045` | 0.049 | 1.000 | +0.951 | 0.273 | 0.051 | 100 | 0 |
-| drift-high | `drift_per_second=0.09` | 0.000 | 0.981 | +0.981 | 0.534 | 0.076 | 100 | 0 |
-| moving-low | `moving_speed_delta=0.02` | 0.977 | 1.000 | +0.023 | 0.129 | 0.051 | 0 | 0 |
-| moving-mid | `moving_speed_delta=0.10` | 0.000 | 0.849 | +0.849 | 0.593 | 0.087 | 100 | 1 |
-| moving-high | `moving_speed_delta=0.18` | 0.000 | 0.010 | +0.010 | 0.968 | 0.154 | 100 | 100 |
-| load-low | `load_speed_delta=0.04` | 0.664 | 1.000 | +0.336 | 0.166 | 0.051 | 18 | 0 |
-| load-mid | `load_speed_delta=0.16` | 0.000 | 0.656 | +0.656 | 0.627 | 0.081 | 100 | 18 |
-| load-high | `load_speed_delta=0.28` | 0.000 | 0.023 | +0.023 | 0.877 | 0.094 | 100 | 100 |
-| combo | existing defaults | 0.000 | 0.008 | +0.008 | 0.315 | 0.154 | 100 | 100 |
+正式离线复现应使用原始 scored result commit `dce9e802b024943cb21b8cdb621bdad34187dd73`；实现冻结标签 `impl-freeze-v3` 指向 `2365a220`，这是两个不同提交。当前维护分支上的 unchanged guard 会拒绝后续维护路径；不要用当前 main 代替原始结果提交。完整隔离 worktree、venv 与离线命令见 [eval-v3 复现说明](docs/REPRODUCING_EVAL_V3.md)。其中命令供未来复现使用，本次文档制作未重跑正式评估。bitwise 一致性仅承诺于注册 runner；跨机器可移植性不代表逐位哈希一致。
 
-结果文件：[`bench.json`](bench.json)、[`bench.md`](bench.md)。combo 规则快速层的全部升级是 V0 核心失败模式；赛中 System-2 层应解决该状态的恢复决策，详见 [FAILURE_MODES.md](FAILURE_MODES.md)。
+项目声明的既有工作边界见 [`HACKATHON_BASELINE.md`](HACKATHON_BASELINE.md) 与 `pre-window-freeze^{commit}`（`3b56637681551f21c6b4c253be6def59389d1051`）。边界之前的 H1 实现也属于既有工作；不应把其后所有提交都描述成活动期新实现。Cursor 为可选项，本文不声称使用过 Cursor。
+
+简短历史入口：[旧 eval-v2 基准报告](bench.md)。它不是当前结果的 headline。

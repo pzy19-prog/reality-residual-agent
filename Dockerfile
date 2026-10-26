@@ -8,4 +8,4 @@ COPY config ./config
 COPY rra /usr/local/bin/rra
 ENV PYTHONPATH=/app/src
 
-CMD ["rra", "bench"]
+CMD ["rra", "run", "--scenario", "bias", "--seed", "7", "--compensation", "on", "--output-dir", "/tmp/rra-demo"]

@@ -3,5 +3,7 @@
 .venv
 __pycache__
 outputs
+bridges/meterless/vendor
+bridges/meterless/node_modules
 bench.json
 bench.md
