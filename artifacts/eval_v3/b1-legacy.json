@@ -1,0 +1,587 @@
+{
+  "schema_version": "rra.eval-v3.row.v1",
+  "row": "b1-legacy",
+  "role": "eval_v3",
+  "seed_file_sha256": "f407cb72120e09b0380d60d7715ae143e6a94b85852ce8154f2c10cc3e877a76",
+  "seed_count": 100,
+  "case_episode_counts": {
+    "0": 6,
+    "1": 6,
+    "2": 6,
+    "3": 6,
+    "4": 6,
+    "5": 5,
+    "6": 5,
+    "7": 5,
+    "8": 5,
+    "9": 5,
+    "10": 5,
+    "11": 5,
+    "12": 5,
+    "13": 5,
+    "14": 5,
+    "15": 5,
+    "16": 5,
+    "17": 5,
+    "18": 5
+  },
+  "status": "complete",
+  "metrics": {
+    "scenario_count": 14,
+    "episode_count": 1400
+  },
+  "episodes": [
+    {
+      "scenario": "nominal",
+      "success": 1.0,
+      "coverage": 1.0,
+      "precision": 1.0,
+      "mae": 0.057643,
+      "terminal_counts": {
+        "picked": 1200,
+        "attempt_failed": 0,
+        "rejected": 0,
+        "escalated": 0,
+        "skipped": 0
+      },
+      "escalations": 0
+    },
+    {
+      "scenario": "bias-low",
+      "success": 1.0,
+      "coverage": 1.0,
+      "precision": 1.0,
+      "mae": 0.056103,
+      "terminal_counts": {
+        "picked": 1200,
+        "attempt_failed": 0,
+        "rejected": 0,
+        "escalated": 0,
+        "skipped": 0
+      },
+      "escalations": 0
+    },
+    {
+      "scenario": "bias-mid",
+      "success": 1.0,
+      "coverage": 1.0,
+      "precision": 1.0,
+      "mae": 0.056033,
+      "terminal_counts": {
+        "picked": 1200,
+        "attempt_failed": 0,
+        "rejected": 0,
+        "escalated": 0,
+        "skipped": 0
+      },
+      "escalations": 0
+    },
+    {
+      "scenario": "bias-high",
+      "success": 1.0,
+      "coverage": 1.0,
+      "precision": 1.0,
+      "mae": 0.055045,
+      "terminal_counts": {
+        "picked": 1200,
+        "attempt_failed": 0,
+        "rejected": 0,
+        "escalated": 0,
+        "skipped": 0
+      },
+      "escalations": 0
+    },
+    {
+      "scenario": "drift-low",
+      "success": 1.0,
+      "coverage": 1.0,
+      "precision": 1.0,
+      "mae": 0.057953,
+      "terminal_counts": {
+        "picked": 1200,
+        "attempt_failed": 0,
+        "rejected": 0,
+        "escalated": 0,
+        "skipped": 0
+      },
+      "escalations": 0
+    },
+    {
+      "scenario": "drift-mid",
+      "success": 1.0,
+      "coverage": 1.0,
+      "precision": 1.0,
+      "mae": 0.057986,
+      "terminal_counts": {
+        "picked": 1200,
+        "attempt_failed": 0,
+        "rejected": 0,
+        "escalated": 0,
+        "skipped": 0
+      },
+      "escalations": 0
+    },
+    {
+      "scenario": "drift-high",
+      "success": 0.965833,
+      "coverage": 0.984167,
+      "precision": 0.981372,
+      "mae": 0.081317,
+      "terminal_counts": {
+        "picked": 1159,
+        "attempt_failed": 22,
+        "rejected": 0,
+        "escalated": 0,
+        "skipped": 19
+      },
+      "escalations": 0
+    },
+    {
+      "scenario": "moving-low",
+      "success": 1.0,
+      "coverage": 1.0,
+      "precision": 1.0,
+      "mae": 0.058071,
+      "terminal_counts": {
+        "picked": 1200,
+        "attempt_failed": 0,
+        "rejected": 0,
+        "escalated": 0,
+        "skipped": 0
+      },
+      "escalations": 0
+    },
+    {
+      "scenario": "moving-mid",
+      "success": 0.805833,
+      "coverage": 0.849167,
+      "precision": 0.94897,
+      "mae": 0.091139,
+      "terminal_counts": {
+        "picked": 967,
+        "attempt_failed": 52,
+        "rejected": 0,
+        "escalated": 0,
+        "skipped": 181
+      },
+      "escalations": 3
+    },
+    {
+      "scenario": "moving-high",
+      "success": 0.008333,
+      "coverage": 0.009167,
+      "precision": 0.909091,
+      "mae": 0.146645,
+      "terminal_counts": {
+        "picked": 10,
+        "attempt_failed": 1,
+        "rejected": 0,
+        "escalated": 1114,
+        "skipped": 75
+      },
+      "escalations": 100
+    },
+    {
+      "scenario": "load-low",
+      "success": 1.0,
+      "coverage": 1.0,
+      "precision": 1.0,
+      "mae": 0.058306,
+      "terminal_counts": {
+        "picked": 1200,
+        "attempt_failed": 0,
+        "rejected": 0,
+        "escalated": 0,
+        "skipped": 0
+      },
+      "escalations": 0
+    },
+    {
+      "scenario": "load-mid",
+      "success": 0.0625,
+      "coverage": 0.065,
+      "precision": 0.961538,
+      "mae": 0.074993,
+      "terminal_counts": {
+        "picked": 75,
+        "attempt_failed": 3,
+        "rejected": 0,
+        "escalated": 998,
+        "skipped": 124
+      },
+      "escalations": 103
+    },
+    {
+      "scenario": "load-high",
+      "success": 0.02,
+      "coverage": 0.020833,
+      "precision": 0.96,
+      "mae": 0.100121,
+      "terminal_counts": {
+        "picked": 24,
+        "attempt_failed": 1,
+        "rejected": 0,
+        "escalated": 1128,
+        "skipped": 47
+      },
+      "escalations": 100
+    },
+    {
+      "scenario": "combo",
+      "success": 0.011667,
+      "coverage": 0.011667,
+      "precision": 1.0,
+      "mae": 0.128636,
+      "terminal_counts": {
+        "picked": 14,
+        "attempt_failed": 0,
+        "rejected": 0,
+        "escalated": 1186,
+        "skipped": 0
+      },
+      "escalations": 100
+    }
+  ],
+  "comparison_basis": "Fourteen scenarios from config/scenarios.json, aggregated over the supplied seed list. artifacts/h1/b1-legacy-dev.json stores those scenario rows, not per-seed receipts; compare scenario, success, coverage, precision, mae, terminal_counts, and escalations.",
+  "diagnostic": {
+    "schema_version": "rra.h1.b1-dev-diagnostic.v1",
+    "git_sha": "c6fc79a714c59f759a0a628b9c36e10a97a7e351",
+    "mode": "legacy",
+    "framework": {
+      "dt": 0.1,
+      "episode_steps": 100,
+      "sigma": 0.015
+    },
+    "seeds": {
+      "path": "config/dev_seeds.json",
+      "values": [
+        762628031,
+        133407732,
+        311296807,
+        165337493,
+        1293557078,
+        139595933,
+        307113745,
+        1222933645,
+        2039808182,
+        1866521706,
+        766045992,
+        716753975,
+        1631991333,
+        21170310,
+        19229104,
+        1499830896,
+        599078007,
+        1232433459,
+        98086793,
+        1647152579,
+        2066922453,
+        1352800101,
+        969930712,
+        614856150,
+        586612133,
+        389998528,
+        145566312,
+        840856649,
+        1033173478,
+        1851441804,
+        317418502,
+        696050513,
+        746231815,
+        1562006704,
+        1759752431,
+        795852365,
+        1371665017,
+        980891881,
+        16311626,
+        1465302544,
+        2127055818,
+        1969505551,
+        2024397312,
+        1440042118,
+        925700982,
+        606294903,
+        400795025,
+        955930026,
+        1509429182,
+        948159865,
+        1516834214,
+        746601344,
+        1120012479,
+        1200526580,
+        402870775,
+        1310882850,
+        601741199,
+        1318673046,
+        1064705931,
+        989871041,
+        1089470336,
+        1451056861,
+        1740823371,
+        1572494484,
+        728774274,
+        452134362,
+        211062642,
+        785689062,
+        359539685,
+        1271768546,
+        154806464,
+        1348735497,
+        1601050246,
+        962653536,
+        438695273,
+        1240458011,
+        1785455776,
+        1254957707,
+        2013222843,
+        374322860,
+        271259117,
+        1829971265,
+        1545232899,
+        1880290031,
+        1487727306,
+        668851383,
+        1743822649,
+        1827622813,
+        2118705628,
+        704174302,
+        313550848,
+        1991484768,
+        636389209,
+        587272240,
+        1398676818,
+        2100619540,
+        209067459,
+        1799454660,
+        1251140854,
+        1882560604
+      ]
+    },
+    "workers": 1,
+    "runtime_seconds": 159.819,
+    "rows": [
+      {
+        "scenario": "nominal",
+        "success": 1.0,
+        "coverage": 1.0,
+        "precision": 1.0,
+        "mae": 0.057643,
+        "terminal_counts": {
+          "picked": 1200,
+          "attempt_failed": 0,
+          "rejected": 0,
+          "escalated": 0,
+          "skipped": 0
+        },
+        "escalations": 0
+      },
+      {
+        "scenario": "bias-low",
+        "success": 1.0,
+        "coverage": 1.0,
+        "precision": 1.0,
+        "mae": 0.056103,
+        "terminal_counts": {
+          "picked": 1200,
+          "attempt_failed": 0,
+          "rejected": 0,
+          "escalated": 0,
+          "skipped": 0
+        },
+        "escalations": 0
+      },
+      {
+        "scenario": "bias-mid",
+        "success": 1.0,
+        "coverage": 1.0,
+        "precision": 1.0,
+        "mae": 0.056033,
+        "terminal_counts": {
+          "picked": 1200,
+          "attempt_failed": 0,
+          "rejected": 0,
+          "escalated": 0,
+          "skipped": 0
+        },
+        "escalations": 0
+      },
+      {
+        "scenario": "bias-high",
+        "success": 1.0,
+        "coverage": 1.0,
+        "precision": 1.0,
+        "mae": 0.055045,
+        "terminal_counts": {
+          "picked": 1200,
+          "attempt_failed": 0,
+          "rejected": 0,
+          "escalated": 0,
+          "skipped": 0
+        },
+        "escalations": 0
+      },
+      {
+        "scenario": "drift-low",
+        "success": 1.0,
+        "coverage": 1.0,
+        "precision": 1.0,
+        "mae": 0.057953,
+        "terminal_counts": {
+          "picked": 1200,
+          "attempt_failed": 0,
+          "rejected": 0,
+          "escalated": 0,
+          "skipped": 0
+        },
+        "escalations": 0
+      },
+      {
+        "scenario": "drift-mid",
+        "success": 1.0,
+        "coverage": 1.0,
+        "precision": 1.0,
+        "mae": 0.057986,
+        "terminal_counts": {
+          "picked": 1200,
+          "attempt_failed": 0,
+          "rejected": 0,
+          "escalated": 0,
+          "skipped": 0
+        },
+        "escalations": 0
+      },
+      {
+        "scenario": "drift-high",
+        "success": 0.965833,
+        "coverage": 0.984167,
+        "precision": 0.981372,
+        "mae": 0.081317,
+        "terminal_counts": {
+          "picked": 1159,
+          "attempt_failed": 22,
+          "rejected": 0,
+          "escalated": 0,
+          "skipped": 19
+        },
+        "escalations": 0
+      },
+      {
+        "scenario": "moving-low",
+        "success": 1.0,
+        "coverage": 1.0,
+        "precision": 1.0,
+        "mae": 0.058071,
+        "terminal_counts": {
+          "picked": 1200,
+          "attempt_failed": 0,
+          "rejected": 0,
+          "escalated": 0,
+          "skipped": 0
+        },
+        "escalations": 0
+      },
+      {
+        "scenario": "moving-mid",
+        "success": 0.805833,
+        "coverage": 0.849167,
+        "precision": 0.94897,
+        "mae": 0.091139,
+        "terminal_counts": {
+          "picked": 967,
+          "attempt_failed": 52,
+          "rejected": 0,
+          "escalated": 0,
+          "skipped": 181
+        },
+        "escalations": 3
+      },
+      {
+        "scenario": "moving-high",
+        "success": 0.008333,
+        "coverage": 0.009167,
+        "precision": 0.909091,
+        "mae": 0.146645,
+        "terminal_counts": {
+          "picked": 10,
+          "attempt_failed": 1,
+          "rejected": 0,
+          "escalated": 1114,
+          "skipped": 75
+        },
+        "escalations": 100
+      },
+      {
+        "scenario": "load-low",
+        "success": 1.0,
+        "coverage": 1.0,
+        "precision": 1.0,
+        "mae": 0.058306,
+        "terminal_counts": {
+          "picked": 1200,
+          "attempt_failed": 0,
+          "rejected": 0,
+          "escalated": 0,
+          "skipped": 0
+        },
+        "escalations": 0
+      },
+      {
+        "scenario": "load-mid",
+        "success": 0.0625,
+        "coverage": 0.065,
+        "precision": 0.961538,
+        "mae": 0.074993,
+        "terminal_counts": {
+          "picked": 75,
+          "attempt_failed": 3,
+          "rejected": 0,
+          "escalated": 998,
+          "skipped": 124
+        },
+        "escalations": 103
+      },
+      {
+        "scenario": "load-high",
+        "success": 0.02,
+        "coverage": 0.020833,
+        "precision": 0.96,
+        "mae": 0.100121,
+        "terminal_counts": {
+          "picked": 24,
+          "attempt_failed": 1,
+          "rejected": 0,
+          "escalated": 1128,
+          "skipped": 47
+        },
+        "escalations": 100
+      },
+      {
+        "scenario": "combo",
+        "success": 0.011667,
+        "coverage": 0.011667,
+        "precision": 1.0,
+        "mae": 0.128636,
+        "terminal_counts": {
+          "picked": 14,
+          "attempt_failed": 0,
+          "rejected": 0,
+          "escalated": 1186,
+          "skipped": 0
+        },
+        "escalations": 100
+      }
+    ]
+  },
+  "runtime_versions": {
+    "python": "3.12.3",
+    "numpy": "2.5.4",
+    "machine": "x86_64",
+    "cpu_model": "Intel(R) Core(TM) i7-10750H CPU @ 2.60GHz",
+    "blas": {
+      "name": "scipy-openblas",
+      "version": "0.3.34.106.0"
+    }
+  },
+  "git_sha": "c6fc79a714c59f759a0a628b9c36e10a97a7e351",
+  "receipt_sha256": "a9e80f9ef339aae2cdf8a35eb6f1eee72490acd94257309eb8d6c7495a86f4e0"
+}

@@ -232,11 +232,32 @@ def test_live_rerun_keeps_prior_distinct_requests_inside_the_cap(monkeypatch, tm
     assert calls["n"] == 0
 
 
-def test_estimate_refuses_eval_role_without_reading_seeds(capsys):
+@pytest.mark.parametrize("with_seed_file", [False, True])
+def test_estimate_refuses_eval_role_without_reading_seeds(
+    capsys, monkeypatch, tmp_path, with_seed_file
+):
+    monkeypatch.setattr(final_v3, "ROOT", tmp_path)
+    seed_path = tmp_path / "config/eval_seeds_v3.json"
+    seed_path.parent.mkdir()
+    if with_seed_file:
+        seed_path.write_text("synthetic sentinel; not a seed document\n")
+    assert seed_path.is_file() is with_seed_file
+
+    def forbidden_loader(*args, **kwargs):
+        pytest.fail("eval-role estimate called the seed loader")
+
+    real_path_open = Path.open
+
+    def guarded_path_open(path, *args, **kwargs):
+        if path == seed_path:
+            pytest.fail("eval-role estimate opened the synthetic seed path")
+        return real_path_open(path, *args, **kwargs)
+
+    monkeypatch.setattr(final_v3, "load_seed_file", forbidden_loader)
+    monkeypatch.setattr(Path, "open", guarded_path_open)
     code = final_v3.main(["b4", "--estimate"])
     assert code == 2
     assert "role dev" in capsys.readouterr().err
-    assert not (ROOT / "config/eval_seeds_v3.json").exists()
 
 
 def _freeze_seed_file(root: Path) -> Path:
