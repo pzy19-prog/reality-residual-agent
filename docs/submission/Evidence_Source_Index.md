@@ -1,0 +1,26 @@
+# Evidence and source index
+
+**Repository:** https://github.com/pzy19-prog/reality-residual-agent
+
+The payload bundle includes `data/formal_facts.json`, `data/dev_trace.json`, `data/source_provenance.json`, and `data/official_requirements.md`. These are sanitized, portable inputs; they contain no eval seed configuration, model request bodies, credentials, or local workspace paths.
+
+| Claim | Bundled field | Canonical source / commit |
+|---|---|---|
+| B2: 104 / 614 recovered, 47 unsafe events, 100 episodes | `data/formal_facts.json: formal.episodes`, `formal.recoverable_challenges`, `formal.b2.recovered`, `formal.b2.unsafe_events` | `artifacts/eval_v3/b2.json`: `metrics.episodes`, `metrics.challenge_success_count`, `metrics.recoverable_challenge_count`, `metrics.unsafe_action`; formal result `dce9e802b024943cb21b8cdb621bdad34187dd73` |
+| B3: 41 / 614 recovered, 15 unsafe events, source split, 159 authorizations | `data/formal_facts.json: formal.b3.*` | `artifacts/eval_v3/b1b3.json`: `metrics.recoverable_challenge_success_count`, `metrics.recoverable_challenge_count`, `metrics.unsafe_action`, `metrics.unsafe_action_by_source`, `metrics.authorization_count`; same formal result commit |
+| B4 STRICT/TIEBREAK results across four text conditions | `data/formal_facts.json: formal.b4.*` | `artifacts/eval_v3/b4.json`: `metrics.{NO_TEXT_CONTEXT,HELPFUL_TEXT_CONTEXT,IRRELEVANT_TEXT_CONTEXT,MISLEADING_TEXT_CONTEXT}.{B4_STRICT,B4_TIEBREAK}.{recovery,unsafe_action,unsafe_by_source}`; result `dce9e802b024943cb21b8cdb621bdad34187dd73` |
+| STRICT equals B3 by construction; TIEBREAK is necessity comparison | `data/formal_facts.json: formal.b4.strict_equals_b3`, `formal.b4.tiebreak_recovery_gain` | Registered A04 §2 at `docs/P3_PREREG_ADDENDUM_04.md`; freeze `2365a2204ae68354809b99a161fe963b978dbb5d` |
+| B4 original live fill: 1,519 provider `llm_calls`; 1,523 `distinct_live_requests` | `data/formal_facts.json: formal.accounting.live_fill_*` | `artifacts/eval_v3/b4_live.json`: top-level `llm_calls`, `distinct_live_requests` |
+| B4 scored replay: 1,519 provider `llm_calls`; 0 **new** live requests during scored replay; 1,523 replay cache-ledger records; 1,352 / 1,348 proposer events | `data/formal_facts.json: formal.accounting.scored_replay_*`, `formal.accounting.*_proposer_events` | `artifacts/eval_v3/b4.json`: top-level `llm_calls`, `distinct_live_requests`, `cache_provenance.ledger`, `strict_proposer_invocations`, `tiebreak_proposer_invocations`. The zero is replay-mode only; the earlier live fill used 1,523 distinct requests. |
+| B3 unsafe qualifier and authorization count | `data/formal_facts.json: formal.b3.unsafe_by_source`, `authorization_count` | `artifacts/eval_v3/b1b3.json`: `metrics.unsafe_action_by_source.s2_authorized = 0`; `metrics.authorization_count = 159` |
+| Fresh development episode, 14 decisions, scenario/policy-fault labels, observed values and action progression | `data/dev_trace.json: episode_id`, `fault_family` (development scenario), `decisions[].faults` (recorded policy fault label), `decisions[].{time,target_id,action,reason,evidence,evidence_candidate_total,observation}`, `terminal_outcomes` | Release-base development trace excerpt; source commit `87a3124a9a337a525efdf3d5390905df9803114f`; receipt `84a96c6eaf26a6c89618fd5c57055f23b6843f69b83e0a91ff7c0fdbca905c91`. The trace displays the first 4 of 14 candidates at applicable decisions. |
+| Meterless replay equality and receipt SHA | `data/dev_trace.json: replay.*` | `data/source_provenance.json: original_dev_excerpt_sha256`; Meterless commit `1742dec56a66e58eef9dda2d2b865823758ca8cd` |
+| Four fresh Meterless dev checks; replay 4/4, cross-episode reads 0 | `data/formal_facts.json: meterless_dev_fresh.*` | Producer `meterless-verify.log`: `episodes`, `M1_roundtrip_mismatches`, `M2_equal`, `M3_cross_episode_reads`, `M4_replay_match`, `all_ok`; not eval-v3 |
+| Zetaris recorded equivalence | `data/formal_facts.json: zetaris.*` | Receipt at integration base `18041e5b9942e785d191003b5432d4b2e08ef45f`; implementation `src/rra/sponsor/zetaris.py`, `scripts/l3_zetaris_up.sh`, `scripts/l3_source_server.py`, `scripts/l3_equivalence.py` at release base `87a3124a9a337a525efdf3d5390905df9803114f` |
+| Stack versions and pinned source docs | `data/formal_facts.json: runtime.*`; `data/source_provenance.json: release_readme_commit` | Python/NumPy in the scored result packet; README and runbooks copied from `f9087ea5063a9e1d32945ceed88def9cbe47d073` |
+| Pre-existing boundary | `data/formal_facts.json: commits.pre_window`; `Limitations_and_Disclosure.md` | `HACKATHON_BASELINE.md`; boundary `3b56637681551f21c6b4c253be6def59389d1051` |
+| Official submission requirements | `data/official_requirements.md` | Official event page: https://hackathon.genai.works/event/open-agent-hackathon-2026; requirements checked 2026-10-26 |
+
+Input hashes: fact packet `8e010e05335b0c94f2e06b44451e49223be4b5fd3be6381eef2d197ac9531b86`; original development excerpt `1deec47fe012b0be125e03ee920c55793ea1057409e9eddc353404f98969dec3`; source provenance also records these hashes. No seed configuration was opened and no formal evaluation was rerun for this submission.
+
+Mode-specific call-accounting clarification note SHA-256: `25aeb8ca6882055210edfd508def40494fbd905253b646c3c5170f860e35df54`.

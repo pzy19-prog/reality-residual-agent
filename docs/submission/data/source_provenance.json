@@ -1,0 +1,22 @@
+{
+  "schema": "rra.submission.source_provenance.v2",
+  "facts_packet_sha256": "8e010e05335b0c94f2e06b44451e49223be4b5fd3be6381eef2d197ac9531b86",
+  "original_dev_excerpt_sha256": "1deec47fe012b0be125e03ee920c55793ea1057409e9eddc353404f98969dec3",
+  "call_accounting_source_note_sha256": "25aeb8ca6882055210edfd508def40494fbd905253b646c3c5170f860e35df54",
+  "release_readme_commit": "f9087ea5063a9e1d32945ceed88def9cbe47d073",
+  "release_readme_source_blobs": {
+    "README.md": "f92bc71c254b6348b2cdfbbb00960e398b7259dab8f0e2758d8bfb66053a8908",
+    "README.en.md": "152ff474fad6541bf85e85393703825c84ab0fdd867da686f1c512cd8890768f",
+    "docs/DEMO_RUNBOOK.md": "7c8d933f6938ef97d95b9dc020d1edc204aff864276c98af794c38a6c4c26def",
+    "docs/REPRODUCING_EVAL_V3.md": "c440f5896520b8905e305a9d1adcceb5e30f7ebf184d86a06ba0b510e87db03f"
+  },
+  "release_readme_packaging_note": "Portable copies were derived from these exact blobs at the pinned commit. This package corrects the B3 metric field name, clarifies live-fill versus scored-replay counters, labels the visible candidate subset, and replaces producer-workspace absolute paths with bundled sanitized evidence references; the release-readme branch and files were not modified.",
+  "source_commit": "87a3124a9a337a525efdf3d5390905df9803114f",
+  "dev_receipt_sha256": "84a96c6eaf26a6c89618fd5c57055f23b6843f69b83e0a91ff7c0fdbca905c91",
+  "dev_log_files": [
+    "meterless-verify.log",
+    "trail-ep-014.log",
+    "replay-ep-014.log"
+  ],
+  "public_repository": "https://github.com/pzy19-prog/reality-residual-agent"
+}
