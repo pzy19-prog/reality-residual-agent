@@ -1,37 +1,60 @@
-# Reality Residual Agent (RRA) V0
+# Reality Residual Agent
 
-A deterministic 2D conveyor pick simulation and residual-compensation baseline. V0 makes no LLM, network, NIM, or Jev calls. Explicit seeds determine object placement; [`config/scenarios.json`](config/scenarios.json) defines the benchmark suite.
+Reality Residual Agent (RRA) is a deterministic 2D conveyor pick simulation for robotics developers studying how model error becomes action risk and when a controller should stop and escalate. It is a research simulator, not a deployed industrial controller. Explicit seeds drive each episode; disturbances, observations, and actions are recorded in receipts for replay and audit.
 
-## Install and run
+## Architecture
 
-Requires Python 3.12.
+The fast residual layer compares observations with nominal motion predictions and corrects pick timing within bounded limits. It stops and escalates outside those limits. System 2 B3 performs deterministic hypothesis search over a constrained candidate space. Optional B4 uses NVIDIA NIM to rank proposals and break ties, but proposals pass whitelist, fitter, verifier, and explicit authorization checks before execution. Unverified proposals cannot become control actions. Under A04 §2, STRICT equals B3 by construction; this is not new evidence of model benefit.
+
+Zetaris provides an evidence view. Meterless persists decisions per episode, refuses cross-episode reads, and supports replay from a stored manifest. See the evidence and boundaries below. The quickstart requires no secret, NIM, or online service.
+
+## Quick development smoke
+
+Requires Python 3.12. [`requirements.txt`](requirements.txt) pins NumPy 2.5.4 and allows Pydantic `>=2.6,<3` and pytest `>=8,<9`. Install the Python application dependencies, then run one deterministic development episode. Use an explicit output directory to keep the receipt outside the repository:
 
 ```bash
 python3.12 -m venv .venv
 .venv/bin/pip install -r requirements.txt
-.venv/bin/python ./rra run --scenario bias --seed 7 --compensation on
-.venv/bin/python ./rra bench
+mkdir -p /tmp/rra-demo
+PYTHONPATH=src .venv/bin/python ./rra run --scenario bias --seed 7 --compensation on --output-dir /tmp/rra-demo
 ```
 
-You can also activate the virtual environment first, then run `./rra ...` or `rra ...`. Use the virtual environment's Python so the `rra` script's `#!/usr/bin/env python3` shebang does not select the system Python.
+Measured with Python 3.12.3 and NumPy 2.5.4: the command exited successfully and wrote `bias-seed7-on.json`, with attempted=12, successes=12, escalations=0. This single-episode smoke makes no model call and is not a formal evaluation.
 
-`rra bench` defaults to the frozen eval seeds `2000–2099` and runs nominal, low/mid/high levels of bias, drift, moving-target, and load disturbances, plus combo. Development uses seeds `0–129`. A development smoke run can select them with `RRA_SEED_FILE=config/dev_seeds.json .venv/bin/python ./rra bench`.
+Meterless is an optional development integration and requires Node 22. See the [demo runbook](docs/DEMO_RUNBOOK.md) to install the pinned bridge and run a real persistence demonstration. A live Zetaris environment is also optional and requires user-provided service configuration; this documentation does not require credentials. The recorded Zetaris receipt is prior integration evidence, not a new query.
 
-Evaluation protocol: [docs/EVAL_PROTOCOL.md](docs/EVAL_PROTOCOL.md).
-
-Docker smoke:
+The Docker image is limited to the same Python-only development smoke:
 
 ```bash
-docker build -t reality-residual-agent .
-docker run --rm -e RRA_SEED_FILE=/app/config/dev_seeds.json reality-residual-agent rra bench
+docker build -t rra-dev-smoke .
+docker run --rm rra-dev-smoke
 ```
 
-## Metric definitions
+It uses the Python 3.12 slim family; this build ran Python 3.12.13 and NumPy 2.5.4. The image contains the `rra.eval.final_v3` module copied with `src`, but lacks `.git` metadata, the scored eval-v3 artifacts, and optional sponsor runtime, so it does not support formal replay. It is not a sponsor-stack image.
 
-- **Success rate** = successful picks / all generated objects (12 per seed and configuration). A pick succeeds only when the controller accepts the command and the pick window is met. Objects not attempted after escalation remain in the denominator as failures. Rejected attempts are not successes.
-- **MAE** = sum of pick-window errors over all attempted picks / number of attempts. Each error is `max(2D Euclidean position error, |actual time − command time| × command speed)`, in world-distance units. Successful and failed attempts both count. Objects never attempted after escalation add no error sample. MAE is 0 only when there are no attempts in the whole group.
-- **Escalations** count residual safety escalations (once per episode) and controller rejections.
+## Formal eval-v3 results
 
-The former `0.011` combo MAE with 0 success was a benchmark aggregation bug: the old mean of episode MAEs included 0 for episodes with no attempts, even though the few attempted picks all failed. Success still used all generated objects as its denominator. The benchmark now computes MAE from the global error sum divided by global attempts.
+These numbers come from the registered 100-seed results and their static audit. They are **not new scores from this smoke or the Meterless dev demo**. The denominator is 614 recoverable challenges. Unsafe values are action counts, not episode percentages.
 
-The frozen v2 blind evaluation uses 100 seeds (`2000–2099`) at code version `c66b4bf`. Nominal success was 1.000 with both compensation modes; combo success was 0.000 off and 0.008 on, with 100 escalations in each mode. The complete scenario table is in the Chinese README; raw results are in `bench.json` and `bench.md`. Combo fast-layer fail-closed behavior is a known failure mode described in [FAILURE_MODES.md](FAILURE_MODES.md).
+| Condition | Challenge recovery | Unsafe actions | Interpretation |
+|---|---:|---:|---|
+| B2 | 104 / 614 | 47 | Broader-envelope static baseline in the same formal comparison |
+| B3 | 41 / 614 | 15 | All 15 are fast-layer actions; S2-authorized unsafe actions: 0 (159 authorization events) |
+| B4 STRICT (each of four text conditions) | 41 / 614 | 15 | Equal to B3 by construction, not independent model-benefit evidence |
+| B4 TIEBREAK (each of four text conditions) | 39 / 614 | 58–59 | Each condition has 15 fast-layer and 43–44 S2-authorized unsafe actions; recovery did not improve |
+
+Results, receipt fields, and audit: [B2](artifacts/eval_v3/b2.md) / [B2 JSON](artifacts/eval_v3/b2.json), [B3](artifacts/eval_v3/b1b3.md) / [B3 JSON](artifacts/eval_v3/b1b3.json), [B4](artifacts/eval_v3/b4.md) / [B4 JSON](artifacts/eval_v3/b4.json), [per-condition response and reporting audit](artifacts/eval_v3/reporting_audit.md) / [machine-readable audit](artifacts/eval_v3/reporting_audit.json). The audit documents STRICT=B3 as a design construction. TIEBREAK recovered 39 and had 58–59 unsafe actions; the evidence does not support a model-improves-recovery or zero-overall-risk claim.
+
+The counts above map to receipt fields `challenge_success_count` / `recoverable_challenge_count` (B2) and `recoverable_challenge_success_count` / `recoverable_challenge_count` (B3). Source splits for B3/B4 are in `unsafe_action_by_source` and `unsafe_by_source`; the reporting audit contains the STRICT/TIEBREAK response categories and gate counts. Action counts are not episode rates.
+
+Call statistics use different units: across the four text conditions there were 1,519 provider `llm_calls`, 1,523 distinct ledger requests, and 2,700 proposer invocations (1,352 STRICT, 1,348 TIEBREAK). These are not interchangeable request counts and should not all be called HTTP calls. The shared-provider `llm_calls=0` field on TIEBREAK rows does not mean the model was unused.
+
+Recorded Zetaris equivalence evidence is in [`zetaris-equivalence.json`](artifacts/sponsor/zetaris-equivalence.json): base `18041e5`, T3/T4 mismatches both 0, and T8 receipt bytes identical is true. This is a saved prior receipt, not a live query in this release task.
+
+## Reproduction and scope
+
+Formal offline reproduction should use the original scored result commit `dce9e802b024943cb21b8cdb621bdad34187dd73`; implementation freeze tag `impl-freeze-v3` points to `2365a220`. These are different commits. The unchanged guard on the maintained branch rejects later maintenance paths; do not substitute current main for the original result commit. See [eval-v3 reproduction](docs/REPRODUCING_EVAL_V3.md) for isolated worktree, virtual environment, and offline commands. Those commands are for future reproduction and were not rerun for this documentation task. Bitwise reproducibility applies only to the registered runner; portability across machines does not promise identical hashes.
+
+The declared pre-existing work boundary is recorded in [`HACKATHON_BASELINE.md`](HACKATHON_BASELINE.md) and `pre-window-freeze^{commit}` (`3b56637681551f21c6b4c253be6def59389d1051`). H1 implementation before that boundary is also pre-existing work; later commits should not all be described as work newly built during the event. Cursor is optional and this README makes no claim that it was used.
+
+Historical pointer: [older eval-v2 benchmark report](bench.md). It is not the current headline result.

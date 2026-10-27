@@ -1,0 +1,540 @@
+{
+  "schema": "rra.dev_trace_bundle.v1",
+  "label": "Fresh B3 development trace; not a registered evaluation score",
+  "source_base_commit": "87a3124a9a337a525efdf3d5390905df9803114f",
+  "source_commit": "87a3124a9a337a525efdf3d5390905df9803114f",
+  "episode_id": "ep-014",
+  "fault_family": "SENSOR_STUCK",
+  "run_tag": "release-demo",
+  "receipt_sha256": "84a96c6eaf26a6c89618fd5c57055f23b6843f69b83e0a91ff7c0fdbca905c91",
+  "decision_sha256": "7c0b284add1881646fa6ab09b44a759383e92eb652d566b54d5742ea9d2e9e27",
+  "decisions": [
+    {
+      "time": 0.2,
+      "target_id": 0,
+      "action": "PAUSE_AND_REOBSERVE",
+      "reason": "NO_VERIFIED_HYPOTHESIS",
+      "faults": [],
+      "pause_seconds": 0.0,
+      "evidence_candidate_total": 14,
+      "evidence": [
+        {
+          "hypothesis": "SENSOR_BIAS",
+          "passed": false,
+          "n_usable": 3,
+          "violations": [
+            "n_usable < 6",
+            "RMSE > 0.030"
+          ]
+        },
+        {
+          "hypothesis": "VELOCITY_OFFSET",
+          "passed": false,
+          "n_usable": 3,
+          "violations": [
+            "n_usable < 6",
+            "RMSE > 0.030"
+          ]
+        },
+        {
+          "hypothesis": "SPEED_STEP",
+          "passed": false,
+          "n_usable": 3,
+          "violations": [
+            "n_usable < 6",
+            "RMSE > 0.030"
+          ]
+        },
+        {
+          "hypothesis": "ACTUATOR_DELAY",
+          "passed": false,
+          "n_usable": 3,
+          "violations": [
+            "n_usable < 6",
+            "RMSE > 0.030"
+          ]
+        }
+      ],
+      "observation": {
+        "nominal_speed": 1.0,
+        "nominal_x": -4.476066724443554,
+        "observed_x": -4.463941215974607,
+        "time": 0.2
+      }
+    },
+    {
+      "time": 0.30000000000000004,
+      "target_id": 1,
+      "action": "PAUSE_AND_REOBSERVE",
+      "reason": "NO_VERIFIED_HYPOTHESIS",
+      "faults": [],
+      "pause_seconds": 0.0,
+      "evidence_candidate_total": 14,
+      "evidence": [
+        {
+          "hypothesis": "SENSOR_BIAS",
+          "passed": false,
+          "n_usable": 4,
+          "violations": [
+            "n_usable < 6",
+            "RMSE > 0.030"
+          ]
+        },
+        {
+          "hypothesis": "VELOCITY_OFFSET",
+          "passed": false,
+          "n_usable": 4,
+          "violations": [
+            "n_usable < 6",
+            "RMSE > 0.030"
+          ]
+        },
+        {
+          "hypothesis": "SPEED_STEP",
+          "passed": false,
+          "n_usable": 4,
+          "violations": [
+            "n_usable < 6",
+            "RMSE > 0.030"
+          ]
+        },
+        {
+          "hypothesis": "ACTUATOR_DELAY",
+          "passed": false,
+          "n_usable": 4,
+          "violations": [
+            "n_usable < 6",
+            "RMSE > 0.030"
+          ]
+        }
+      ],
+      "observation": {
+        "nominal_speed": 1.0,
+        "nominal_x": -6.256213332662974,
+        "observed_x": -6.229828195824646,
+        "time": 0.30000000000000004
+      }
+    },
+    {
+      "time": 0.2,
+      "target_id": 2,
+      "action": "PAUSE_AND_REOBSERVE",
+      "reason": "NO_VERIFIED_HYPOTHESIS",
+      "faults": [],
+      "pause_seconds": 0.0,
+      "evidence_candidate_total": 14,
+      "evidence": [
+        {
+          "hypothesis": "SENSOR_BIAS",
+          "passed": false,
+          "n_usable": 3,
+          "violations": [
+            "n_usable < 6",
+            "RMSE > 0.030"
+          ]
+        },
+        {
+          "hypothesis": "VELOCITY_OFFSET",
+          "passed": false,
+          "n_usable": 3,
+          "violations": [
+            "n_usable < 6",
+            "RMSE > 0.030"
+          ]
+        },
+        {
+          "hypothesis": "SPEED_STEP",
+          "passed": false,
+          "n_usable": 3,
+          "violations": [
+            "n_usable < 6",
+            "RMSE > 0.030"
+          ]
+        },
+        {
+          "hypothesis": "ACTUATOR_DELAY",
+          "passed": false,
+          "n_usable": 3,
+          "violations": [
+            "n_usable < 6",
+            "RMSE > 0.030"
+          ]
+        }
+      ],
+      "observation": {
+        "nominal_speed": 1.0,
+        "nominal_x": -4.98904277767178,
+        "observed_x": -4.986901053778015,
+        "time": 0.2
+      }
+    },
+    {
+      "time": 0.5,
+      "target_id": 3,
+      "action": "UPDATE_MODEL_AND_REPLAN",
+      "reason": "COMMON_ACTION",
+      "faults": [],
+      "pause_seconds": 0.0,
+      "evidence_candidate_total": 14,
+      "evidence": [
+        {
+          "hypothesis": "SENSOR_BIAS",
+          "passed": true,
+          "n_usable": 6,
+          "violations": []
+        },
+        {
+          "hypothesis": "VELOCITY_OFFSET",
+          "passed": true,
+          "n_usable": 6,
+          "violations": []
+        },
+        {
+          "hypothesis": "SPEED_STEP",
+          "passed": true,
+          "n_usable": 6,
+          "violations": []
+        },
+        {
+          "hypothesis": "ACTUATOR_DELAY",
+          "passed": true,
+          "n_usable": 6,
+          "violations": []
+        }
+      ],
+      "observation": {
+        "nominal_speed": 1.0,
+        "nominal_x": -4.059524853389622,
+        "observed_x": -4.037779507232661,
+        "time": 0.5
+      }
+    },
+    {
+      "time": 0.4,
+      "target_id": 4,
+      "action": "PAUSE_AND_REOBSERVE",
+      "reason": "NO_VERIFIED_HYPOTHESIS",
+      "faults": [],
+      "pause_seconds": 0.0,
+      "evidence_candidate_total": 14,
+      "evidence": [
+        {
+          "hypothesis": "SENSOR_BIAS",
+          "passed": false,
+          "n_usable": 5,
+          "violations": [
+            "n_usable < 6",
+            "RMSE > 0.030"
+          ]
+        },
+        {
+          "hypothesis": "VELOCITY_OFFSET",
+          "passed": false,
+          "n_usable": 5,
+          "violations": [
+            "n_usable < 6",
+            "RMSE > 0.030"
+          ]
+        },
+        {
+          "hypothesis": "SPEED_STEP",
+          "passed": false,
+          "n_usable": 5,
+          "violations": [
+            "n_usable < 6",
+            "RMSE > 0.030"
+          ]
+        },
+        {
+          "hypothesis": "ACTUATOR_DELAY",
+          "passed": false,
+          "n_usable": 5,
+          "violations": [
+            "n_usable < 6",
+            "RMSE > 0.030"
+          ]
+        }
+      ],
+      "observation": {
+        "nominal_speed": 1.0,
+        "nominal_x": -5.034730076847341,
+        "observed_x": -5.048575713250312,
+        "time": 0.4
+      }
+    },
+    {
+      "time": 0.2,
+      "target_id": 5,
+      "action": "PAUSE_AND_REOBSERVE",
+      "reason": "NO_VERIFIED_HYPOTHESIS",
+      "faults": [],
+      "pause_seconds": 0.0,
+      "evidence_candidate_total": 14,
+      "evidence": [
+        {
+          "hypothesis": "SENSOR_BIAS",
+          "passed": false,
+          "n_usable": 3,
+          "violations": [
+            "n_usable < 6",
+            "RMSE > 0.030"
+          ]
+        },
+        {
+          "hypothesis": "VELOCITY_OFFSET",
+          "passed": false,
+          "n_usable": 3,
+          "violations": [
+            "n_usable < 6",
+            "RMSE > 0.030"
+          ]
+        },
+        {
+          "hypothesis": "SPEED_STEP",
+          "passed": false,
+          "n_usable": 3,
+          "violations": [
+            "n_usable < 6",
+            "RMSE > 0.030"
+          ]
+        },
+        {
+          "hypothesis": "ACTUATOR_DELAY",
+          "passed": false,
+          "n_usable": 3,
+          "violations": [
+            "n_usable < 6",
+            "RMSE > 0.030"
+          ]
+        }
+      ],
+      "observation": {
+        "nominal_speed": 1.0,
+        "nominal_x": -5.606547164746744,
+        "observed_x": -5.606424689335606,
+        "time": 0.2
+      }
+    },
+    {
+      "time": 0.30000000000000004,
+      "target_id": 6,
+      "action": "PAUSE_AND_REOBSERVE",
+      "reason": "NO_VERIFIED_HYPOTHESIS",
+      "faults": [],
+      "pause_seconds": 0.0,
+      "evidence_candidate_total": 14,
+      "evidence": [
+        {
+          "hypothesis": "SENSOR_BIAS",
+          "passed": false,
+          "n_usable": 4,
+          "violations": [
+            "n_usable < 6",
+            "RMSE > 0.030"
+          ]
+        },
+        {
+          "hypothesis": "VELOCITY_OFFSET",
+          "passed": false,
+          "n_usable": 4,
+          "violations": [
+            "n_usable < 6",
+            "RMSE > 0.030"
+          ]
+        },
+        {
+          "hypothesis": "SPEED_STEP",
+          "passed": false,
+          "n_usable": 4,
+          "violations": [
+            "n_usable < 6",
+            "RMSE > 0.030"
+          ]
+        },
+        {
+          "hypothesis": "ACTUATOR_DELAY",
+          "passed": false,
+          "n_usable": 4,
+          "violations": [
+            "n_usable < 6",
+            "RMSE > 0.030"
+          ]
+        }
+      ],
+      "observation": {
+        "nominal_speed": 1.0,
+        "nominal_x": -4.650746309875227,
+        "observed_x": -4.651420975261088,
+        "time": 0.30000000000000004
+      }
+    },
+    {
+      "time": 0.2,
+      "target_id": 7,
+      "action": "PAUSE_AND_REOBSERVE",
+      "reason": "NO_VERIFIED_HYPOTHESIS",
+      "faults": [],
+      "pause_seconds": 0.0,
+      "evidence_candidate_total": 14,
+      "evidence": [
+        {
+          "hypothesis": "SENSOR_BIAS",
+          "passed": false,
+          "n_usable": 3,
+          "violations": [
+            "n_usable < 6",
+            "RMSE > 0.030"
+          ]
+        },
+        {
+          "hypothesis": "VELOCITY_OFFSET",
+          "passed": false,
+          "n_usable": 3,
+          "violations": [
+            "n_usable < 6",
+            "RMSE > 0.030"
+          ]
+        },
+        {
+          "hypothesis": "SPEED_STEP",
+          "passed": false,
+          "n_usable": 3,
+          "violations": [
+            "n_usable < 6",
+            "RMSE > 0.030"
+          ]
+        },
+        {
+          "hypothesis": "ACTUATOR_DELAY",
+          "passed": false,
+          "n_usable": 3,
+          "violations": [
+            "n_usable < 6",
+            "RMSE > 0.030"
+          ]
+        }
+      ],
+      "observation": {
+        "nominal_speed": 1.0,
+        "nominal_x": -4.934742469439838,
+        "observed_x": -4.90826769215759,
+        "time": 0.2
+      }
+    },
+    {
+      "time": 3.1,
+      "target_id": 7,
+      "action": "PAUSE_AND_REOBSERVE",
+      "reason": "AMBIGUOUS",
+      "faults": [],
+      "pause_seconds": 0.0,
+      "evidence_candidate_total": 14,
+      "evidence": [
+        {
+          "hypothesis": "SENSOR_BIAS",
+          "passed": true,
+          "n_usable": 32,
+          "violations": []
+        },
+        {
+          "hypothesis": "VELOCITY_OFFSET",
+          "passed": true,
+          "n_usable": 32,
+          "violations": []
+        },
+        {
+          "hypothesis": "SPEED_STEP",
+          "passed": true,
+          "n_usable": 32,
+          "violations": []
+        },
+        {
+          "hypothesis": "ACTUATOR_DELAY",
+          "passed": true,
+          "n_usable": 32,
+          "violations": []
+        }
+      ],
+      "observation": {
+        "nominal_speed": 1.0,
+        "nominal_x": -2.034742469439838,
+        "observed_x": -2.1384837707911664,
+        "time": 3.1
+      }
+    },
+    {
+      "time": 3.2,
+      "target_id": 7,
+      "action": "HUMAN_ESCALATION",
+      "reason": "HARD_FAULT_LATCH",
+      "faults": [
+        "BELT_STOP_OR_MOTION_LOSS"
+      ],
+      "pause_seconds": 0.0,
+      "evidence_candidate_total": 0,
+      "evidence": []
+    },
+    {
+      "time": 0.0,
+      "target_id": 8,
+      "action": "HUMAN_ESCALATION",
+      "reason": "HARD_FAULT_LATCH",
+      "faults": [
+        "BELT_STOP_OR_MOTION_LOSS"
+      ],
+      "pause_seconds": 0.0,
+      "evidence_candidate_total": 0,
+      "evidence": []
+    },
+    {
+      "time": 0.0,
+      "target_id": 9,
+      "action": "HUMAN_ESCALATION",
+      "reason": "HARD_FAULT_LATCH",
+      "faults": [
+        "BELT_STOP_OR_MOTION_LOSS"
+      ],
+      "pause_seconds": 0.0,
+      "evidence_candidate_total": 0,
+      "evidence": []
+    },
+    {
+      "time": 0.0,
+      "target_id": 10,
+      "action": "HUMAN_ESCALATION",
+      "reason": "HARD_FAULT_LATCH",
+      "faults": [
+        "BELT_STOP_OR_MOTION_LOSS"
+      ],
+      "pause_seconds": 0.0,
+      "evidence_candidate_total": 0,
+      "evidence": []
+    },
+    {
+      "time": 0.0,
+      "target_id": 11,
+      "action": "HUMAN_ESCALATION",
+      "reason": "HARD_FAULT_LATCH",
+      "faults": [
+        "BELT_STOP_OR_MOTION_LOSS"
+      ],
+      "pause_seconds": 0.0,
+      "evidence_candidate_total": 0,
+      "evidence": []
+    }
+  ],
+  "terminal_outcomes": {
+    "picked": 7,
+    "escalated": 5,
+    "attempt_failed": 0,
+    "rejected": 0,
+    "skipped": 0
+  },
+  "replay": {
+    "decision_count": 14,
+    "persisted_and_replayed_decisions_match": true,
+    "receipt_match": true,
+    "manifest_receipt_sha256": "84a96c6eaf26a6c89618fd5c57055f23b6843f69b83e0a91ff7c0fdbca905c91",
+    "replay_receipt_sha256": "84a96c6eaf26a6c89618fd5c57055f23b6843f69b83e0a91ff7c0fdbca905c91"
+  }
+}

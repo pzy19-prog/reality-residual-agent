@@ -1,0 +1,111 @@
+{
+  "schema": "rra.submission.facts.v3",
+  "repository_url": "https://github.com/pzy19-prog/reality-residual-agent",
+  "commits": {
+    "release_base": "87a3124a9a337a525efdf3d5390905df9803114f",
+    "formal_result": "dce9e802b024943cb21b8cdb621bdad34187dd73",
+    "implementation_freeze": "2365a2204ae68354809b99a161fe963b978dbb5d",
+    "pre_window": "3b56637681551f21c6b4c253be6def59389d1051",
+    "zetaris_integration_base": "18041e5b9942e785d191003b5432d4b2e08ef45f",
+    "meterless_integration": "1742dec56a66e58eef9dda2d2b865823758ca8cd"
+  },
+  "formal": {
+    "episodes": 100,
+    "recoverable_challenges": 614,
+    "b2": {
+      "recovered": 104,
+      "unsafe_events": 47
+    },
+    "b3": {
+      "recovered": 41,
+      "unsafe_events": 15,
+      "unsafe_by_source": {
+        "fast_layer_command": 15,
+        "s2_authorized": 0
+      },
+      "authorization_count": 159
+    },
+    "b4": {
+      "text_conditions": 4,
+      "strict": {
+        "recovered_each": 41,
+        "unsafe_events_each": 15
+      },
+      "tiebreak": {
+        "recovered_each": 39,
+        "unsafe_events_range": [
+          58,
+          59
+        ],
+        "s2_authorized_unsafe_range": [
+          43,
+          44
+        ]
+      },
+      "strict_equals_b3": "by construction under A04 section 2",
+      "tiebreak_recovery_gain": false
+    },
+    "accounting": {
+      "live_fill_provider_llm_calls": 1519,
+      "live_fill_distinct_live_requests": 1523,
+      "scored_replay_provider_llm_calls": 1519,
+      "scored_replay_new_live_requests": 0,
+      "scored_replay_cache_ledger_records": 1523,
+      "strict_proposer_events": 1352,
+      "tiebreak_proposer_events": 1348,
+      "total_proposer_events": 2700
+    }
+  },
+  "runtime": {
+    "python": "3.12.3",
+    "numpy": "2.5.4"
+  },
+  "limits": [
+    "2D simulation, not deployment on a physical robot",
+    "B4 STRICT equals B3 by construction under A04 section 2; this is not independent empirical evidence of LLM benefit",
+    "B4 TIEBREAK is the relevant LLM comparison and did not improve recovery",
+    "Case 9 was seen during development; no unseen-composition generalization claim",
+    "15 unsafe fast-layer actions per B3/STRICT condition; no overall zero-unsafe claim",
+    "Meterless integration checks are dev checks, not registered eval-v3 outcome rows",
+    "Zetaris integration receipt is recorded evidence, not a new live query for the demo"
+  ],
+  "zetaris": {
+    "kind": "recorded validated integration receipt",
+    "T3_anchor_mismatches": 0,
+    "T3_authorization_mismatches": 0,
+    "T4_mismatches": 0,
+    "T8_reference_receipt_bytes_identical": true
+  },
+  "meterless_archived": {
+    "B4": "PASS: B4_TIEBREAK meterless off/on decisions 20/20, receipt hashes 20/20",
+    "M1_roundtrip_mismatches": 0,
+    "M2_equal": 20,
+    "M2_production_decisions_equal": 20,
+    "M2_production_receipt_equal_ignoring_diagnostic_fields": 20,
+    "M2_production_receipt_sha_literal_equal": 20,
+    "M3_cross_episode_reads": 0,
+    "M3_negative_refused": 20,
+    "M4_replay_match": 20,
+    "M5_identical": 20,
+    "M8_hidden_key_hits": 0,
+    "all_ok": true,
+    "episodes": 20
+  },
+  "meterless_dev_fresh": {
+    "episodes": 4,
+    "M1_roundtrip_mismatches": 0,
+    "M2_equal": 4,
+    "M3_cross_episode_reads": 0,
+    "M4_replay_match": 4,
+    "all_ok": true,
+    "source": "meterless-verify.log"
+  },
+  "source_fields": {
+    "b2": "artifacts/eval_v3/b2.json: metrics.episodes, metrics.challenge_success_count, metrics.recoverable_challenge_count, metrics.unsafe_action",
+    "b3": "artifacts/eval_v3/b1b3.json: metrics.recoverable_challenge_success_count, metrics.recoverable_challenge_count, metrics.unsafe_action, metrics.unsafe_action_by_source, metrics.authorization_count",
+    "b4_live_fill": "artifacts/eval_v3/b4_live.json: llm_calls, distinct_live_requests",
+    "b4_scored_replay": "artifacts/eval_v3/b4.json: llm_calls, distinct_live_requests, cache_provenance.ledger, strict_proposer_invocations, tiebreak_proposer_invocations",
+    "zetaris": "submission facts packet: zetaris_recorded_integration.*",
+    "meterless": "release-dev meterless verify log: episodes, M1_roundtrip_mismatches, M2_equal, M3_cross_episode_reads, M4_replay_match, all_ok"
+  }
+}
